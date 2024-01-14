@@ -2,3 +2,11 @@
 *.pt
 __pycache__
 logs/*
+eval*.txt
+KD*.txt
+teacher*.txt
+*.ptl
+nc_workspace/*
+*.onnx
+eval*/keys
+distil*.txt

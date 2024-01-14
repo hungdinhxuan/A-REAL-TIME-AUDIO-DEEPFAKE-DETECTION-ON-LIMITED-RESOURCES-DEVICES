@@ -9,7 +9,7 @@ from startup_config import set_random_seed
 from student import Distil_W2V2_AASISTL, Distil_W2V2_AASISTL_Cosine, Distil_W2V2_AASISTL_Regressor
 from teacher import W2V2_AASIST, W2V2_AASIST_Cosine, W2V2_AASIST_Regressor
 from kdtoolkit import train_knowledge_distillation, train_kd_cosine_loss, train_kd_mse_loss
-from menu import get_model
+from menu import get_main_menu
 from utils import EarlyStopping
 
 __author__ = "Hungdx"
@@ -46,34 +46,38 @@ def evaluate_accuracy(dev_loader, model, device, kd_method=None):
    
     return val_loss
 
-def produce_evaluation_file(dataset, model, device, save_path):
-    data_loader = DataLoader(dataset, batch_size=14, shuffle=False, drop_last=False)
-    num_correct = 0.0
-    num_total = 0.0
+def produce_evaluation_file(dataset, model, device, save_path, kd_method=None, batch_size=4):
+    data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=False, drop_last=False)
     model.eval()
-    
     fname_list = []
-    key_list = []
     score_list = []
-    
-    for batch_x,utt_id in data_loader:
-        fname_list = []
-        score_list = []  
-        batch_size = batch_x.size(0)
-        batch_x = batch_x.to(device)
-        
-        batch_out = model(batch_x)
-        
-        batch_score = (batch_out[:, 1]  
-                       ).data.cpu().numpy().ravel() 
-        # add outputs
-        fname_list.extend(utt_id)
-        score_list.extend(batch_score.tolist())
-        
-        with open(save_path, 'a+') as fh:
-            for f, cm in zip(fname_list,score_list):
-                fh.write('{} {}\n'.format(f, cm))
-        fh.close()   
+
+    with torch.no_grad():
+        for batch_x,utt_id in data_loader:
+            fname_list = []
+            score_list = []  
+            batch_size = batch_x.size(0)
+            batch_x = batch_x.to(device)
+            
+            if kd_method == 'KD_logits':
+                batch_out = model(batch_x)
+            elif kd_method == 'KD_cosine':
+                batch_out, _ = model(batch_x)
+            elif kd_method == 'KD_mse':
+                batch_out, _ = model(batch_x)
+            else:
+                batch_out = model(batch_x)
+          
+            batch_score = (batch_out[:, 1]  
+                        ).data.cpu().numpy().ravel() 
+            # add outputs
+            fname_list.extend(utt_id)
+            score_list.extend(batch_score.tolist())
+            
+            with open(save_path, 'a+') as fh:
+                for f, cm in zip(fname_list,score_list):
+                    fh.write('{} {}\n'.format(f, cm))
+            fh.close()   
     print('Scores saved to {}'.format(save_path))
 
 def train_epoch(train_loader, model, lr,optim, device):
@@ -109,11 +113,12 @@ def train_epoch(train_loader, model, lr,optim, device):
     return running_loss
 
 
+
 if __name__ == '__main__':
     
     if not os.path.exists('models'):
         os.mkdir('models')
-    args = get_model()
+    args = get_main_menu()
  
     #make experiment reproducible
     set_random_seed(args.seed, args)
@@ -143,16 +148,19 @@ if __name__ == '__main__':
 
     if args.KD_logits:
         model = W2V2_AASIST()
-        student = Distil_W2V2_AASISTL()
+        student = Distil_W2V2_AASISTL(device)
+        kd_method = 'KD_logits'
 
     elif args.KD_cosine:
         model = W2V2_AASIST_Cosine()
-        student = Distil_W2V2_AASISTL_Cosine()
+        student = Distil_W2V2_AASISTL_Cosine(device)
+        kd_method = 'KD_cosine'
 
     elif args.KD_mse:
         model = W2V2_AASIST_Regressor()
-        student = Distil_W2V2_AASISTL_Regressor()
-    
+        student = Distil_W2V2_AASISTL_Regressor(device)
+        kd_method = 'KD_mse'
+
     else:
         raise ValueError('Invalid KD method given')
 
@@ -172,17 +180,41 @@ if __name__ == '__main__':
         print('Model loaded : {}'.format(args.model_path))
 
     if args.student_restore:
-        
-        last_cpt = sorted(os.listdir(model_save_path), key=lambda x: int(x.split('_')[1].split('.')[0]))[-1]
-        student.load_state_dict(torch.load(os.path.join(model_save_path, last_cpt)))
-        print('Student model loaded : {}'.format(os.path.join(model_save_path, last_cpt)))
+        try:        
+            # Restore student model from best checkpoint
+            cpt = sorted(os.listdir(model_save_path), key=lambda x: int(x.split('_')[2].split('.')[0]) if not x.startswith('epoch') else 0 )[-1]
+            
+            # Restore student model from last checkpoint
+            # last_cpt = sorted(os.listdir(model_save_path), key=lambda x: int(x.split('_')[1].split('.')[0]) if not x.startswith('best') else 0 )[-1]
+
+            student.load_state_dict(torch.load(os.path.join(model_save_path, cpt)))
+            print('Student model loaded : {}'.format(os.path.join(model_save_path, cpt)))
+            # print('Training from epoch {}'.format(int(last_cpt.split('_')[1].split('.')[0])))
+        except Exception as e:
+            print('No checkpoint student found in ', model_save_path)
+            print(e)
+            print('Training from scratch')
+
+    if args.student_model_path:
+        print('Loading student model from {}'.format(args.student_model_path))
+        try:
+            student.load_state_dict(torch.load(args.student_model_path,map_location=device))
+            student.load_state_dict(torch.load(args.student_model_path,map_location=device))
+            print('Student model loaded : {}'.format(args.student_model_path))
+        except Exception as e:
+            print('No checkpoint student found in ', args.student_model_path)
+            print(e)
+            print('Training from scratch')
 
     #evaluation 
     if args.eval:
-        file_eval = genSpoof_list( dir_meta =  os.path.join(args.protocols_path+'ASVspoof_{}_cm_protocols/{}.cm.eval.trl.txt'.format(track,prefix_2021)),is_train=False,is_eval=True)
+        file_eval = genSpoof_list( dir_meta =  os.path.join(args.protocols_path+'ASVspoof_{}_cm_protocols/{}.cm.eval.trl.txt'.format(track,prefix_2021)),is_train=False,is_eval=True, num_eval_samples=args.num_eval_samples)
         print('no. of eval trials',len(file_eval))
         eval_set=Dataset_ASVspoof2021_eval(list_IDs = file_eval,base_dir = os.path.join(args.database_path+'ASVspoof2021_{}_eval/'.format(args.track)))
-        produce_evaluation_file(eval_set, model, device, args.eval_output)
+
+        # Produce evaluation file 
+        produce_evaluation_file(eval_set, model if args.is_eval_teacher else student , device, args.eval_output, batch_size=args.batch_size_eval, kd_method=kd_method)
+        
         sys.exit(0)
    
     
@@ -215,7 +247,7 @@ if __name__ == '__main__':
     
 
     # Training and validation
-    start_epoch = 0 if not args.student_restore else int(last_cpt.split('_')[1].split('.')[0])
+    start_epoch = 0 if not args.student_restore else int(cpt.split('_')[1].split('.')[0])
     assert start_epoch == 0 or type(start_epoch) == int, 'Invalid start epoch given'
     print('Start epoch: {}'.format(start_epoch))
     

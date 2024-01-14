@@ -421,9 +421,7 @@ class W2V2_AASIST_Regressor(nn.Module):
         x_ssl_feat = self.ssl_model.extract_feat(x.squeeze(-1))
         x = self.LL(x_ssl_feat) #(bs,frame_number,feat_out_dim)
         conv_feature_map = x
-        # flatten the input
-        flattened_conv_output = torch.flatten(x, 1)
-        
+
         # post-processing on front-end features
         x = x.transpose(1, 2)   #(bs,feat_out_dim,frame_number)
         x = x.unsqueeze(dim=1) # add channel 

@@ -11,7 +11,7 @@ from fairseq.models.distilXLSR import DistilXLSR, DistilXLSRConfig
 class SSLModel(nn.Module):
     def __init__(self):
         super().__init__()
-        cp_path = 'xlsr2_300m.pt'   # Change the pre-trained XLSR model path. 
+        cp_path = '/nfs/datab/hungdx/KDW2V-AASISTL/xlsr2_300m.pt'   # Change the pre-trained XLSR model path. 
         model, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([cp_path])
         self.model = model[0]
         self.out_dim = 1024
@@ -22,10 +22,10 @@ class SSLModel(nn.Module):
         return emb
 
 class DistilSSLModel(nn.Module):
-    def __init__(self):
+    def __init__(self, device):
         super().__init__()
-        cp_path = 'distilXLSR_xlsr128.pt'   # Change the pre-trained XLSR model path. 
-        checkpoint = torch.load(cp_path)
+        cp_path = '/nfs/datab/hungdx/KDW2V-AASISTL/distilXLSR_xlsr128.pt'   # Change the pre-trained XLSR model path. 
+        checkpoint = torch.load(cp_path, map_location=device)
         self.pretrained_model_cfg = checkpoint["Config"]["model"]
         self.pretrained_model_cfg = DistilXLSRConfig(self.pretrained_model_cfg)
         self.model = DistilXLSR(self.pretrained_model_cfg)

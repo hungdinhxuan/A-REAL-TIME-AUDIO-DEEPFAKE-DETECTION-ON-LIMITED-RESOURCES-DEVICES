@@ -1,11 +1,10 @@
 from torch import nn
 import torch
-from utils import get_model
 from models import DistilSSLModel, GraphAttentionLayer, GraphPool, HtrgGraphAttentionLayer, Residual_block
 import torch.nn.functional as F
 
 class Distil_W2V2_AASISTL(nn.Module):
-    def __init__(self):
+    def __init__(self, device):
         super().__init__()
         # AASIST parameters
         filts = [128, [1, 32], [32, 32], [32, 24], [24, 24]]
@@ -16,7 +15,7 @@ class Distil_W2V2_AASISTL(nn.Module):
         ####
         # create network wav2vec 2.0
         ####
-        self.ssl_model = DistilSSLModel()
+        self.ssl_model = DistilSSLModel(device)
         self.LL = nn.Linear(self.ssl_model.out_dim, 128)
         self.first_bn = nn.BatchNorm2d(num_features=1)
         self.first_bn1 = nn.BatchNorm2d(num_features=24)
@@ -167,9 +166,8 @@ class Distil_W2V2_AASISTL(nn.Module):
         
         return output
 
-
 class Distil_W2V2_AASISTL_Cosine(nn.Module):
-    def __init__(self):
+    def __init__(self, device):
         super().__init__()
         # AASIST parameters
         filts = [128, [1, 32], [32, 32], [32, 24], [24, 24]]
@@ -180,7 +178,7 @@ class Distil_W2V2_AASISTL_Cosine(nn.Module):
         ####
         # create network wav2vec 2.0
         ####
-        self.ssl_model = DistilSSLModel()
+        self.ssl_model = DistilSSLModel(device)
         self.LL = nn.Linear(self.ssl_model.out_dim, 128)
         self.first_bn = nn.BatchNorm2d(num_features=1)
         self.first_bn1 = nn.BatchNorm2d(num_features=24)
@@ -336,7 +334,7 @@ class Distil_W2V2_AASISTL_Cosine(nn.Module):
         return output, flattened_conv_output
 
 class Distil_W2V2_AASISTL_Regressor(nn.Module):
-    def __init__(self):
+    def __init__(self, device):
         super().__init__()
         # AASIST parameters
         filts = [128, [1, 32], [32, 32], [32, 24], [24, 24]]
@@ -347,7 +345,7 @@ class Distil_W2V2_AASISTL_Regressor(nn.Module):
         ####
         # create network wav2vec 2.0
         ####
-        self.ssl_model = DistilSSLModel()
+        self.ssl_model = DistilSSLModel(device)
         self.LL = nn.Linear(self.ssl_model.out_dim, 128)
         self.first_bn = nn.BatchNorm2d(num_features=1)
         self.first_bn1 = nn.BatchNorm2d(num_features=24)

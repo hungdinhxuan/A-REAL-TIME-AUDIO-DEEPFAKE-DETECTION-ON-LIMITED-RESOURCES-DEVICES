@@ -87,7 +87,7 @@ class bio_emb(nn.Module):
 #             file_list.append(key)
 #             d_meta[key] = 1 if label == 'bonafide' else 0
 #         return d_meta, file_list
-def genSpoof_list( dir_meta,is_train=False,is_eval=False):
+def genSpoof_list( dir_meta,is_train=False,is_eval=False, num_eval_samples=60000):
     
     d_meta = {}
     file_list=[]
@@ -103,6 +103,15 @@ def genSpoof_list( dir_meta,is_train=False,is_eval=False):
         return d_meta,file_list
     
     elif(is_eval):
+        # Randomly num_eval_samples  samples from eval set
+
+        if num_eval_samples > len(l_meta) or num_eval_samples < 0:
+            num_eval_samples = len(l_meta)
+        
+        np.random.seed(0)
+        np.random.shuffle(l_meta)
+        l_meta = l_meta[:num_eval_samples]
+        
         for line in l_meta:
             key= line.strip()
             file_list.append(key)
@@ -171,7 +180,7 @@ class Dataset_ASVspoof2021_eval(Dataset):
     def __getitem__(self, index):
         self.cut=64600 # take ~4 sec audio (64600 samples)
         key = self.list_IDs[index]
-        X, fs = librosa.load(self.base_dir+'flac/'+key+'.flac', sr=16000)
+        X, fs = librosa.load(self.base_dir+key+'.flac', sr=16000)
         X_pad = pad(X,self.cut)
         x_inp = Tensor(X_pad)
         return x_inp,key           
@@ -192,7 +201,7 @@ class Dataset_ASVspoof2019_eval(Dataset):
         self.cut = 64600  # take ~4 sec audio (64600 samples)
         keys = self.list_IDs[index].strip().split(' ')
         # key = self.list_IDs[index]
-        X, fs = librosa.load(self.base_dir+'flac/'+keys[1]+'.flac', sr=16000)
+        X, fs = librosa.load(self.base_dir+keys[1]+'.flac', sr=16000)
         X_pad = pad(X, self.cut)
         x_inp = Tensor(X_pad)
         
