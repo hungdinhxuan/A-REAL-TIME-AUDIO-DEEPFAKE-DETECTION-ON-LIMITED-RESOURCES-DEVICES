@@ -1,5 +1,11 @@
 # Model and code for *A REAL-TIME AUDIO DEEPFAKE DETECTION ON LIMITED RESOURCES DEVICES*
 
+# Clone the repository and submodules
+
+```
+git clone --recursive https://github.com/hungdinhxuan/A-REAL-TIME-AUDIO-DEEPFAKE-DETECTION-ON-LIMITED-RESOURCES-DEVICES
+```
+
 ### Pre-trained models:
 
 | Models | Link |
