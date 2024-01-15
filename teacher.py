@@ -252,7 +252,7 @@ class W2V2_AASIST_Cosine(nn.Module):
         x = self.LL(x_ssl_feat) #(bs,frame_number,feat_out_dim)
 
         # flatten the input
-        flattened_conv_output = torch.flatten(x, 1)
+        flattened_conv_output = x
         
         # post-processing on front-end features
         x = x.transpose(1, 2)   #(bs,feat_out_dim,frame_number)

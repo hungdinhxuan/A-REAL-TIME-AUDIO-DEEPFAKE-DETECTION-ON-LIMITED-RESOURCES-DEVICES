@@ -10,3 +10,4 @@ nc_workspace/*
 *.onnx
 eval*/keys
 distil*.txt
+tmp.txt

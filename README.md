@@ -44,3 +44,12 @@ CUDA_VISIBLE_DEVICES=0 python main.py --comment "KD_cosine" --student_restore --
 ```
 CUDA_VISIBLE_DEVICES=2 python main.py --comment "KD_logits" --student_restore --model_path='' --eval --KD_logits --batch_size=30 --eval_output "./KD_logits_test_150k.txt" --batch_size_eval=64 --num_eval_samples=150000
 ```
+
+# Fairseq Error:
+1. ImportError: cannot import name 'metrics' from 'fairseq' (unknown location)
+Please refer to [fairseq issues](https://github.com/facebookresearch/av_hubert/issues/70#issuecomment-1646736723) for more details.
+In short you can fix it by adding the following line to your command:
+```
+PYTHONPATH=$PYTHONPATH:<your absolute path to fairseq submodule> python <your comand here>
+```
+PYTHONPATH=$PYTHONPATH:/nfs/datab/hungdx/KDW2V-AASISTL/fairseq

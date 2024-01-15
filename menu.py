@@ -38,6 +38,10 @@ def get_main_menu():
     
     parser.add_argument('--model_path', type=str,
                         default='./W2V2-AASIST-teacher.pth', help='Model checkpoint')
+    parser.add_argument('--student_model_path', type=str,
+                        default=None, help='Student model checkpoint')
+    parser.add_argument('--comment', type=str, default=None,
+                        help='Comment to describe the saved model')
     
     # Auxiliary arguments
     parser.add_argument('--track', type=str, default='DF',choices=['LA', 'PA','DF'], help='LA/PA/DF')
@@ -60,6 +64,8 @@ def get_main_menu():
     
     parser.add_argument('--student_restore', action='store_true', default=False,
                         help='Student model checkpoint')
+    
+    parser.add_argument('--ssl_type', type=str, help='Type of SSL models', default='Distil_XLSR')
 
     parser.add_argument('--KD_logits', action='store_true', default=False,
                         help='Distillation loss is calculated from the logits of the networks')

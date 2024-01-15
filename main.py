@@ -6,11 +6,18 @@ from torch.utils.data import DataLoader
 from data_utils import genSpoof_list,Dataset_ASVspoof2019_train,Dataset_ASVspoof2021_eval
 from tensorboardX import SummaryWriter
 from startup_config import set_random_seed
-from student import Distil_W2V2_AASISTL, Distil_W2V2_AASISTL_Cosine, Distil_W2V2_AASISTL_Regressor
+from student import Distil_W2V2_AASISTL, Distil_W2V2_AASISTL_Cosine, Distil_W2V2_AASISTL_Regressor, Distil_W2V2BASE_AASISTL, Distil_W2V2BASE_AASISTL_Cosine, Distil_W2V2BASE_AASISTL_Regressor
 from teacher import W2V2_AASIST, W2V2_AASIST_Cosine, W2V2_AASIST_Regressor
 from kdtoolkit import train_knowledge_distillation, train_kd_cosine_loss, train_kd_mse_loss
 from menu import get_main_menu
 from utils import EarlyStopping
+
+
+import logging
+
+# Get the Numba logger
+logger = logging.getLogger('numba')
+logger.setLevel(logging.WARNING)  # Set level to WARNING, ERROR, or CRITICAL
 
 __author__ = "Hungdx"
 __email__ = "hungdx@soongsil.ac.kr"
@@ -145,20 +152,31 @@ if __name__ == '__main__':
     device = 'cuda' if torch.cuda.is_available() else 'cpu'                  
     print('Device: {}'.format(device))
 
-
     if args.KD_logits:
         model = W2V2_AASIST()
-        student = Distil_W2V2_AASISTL(device)
+        if args.ssl_type == 'Distil_XLSR':
+            student = Distil_W2V2_AASISTL(device)
+        else:
+            # W2V2BASE 95M
+            student = Distil_W2V2BASE_AASISTL(device)
         kd_method = 'KD_logits'
 
     elif args.KD_cosine:
         model = W2V2_AASIST_Cosine()
-        student = Distil_W2V2_AASISTL_Cosine(device)
+        if args.ssl_type == 'Distil_XLSR':
+            student = Distil_W2V2_AASISTL_Cosine(device)
+        else:
+            # W2V2BASE 95M
+            student = Distil_W2V2BASE_AASISTL_Cosine(device)
         kd_method = 'KD_cosine'
 
     elif args.KD_mse:
         model = W2V2_AASIST_Regressor()
-        student = Distil_W2V2_AASISTL_Regressor(device)
+        if args.ssl_type == 'Distil_XLSR':
+            student = Distil_W2V2_AASISTL_Regressor(device)
+        else:
+            # W2V2BASE 95M
+            student = Distil_W2V2BASE_AASISTL_Regressor(device)
         kd_method = 'KD_mse'
 
     else:
@@ -247,7 +265,7 @@ if __name__ == '__main__':
     
 
     # Training and validation
-    start_epoch = 0 if not args.student_restore else int(cpt.split('_')[1].split('.')[0])
+    start_epoch = 0 if not args.student_restore else int(cpt.split('_')[2].split('.')[0]) + 1
     assert start_epoch == 0 or type(start_epoch) == int, 'Invalid start epoch given'
     print('Start epoch: {}'.format(start_epoch))
     

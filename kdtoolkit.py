@@ -74,15 +74,21 @@ def train_kd_cosine_loss(teacher, student, train_loader, optimizer,  hidden_rep_
         # Forward pass with the teacher model and keep only the hidden representation
         with torch.no_grad():
             _, teacher_hidden_representation = teacher(batch_x)
-            # print("teacher_hidden_representation",teacher_hidden_representation.shape)
+            
 
         # Forward pass with the student model
         # Forward pass with the student model
         student_logits, student_hidden_representation = student(batch_x)
-        # print("student_hidden_representation",student_hidden_representation.shape)
+        
 
         #Soften the student logits by applying softmax first and log() second
-        hidden_rep_loss = cosine_loss(student_hidden_representation, teacher_hidden_representation, target=torch.ones(batch_x.size(0)).to(device))
+        # Flatten the tensors from shape [30, 201, 128] to [30, 201*128]
+        student_hidden_representation = student_hidden_representation.view(batch_size, -1)
+        teacher_hidden_representation = teacher_hidden_representation.view(batch_size, -1)
+
+        # Now pass the reshaped tensors to cosine_loss
+        hidden_rep_loss = cosine_loss(student_hidden_representation, teacher_hidden_representation, target=torch.ones(batch_size).to(device))
+        # hidden_rep_loss = cosine_loss(student_hidden_representation, teacher_hidden_representation, target=torch.ones(batch_x.size(0)).to(device))
         # print("hidden_rep_loss",hidden_rep_loss)
 
         # Calculate the true label loss

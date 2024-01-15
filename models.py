@@ -8,6 +8,64 @@ from torch import Tensor
 import fairseq
 from fairseq.models.distilXLSR import DistilXLSR, DistilXLSRConfig
 
+# class Wav2Vec2Model(nn.Module):
+
+#     def __init__(self, cp_path, device, model_type='base'):
+#         super().__init__()
+#         self.SUPPORT_LISTS = ['base', 'xlsr', 'distil-xlsr']
+#         if model_type not in self.SUPPORT_LISTS:
+#             raise ValueError('Unknown model_type of Wav2Vec2 model: {} it should in {}'.format(model_type, self.SUPPORT_LISTS))
+#         self.model_type = model_type
+
+#         if model_type == 'base' or model_type == 'xlsr':
+#             model, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([cp_path])
+#             self.model = model[0]
+#         else:
+#             checkpoint = torch.load(cp_path, map_location=device)
+#             self.pretrained_model_cfg = checkpoint["Config"]["model"]
+#             self.pretrained_model_cfg = DistilXLSRConfig(self.pretrained_model_cfg)
+#             self.model = DistilXLSR(self.pretrained_model_cfg)
+#             self.model.load_state_dict(checkpoint["Student"])
+        
+#         self.out_dim = 768 if self.model_type == 'base' else 1024
+
+#     def forward(self, input_data):
+#         if self.model_type == 'base' or self.model_type == 'xlsr':
+#             input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data 
+#             emb = self.model(input_tmp, mask=False, features_only=True)['x']
+#             return emb
+#         else:
+#             input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data        
+            
+#             (final_output, layer_results), padding_mask = self.model(
+#                     source=input_tmp, 
+#                     ret_layer_results=True
+#                 )
+#             if self.model.encoder.layer_norm_first:
+#                 layer_hiddens = [i[2] for i in layer_results]
+#                 layer_hiddens.pop(0)
+#                 layer_hiddens.append(final_output)
+#             else:
+#                 layer_hiddens = [i[0] for i in layer_results]
+                
+#             x = layer_hiddens[-1]
+#             return x
+
+class SSLModelBase(nn.Module):
+    def __init__(self):
+        super().__init__()
+        cp_path = '/nfs/datab/hungdx/KDW2V-AASISTL/wav2vec_small.pt'   # Change the pre-trained XLSR model path. 
+        model, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([cp_path])
+        self.model = model[0]
+        self.out_dim = 768
+     
+        print("Wav2Vec2 Model loaded successfully.")
+
+    def forward(self, input_data):
+        input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data 
+        emb = self.model(input_tmp, mask=False, features_only=True)['x']
+        return emb
+    
 class SSLModel(nn.Module):
     def __init__(self):
         super().__init__()
