@@ -115,7 +115,8 @@ def genSpoof_list( dir_meta,is_train=False,is_eval=False, num_eval_samples=60000
         for line in l_meta:
             key= line.strip()
             file_list.append(key)
-        return file_list
+            d_meta[key] = 1 if label == 'bonafide' else 0
+        return d_meta,file_list
     else:
         for line in l_meta:
              _,key,_,_,label = line.strip().split()
@@ -183,7 +184,28 @@ class Dataset_ASVspoof2021_eval(Dataset):
         X, fs = librosa.load(self.base_dir+key+'.flac', sr=16000)
         X_pad = pad(X,self.cut)
         x_inp = Tensor(X_pad)
-        return x_inp,key           
+        return x_inp,key 
+
+class Dataset_ASVspoof2021_with_labels_eval(Dataset):
+    def __init__(self, list_IDs, base_dir, labels):
+        '''self.list_IDs	: list of strings (each string: utt key),
+            '''
+            
+        self.list_IDs = list_IDs
+        self.base_dir = base_dir
+        self.labels = labels
+
+    def __len__(self):
+        return len(self.list_IDs)
+
+
+    def __getitem__(self, index):
+        self.cut=64600 # take ~4 sec audio (64600 samples)
+        key = self.list_IDs[index]
+        X, fs = librosa.load(self.base_dir+key+'.flac', sr=16000)
+        X_pad = pad(X,self.cut)
+        x_inp = Tensor(X_pad)
+        return x_inp,key, self.labels[key]           
         
             
 class Dataset_ASVspoof2019_eval(Dataset):

@@ -7,6 +7,8 @@ from data_utils import genSpoof_list,Dataset_ASVspoof2019_train,Dataset_ASVspoof
 from student import Distil_W2V2_AASISTL, Distil_W2V2_AASISTL_Cosine, Distil_W2V2_AASISTL_Regressor
 import numpy as np
 from torch import Tensor
+import onnx
+import torch.onnx
 
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 device = "cpu"
@@ -20,7 +22,7 @@ model_path = "/nfs/datab/hungdx/KDW2V-AASISTL/models/model_DF_weighted_CCE_100_3
 model.load_state_dict(torch.load(model_path,map_location=device))
 print("Loaded model from {}".format(model_path))
 
-# Define a wrapper model
+#Define a wrapper model
 class WrapperModel(nn.Module):
     def __init__(self, model):
         super().__init__()
@@ -46,9 +48,20 @@ class WrapperModel(nn.Module):
         # Final result in % fake
         return output[0][0]
 
-# Inference
+#Inference
+    
 input = torch.randn(1, 16000)
 model = WrapperModel(model).to(device)
 
-with torch.inference_mode():
-    print(model(input))
+model = model.module if isinstance(model, nn.DataParallel) else model
+
+print("converting to onnx model...")
+
+# convert to ONNX
+onnx_path = "Distil_W2V2_AASISTL_Regressor.onnx"
+model=torch.onnx.export(model, input, onnx_path, export_params=True)
+
+print(f"Model exported to {onnx_path}")
+
+#with torch.inference_mode():
+    #print(model(input))

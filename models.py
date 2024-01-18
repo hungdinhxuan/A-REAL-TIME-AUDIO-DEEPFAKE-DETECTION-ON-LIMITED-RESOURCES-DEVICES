@@ -65,6 +65,23 @@ class SSLModelBase(nn.Module):
         input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data 
         emb = self.model(input_tmp, mask=False, features_only=True)['x']
         return emb
+
+class SSLModelFTBase(nn.Module):
+    def __init__(self):
+        super().__init__()
+        cp_path = '/nfs/datab/hungdx/KDW2V-AASISTL/wav2vec_small_960h.pt'   # Change the pre-trained XLSR model path. 
+        model_override_rules = {}
+        model_override_rules['task'] = {'_name': 'audio_finetuning'}
+        model, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([cp_path], arg_overrides=model_override_rules)
+        self.model = model[0]
+        self.out_dim = 768
+     
+        print("Wav2Vec2 Model loaded successfully.")
+
+    def forward(self, input_data):
+        input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data 
+        emb = self.model(input_tmp, mask=False, features_only=True)['x']
+        return emb
     
 class SSLModel(nn.Module):
     def __init__(self):
@@ -439,7 +456,8 @@ class GraphPool(nn.Module):
         h: graph pool applied data (#bs, #node', #dim)
         """
         _, n_nodes, n_feat = h.size()
-        n_nodes = max(int(n_nodes * k), 1)
+        # n_nodes = max(int(n_nodes * k), 1)
+        n_nodes = torch.max(torch.tensor([int(n_nodes * k), 1]))
         _, idx = torch.topk(scores, n_nodes, dim=1)
         idx = idx.expand(-1, -1, n_feat)
 

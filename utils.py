@@ -35,4 +35,28 @@ class EarlyStopping:
         if self.verbose:
             print(f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).  Saving model ...')
         torch.save(model.state_dict(), os.path.join(self.model_save_path, 'best_checkpoint_{}.pth'.format(epoch)))
+        # Remove previous best model to save memory
+        if epoch > 0:
+            previous_best_model_path = os.path.join(self.model_save_path, 'best_checkpoint_{}.pth'.format(epoch-1))
+            if os.path.exists(previous_best_model_path):
+                os.remove(previous_best_model_path)
+
         self.val_loss_min = val_loss
+
+class AverageMeter(object):
+    """Computes and stores the average and current value"""
+
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.val = 0
+        self.avg = 0
+        self.sum = 0
+        self.count = 0
+
+    def update(self, val, n=1):
+        self.val = val
+        self.sum += val * n
+        self.count += n
+        self.avg = self.sum / self.count

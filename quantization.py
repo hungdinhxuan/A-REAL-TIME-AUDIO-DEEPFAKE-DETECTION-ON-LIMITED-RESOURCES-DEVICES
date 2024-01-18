@@ -1,61 +1,66 @@
 import sys
 import os
+
 import torch
 from torch import nn
 from data_utils import genSpoof_list,Dataset_ASVspoof2019_train,Dataset_ASVspoof2021_eval
-from tensorboardX import SummaryWriter
-from startup_config import set_random_seed
-from student import Distil_W2V2_AASISTL, Distil_W2V2_AASISTL_Cosine, Distil_W2V2_AASISTL_Regressor
-from teacher import W2V2_AASIST, W2V2_AASIST_Cosine, W2V2_AASIST_Regressor
-from kdtoolkit import train_knowledge_distillation, train_kd_cosine_loss, train_kd_mse_loss
-from menu import get_model
-from utils import EarlyStopping
-from neural_compressor import PostTrainingQuantConfig, quantization
-from torch.utils.data import DataLoader
-from neural_compressor.config import PostTrainingQuantConfig
-from torch.utils.mobile_optimizer import optimize_for_mobile
+from student import Distil_W2V2_AASISTL, Distil_W2V2_AASISTL_Cosine, Distil_W2V2_AASISTL_Regressor, Distil_W2V2BASE_AASISTL_Cosine
+import numpy as np
+from torch import Tensor
+
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
-
-args = get_model()
-
 device = "cpu"
 
-model = Distil_W2V2_AASISTL_Regressor(device=device)
+model = Distil_W2V2BASE_AASISTL_Cosine(device=device)
 model = nn.DataParallel(model).to(device)
 
-model.load_state_dict(torch.load("/nfs/datab/hungdx/KDW2V-AASISTL/models/model_DF_weighted_CCE_100_30_1e-06_KD_mse/best_checkpoint_23.pth",map_location=device))
+# model_path = "/datab/hungdx/KDW2V-AASISTL/models/model_DF_weighted_CCE_100_30_1e-06_W2V2Base_KD_cosine/best_checkpoint_42.pth"
 
-# Calibrate dataset
-d_label_trn,file_train = genSpoof_list( dir_meta =  os.path.join(args.protocols_path+'ASVspoof_LA_cm_protocols/ASVspoof2019.LA.cm.train.trn.txt'),is_train=True,is_eval=False)
-print('no. of training trials',len(file_train))
-train_set=Dataset_ASVspoof2019_train(args,list_IDs = file_train,labels = d_label_trn,base_dir = os.path.join(args.database_path+'ASVspoof2019_LA_train/'),algo=args.algo)
-train_loader = DataLoader(train_set, batch_size=args.batch_size,num_workers=8, shuffle=False)
+# # Load the model
+# model.load_state_dict(torch.load(model_path,map_location=device))
+# print("Loaded model from {}".format(model_path))
 
+# Define a wrapper model
+class WrapperModel(nn.Module):
+    def __init__(self, model):
+        super().__init__()
+        self.model = model
+    
+    @torch.jit.script
+    def pad(self, x, max_len: int = 64600) -> Tensor:
+        x_len = x.shape[0]
+        if x_len >= max_len:
+            return x[:max_len]
+        # need to pad
+        num_repeats = int(max_len / x_len)+1
+        padded_x = x.repeat((1, num_repeats))[:, :max_len][0]
+        return padded_x
+        
+    @torch.jit.script
+    def forward(self, x: Tensor):
+        wav_padded = self.pad(x).unsqueeze(0)
+        output, regressor_output = self.model(wav_padded)
 
-conf =  PostTrainingQuantConfig(
-    precision="fp8_e5m2",
-    calibration_sampling_size=[300],
-    batchnorm_calibration_sampling_size=[3000],
-)
-q_model = quantization.fit(model,
-                               conf=conf,
-                               calib_dataloader=train_loader)
-# q_model.save("./KD_mse_auto_quantized_model_ckp23")
+        # Softmax the output and get the probability of fake in tensor
+        # output = nn.Softmax(dim=1)(output)[:,0].item()
+        
+        return output
 
-# Optimize for mobile qmodel
-print("Optimizing for mobile")
+# Inference
+input = torch.randn(1, 16000).to(device)
+model = WrapperModel(model).to(device)
 
-compressed_model = q_model.export_compressed_model()
-torch.save(compressed_model.state_dict(), "compressed_model.pt")
+with torch.inference_mode():
+    print(model(input))
 
+# torch.save(model.state_dict(), "W2V2Base_KD_cosine_best_checkpoint_42.pt")
+# print("Saved model to W2V2Base_KD_cosine_best_checkpoint_42.pt")
+# model = WrapperModel(model)
 
+model.load_state_dict(torch.load("W2V2Base_KD_cosine_best_checkpoint_42.pt"))
 
-# trace_model = torch.jit.trace(q_model, torch.randn(1,64000))
-# optimized_trace_model = optimize_for_mobile(trace_model)
-# os.makedirs("./KD_mse_weight_only_quantized_model_ckp23", exist_ok=True)
-# optimized_trace_model._save_for_lite_interpreter("./KD_mse_weight_only_quantized_model_ckp23/best_model.ptl")
-
-# model.load_state_dict(torch.load("/nfs/datab/hungdx/KDW2V-AASISTL/output/best_model.pt",map_location=device), strict=False)
-
-# print(model(torch.randn(1,64000)))
-
+print("Tracing model...")
+# Trace the model
+traced_model = torch.jit.trace(model, input)
+traced_model.save("W2V2Base_KD_cosine_traced_best_checkpoint_42.pt")
+print("Traced model saved to W2V2Base_KD_cosine_traced_best_checkpoint_42.pt")

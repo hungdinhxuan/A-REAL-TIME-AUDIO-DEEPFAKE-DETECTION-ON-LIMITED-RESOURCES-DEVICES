@@ -49,6 +49,8 @@ def get_main_menu():
                         help='Path to save the evaluation result')
     parser.add_argument('--eval', action='store_true', default=False,
                         help='eval mode')
+    parser.add_argument('--use_amp', action='store_true', default=False,
+                        help='use amp mode')
     parser.add_argument('--is_eval', action='store_true', default=False,help='eval database')
     parser.add_argument('--is_eval_teacher', action='store_true', default=False,help='eval teacher')
     parser.add_argument('--batch_size_eval', type=int, default=14)
@@ -61,20 +63,23 @@ def get_main_menu():
     parser.add_argument('--cudnn-benchmark-toggle', action='store_true', \
                         default=False, 
                         help='use cudnn-benchmark? (default false)') 
-    
+    parser.add_argument('--num_eval_samples', type=int, default=1000, help='Number of evaluation samples')
     parser.add_argument('--student_restore', action='store_true', default=False,
                         help='Student model checkpoint')
     
     parser.add_argument('--ssl_type', type=str, help='Type of SSL models', default='Distil_XLSR')
 
+    parser.add_argument('--self_KD', action='store_true', default=False,
+                        help='Self KD')
+
     parser.add_argument('--KD_logits', action='store_true', default=False,
-                        help='Distillation loss is calculated from the logits of the networks')
+                        help='KD_logits')
     
     parser.add_argument('--KD_cosine', action='store_true', default=False,
-                        help='Distillation loss is calculated from Cosine loss minimization')
+                        help='KD cosine loss')
     
     parser.add_argument('--KD_mse', action='store_true', default=False,
-                        help='Distillation loss is calculated from Cosine loss minimization')
+                        help='KD mse loss')
 
     ##===================================================Rawboost data augmentation ======================================================================#
 
