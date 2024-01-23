@@ -53,9 +53,6 @@ model = WrapperModel(model).to(device)
 with torch.inference_mode():
     print(model(input))
 
-# torch.save(model.state_dict(), "W2V2Base_KD_cosine_best_checkpoint_42.pt")
-# print("Saved model to W2V2Base_KD_cosine_best_checkpoint_42.pt")
-# model = WrapperModel(model)
 
 model.load_state_dict(torch.load("W2V2Base_KD_cosine_best_checkpoint_42.pt"))
 

@@ -42,7 +42,7 @@ def get_main_menu():
                         default=None, help='Student model checkpoint')
     parser.add_argument('--comment', type=str, default=None,
                         help='Comment to describe the saved model')
-    
+    parser.add_argument('--student_ckpt', type=str, help='Student checkpoint', default='./student.pth')
     # Auxiliary arguments
     parser.add_argument('--track', type=str, default='DF',choices=['LA', 'PA','DF'], help='LA/PA/DF')
     parser.add_argument('--eval_output', type=str, default=None,
@@ -68,6 +68,10 @@ def get_main_menu():
                         help='Student model checkpoint')
     
     parser.add_argument('--ssl_type', type=str, help='Type of SSL models', default='Distil_XLSR')
+
+    parser.add_argument('--half',  help='eval with half precision', action='store_true', default=False)
+
+    parser.add_argument('--self_KD_type', type=str, help='Type of Self KD models', default='selfKD')
 
     parser.add_argument('--self_KD', action='store_true', default=False,
                         help='Self KD')

@@ -7,7 +7,8 @@ import torch.nn.functional as F
 from torch import Tensor
 import fairseq
 from fairseq.models.distilXLSR import DistilXLSR, DistilXLSRConfig
-
+from transformers import  AutoFeatureExtractor, AutoModelForCTC
+from torchaudio.models.wav2vec2.utils.import_huggingface import import_huggingface_model
 # class Wav2Vec2Model(nn.Module):
 
 #     def __init__(self, cp_path, device, model_type='base'):
@@ -50,6 +51,32 @@ from fairseq.models.distilXLSR import DistilXLSR, DistilXLSRConfig
                 
 #             x = layer_hiddens[-1]
 #             return x
+
+class SSLHuggingFaceModel(nn.Module):
+    def __init__(self, model_name="facebook/wav2vec2-base", sampling_rate=16000, out_dim=768):
+        super().__init__()
+        self.sampling_rate = sampling_rate
+        self.model = AutoModelForCTC.from_pretrained(model_name, gradient_checkpointing=True)
+        self.model = import_huggingface_model(self.model)
+        self.out_dim = out_dim
+    
+    def forward(self, input_data) -> Tensor:
+        
+        # input_values = self.feature_extractor(input_data, return_tensors="pt", sampling_rate=self.sampling_rate, padding=False).input_values
+        # # Remove an dimension to make it 3D, current  input_values can be 4D or 5D already
+        # while input_values.dim() > 2:
+        #     input_values = input_values.squeeze(1)
+        
+        # print("After squeeze: ", input_values.shape)
+        # output = self.model(input_values, output_hidden_states=True)
+        # print(output["hidden_states"][0].shape)
+        
+        # return output["hidden_states"][0]
+        input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data        
+        # [batch, length, dim]
+        emb = self.model.extract_features(input_tmp)[0][0]
+        return emb
+    
 
 class SSLModelBase(nn.Module):
     def __init__(self):
@@ -312,6 +339,15 @@ class HtrgGraphAttentionLayer(nn.Module):
         x = self.input_drop(x)
 
         # derive attention map
+        # Convert num_type1 to a tensor if it's not already
+        if not isinstance(num_type1, torch.Tensor):
+            num_type1 = torch.tensor(num_type1)
+        
+        # Convert num_type2 to a tensor if it's not already
+        if not isinstance(num_type2, torch.Tensor):
+            num_type2 = torch.tensor(num_type2)
+
+        # derive attention map
         att_map = self._derive_att_map(x, num_type1, num_type2)
         #print('master',master.shape)
         # directional edge for master node
@@ -430,7 +466,8 @@ class HtrgGraphAttentionLayer(nn.Module):
 class GraphPool(nn.Module):
     def __init__(self, k: float, in_dim: int, p: Union[float, int]):
         super().__init__()
-        self.k = k
+        # self.k = k
+        self.k = torch.tensor(k)
         self.sigmoid = nn.Sigmoid()
         self.proj = nn.Linear(in_dim, 1)
         self.drop = nn.Dropout(p=p) if p > 0 else nn.Identity()
@@ -440,6 +477,8 @@ class GraphPool(nn.Module):
         Z = self.drop(h)
         weights = self.proj(Z)
         scores = self.sigmoid(weights)
+        # Convert self.k to a tensor if it's not already
+        
         new_h = self.top_k_graph(scores, h, self.k)
 
         return new_h
@@ -457,7 +496,8 @@ class GraphPool(nn.Module):
         """
         _, n_nodes, n_feat = h.size()
         # n_nodes = max(int(n_nodes * k), 1)
-        n_nodes = torch.max(torch.tensor([int(n_nodes * k), 1]))
+        # n_nodes = torch.max(torch.tensor([int(n_nodes * k), 1]))
+        n_nodes = torch.max((torch.tensor(n_nodes) * k).long(), torch.tensor(1))
         _, idx = torch.topk(scores, n_nodes, dim=1)
         idx = idx.expand(-1, -1, n_feat)
 
@@ -470,6 +510,8 @@ class Residual_block(nn.Module):
     def __init__(self, nb_filts, first=False):
         super().__init__()
         self.first = first
+        self.bn1 = None
+        self.conv_downsample = None
 
         if not self.first:
             self.bn1 = nn.BatchNorm2d(num_features=nb_filts[0])
@@ -501,7 +543,7 @@ class Residual_block(nn.Module):
 
     def forward(self, x):
         identity = x
-        if not self.first:
+        if not self.first and self.bn1 is not None:
             out = self.bn1(x)
             out = self.selu(out)
         else:
@@ -517,7 +559,7 @@ class Residual_block(nn.Module):
         out = self.conv2(out)
         #print('conv2 out',out.shape)
         
-        if self.downsample:
+        if self.downsample and self.conv_downsample is not None:
             identity = self.conv_downsample(identity)
 
         out += identity

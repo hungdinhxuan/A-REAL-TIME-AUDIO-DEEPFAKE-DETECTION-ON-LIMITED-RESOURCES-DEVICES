@@ -7,7 +7,8 @@ KD*.txt
 teacher*.txt
 *.ptl
 nc_workspace/*
-*.onnx
+*.onnx*
 eval*/keys
 distil*.txt
 tmp.txt
+saved_*

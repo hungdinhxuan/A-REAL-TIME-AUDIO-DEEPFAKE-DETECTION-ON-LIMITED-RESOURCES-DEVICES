@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 from data_utils import genSpoof_list,Dataset_ASVspoof2019_train,Dataset_ASVspoof2021_eval, Dataset_ASVspoof2021_with_labels_eval
 from tensorboardX import SummaryWriter
 from startup_config import set_random_seed
-from student import Distil_W2V2_AASISTL, Distil_W2V2_AASISTL_Cosine, Distil_W2V2_AASISTL_Regressor, Distil_W2V2BASE_AASISTL_Cosine, Distil_W2V2BASE_AASISTL, Distil_W2V2BASE_AASISTL_Regressor
+from student import Distil_W2V2_AASISTL, Distil_W2V2_AASISTL_Cosine, Distil_W2V2_AASISTL_Regressor, Distil_W2V2BASE_AASISTL_Cosine, Distil_W2V2BASE_AASISTL, Distil_W2V2BASE_AASISTL_Regressor, Distil_W2V2BASE_AASISTL_Self_KD
 from teacher import W2V2_AASIST, W2V2_AASIST_Cosine, W2V2_AASIST_Regressor
 from kdtoolkit import  train_kd_cosine_loss, train_kd_mse_loss
 from menu import get_hyp_tuning_menu
@@ -19,14 +19,28 @@ import ray
 from ray.tune.schedulers import ASHAScheduler
 import tempfile
 from ray.train import Checkpoint
-
+from main import self_KD_train_epoch, self_KD_val_epoch
 import logging
+import torch.distributed as dist
 
-# Get the Numba logger
+from ray.tune.schedulers import MedianStoppingRule
+from ray.tune.schedulers import ASHAScheduler
+from ray.tune.stopper import ExperimentPlateauStopper
+# Get the Numba logger 
 logger = logging.getLogger('numba')
 logger.setLevel(logging.WARNING)  # Set level to WARNING, ERROR, or CRITICAL
 
-MAX_EPOCHS = 5
+# os.environ['MASTER_ADDR'] = 'localhost'
+# os.environ['MASTER_PORT'] = '12355'
+# os.environ['WORLD_SIZE'] = '4'
+# os.environ['RANK'] = '0'
+
+# print("hello1")
+
+
+# dist.init_process_group(backend='nccl')
+# print("hello")
+MAX_EPOCHS = 100
 
 def train_knowledge_distillation(teacher, student, train_loader,dev_loader, optimizer, T, soft_target_loss_weight, ce_loss_weight, device):
     print('Training student with knowledge distillation. T: {}, soft_target_loss_weight: {}, ce_loss_weight: {}'.format(T, soft_target_loss_weight, ce_loss_weight))
@@ -197,7 +211,7 @@ def train_knowledge_distillation_mse_loss(teacher, student, train_loader,dev_loa
     num_total = 0.0
 
     val_loss = 0.0
-
+    
     for batch_x, batch_y in train_loader:
         batch_x, batch_y = batch_x.to(device), batch_y.view(-1).type(torch.int64).to(device)
         batch_size = batch_x.size(0)
@@ -255,8 +269,9 @@ def train_knowledge_distillation_mse_loss(teacher, student, train_loader,dev_loa
         val_loss /= num_total
 
     return running_loss, val_loss
+
 def train_knowledge_distillation_config(config):
-    args = Namespace(database_path='/nfs/datab/hungdx/KDW2V-AASISTL/databases/', protocols_path='/nfs/datab/hungdx/KDW2V-AASISTL/protocols/', batch_size=32, num_epochs=100, lr=1e-06, weight_decay=0.0001, loss='weighted_CCE', seed=1234, model_path='/nfs/datab/hungdx/KDW2V-AASISTL/W2V2-AASIST-teacher.pth', cudnn_deterministic_toggle=True, cudnn_benchmark_toggle=False, student_restore=False, KD_logits=False, KD_cosine=False, KD_mse=True, algo=3, nBands=5, minF=20, maxF=8000, minBW=100, maxBW=1000, minCoeff=10, maxCoeff=100, minG=0, maxG=0, minBiasLinNonLin=5, maxBiasLinNonLin=20, N_f=5, P=10, g_sd=2, SNRmin=10, SNRmax=40)
+    args = Namespace(database_path='/nfs/datab/hungdx/KDW2V-AASISTL/databases/', protocols_path='/nfs/datab/hungdx/KDW2V-AASISTL/protocols/', batch_size=64, num_epochs=100, lr=1e-06, weight_decay=0.0001, loss='weighted_CCE', seed=1234, model_path='/nfs/datab/hungdx/KDW2V-AASISTL/W2V2-AASIST-teacher.pth', cudnn_deterministic_toggle=True, cudnn_benchmark_toggle=False, student_restore=False, KD_logits=False, KD_cosine=False, KD_mse=False, self_KD=True, algo=3, nBands=5, minF=20, maxF=8000, minBW=100, maxBW=1000, minCoeff=10, maxCoeff=100, minG=0, maxG=0, minBiasLinNonLin=5, maxBiasLinNonLin=20, N_f=5, P=10, g_sd=2, SNRmin=10, SNRmax=40)
     set_random_seed(args.seed)
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'                  
@@ -300,13 +315,16 @@ def train_knowledge_distillation_config(config):
         model = W2V2_AASIST_Regressor()
         student = Distil_W2V2BASE_AASISTL_Regressor(device)
         kd_method = 'KD_mse'
-
+    elif args.self_KD:
+        student = Distil_W2V2BASE_AASISTL_Self_KD(device)
+        kd_method = 'KD_self'
     else:
         raise ValueError('Invalid KD method given')
 
-    nb_params = sum([param.view(-1).size()[0] for param in model.parameters()])
-    model =nn.DataParallel(model).to(device)
-    print('Teacher nb_params:',nb_params)
+    if not args.self_KD:
+        nb_params = sum([param.view(-1).size()[0] for param in model.parameters()])
+        model =nn.DataParallel(model).to(device)
+        print('Teacher nb_params:',nb_params)
         
     nb_params = sum([param.view(-1).size()[0] for param in student.parameters()])
     student = nn.DataParallel(student).to(device)
@@ -314,11 +332,17 @@ def train_knowledge_distillation_config(config):
 
     #set Adam optimizer
     optimizer = torch.optim.Adam(student.parameters(), lr=args.lr,weight_decay=args.weight_decay)
+    # Initialize best_val_loss to None
+    best_val_loss = None
 
     if args.model_path:
-        model.load_state_dict(torch.load(args.model_path,map_location=device))
-        print('Model loaded : {}'.format(args.model_path))
+        if not args.self_KD:
+            model.load_state_dict(torch.load(args.model_path,map_location=device))
+            print('Model loaded : {}'.format(args.model_path))
 
+        # Add early stopping
+        early_stopping = EarlyStopping(patience=10, verbose=True, model_save_path='./')
+        
         for epoch in range(MAX_EPOCHS):
             ## KD logits
             # running_loss, val_loss = train_knowledge_distillation(
@@ -346,28 +370,50 @@ def train_knowledge_distillation_config(config):
             # )
 
             ## KD mse
-            running_loss, val_loss = train_knowledge_distillation_mse_loss(
-                model,
-                student,
-                train_loader,
-                dev_loader,
-                optimizer,
-                feature_map_weight=config["feature_map_weight"],
-                ce_loss_weight=config["ce_loss_weight"],
-                device=device
-            )
+            # running_loss, val_loss = train_knowledge_distillation_mse_loss(
+            #     model,
+            #     student,
+            #     train_loader,
+            #     dev_loader,
+            #     optimizer,
+            #     feature_map_weight=config["feature_map_weight"],
+            #     ce_loss_weight=config["ce_loss_weight"],
+            #     device=device
+            # )
+            ## Self KD
+            scaler = torch.cuda.amp.GradScaler(enabled=True)
+            running_loss = self_KD_train_epoch(train_loader=train_loader, model=student, optimizer=optimizer, device=device, temperature=config["temperature"], alpha=config["alpha"], beta=config["beta"], scaler=scaler)
+            val_loss = self_KD_val_epoch(dev_loader=dev_loader, model=student, device=device)
 
-            # with tempfile.TemporaryDirectory() as temp_checkpoint_dir:
-            #     path = os.path.join(temp_checkpoint_dir, "checkpoint.pt")
-            #     torch.save(
-            #         (student.state_dict(), optimizer.state_dict()), path
-            #     )
-            #     checkpoint = Checkpoint.from_directory(temp_checkpoint_dir)
-            #     ray.train.report(
-            #         {'train_loss': running_loss, 'val_loss': val_loss},
-            #         checkpoint=checkpoint,
-            #     )
-            # # Report both training and validation loss to Tune
+            # Update this code below to save the best model
+            # Save the model if the validation loss is the best we've seen so far.
+
+            
+
+
+            with tempfile.TemporaryDirectory() as temp_checkpoint_dir:
+                early_stopping.model_save_path = temp_checkpoint_dir
+                path = os.path.join(temp_checkpoint_dir, "best_model.pth")
+                # torch.save(
+                #     (student.state_dict(), optimizer.state_dict()), path
+                # )
+                # checkpoint = Checkpoint.from_directory(temp_checkpoint_dir)
+                # ray.train.report(
+                #     {'train_loss': running_loss, 'val_loss': val_loss},
+                #     checkpoint=checkpoint,
+                # )
+                if best_val_loss is None or val_loss < best_val_loss:
+                    best_val_loss = val_loss
+                    torch.save(student.state_dict(), path)
+                
+                early_stopping(val_loss, student, epoch)
+
+                if early_stopping.early_stop:
+                    logging.log(logging.INFO, "Early stopping")
+                    break
+
+
+            # # # Report both training and validation loss to Tune
             metrics = {'train_loss': running_loss, 'val_loss': val_loss}
             # Report both training and validation loss to Tune
             ray.train.report(metrics)
@@ -375,7 +421,7 @@ def train_knowledge_distillation_config(config):
 
 def test_best_model(best_result, model_type="KD_base_cosine"):
     
-    args = Namespace(database_path='/nfs/datab/hungdx/KDW2V-AASISTL/databases/', protocols_path='/nfs/datab/hungdx/KDW2V-AASISTL/protocols/', batch_size=32, num_epochs=100, lr=1e-06, weight_decay=0.0001, loss='weighted_CCE', seed=1234, model_path='/nfs/datab/hungdx/KDW2V-AASISTL/W2V2-AASIST-teacher.pth', cudnn_deterministic_toggle=True, cudnn_benchmark_toggle=False, student_restore=False, KD_logits=False, KD_cosine=False, KD_mse=True, algo=3, nBands=5, minF=20, maxF=8000, minBW=100, maxBW=1000, minCoeff=10, maxCoeff=100, minG=0, maxG=0, minBiasLinNonLin=5, maxBiasLinNonLin=20, N_f=5, P=10, g_sd=2, SNRmin=10, SNRmax=40)
+    args = Namespace(database_path='/nfs/datab/hungdx/KDW2V-AASISTL/databases/', protocols_path='/nfs/datab/hungdx/KDW2V-AASISTL/protocols/', batch_size=64, num_epochs=100, lr=1e-06, weight_decay=0.0001, loss='weighted_CCE', seed=1234, model_path='/nfs/datab/hungdx/KDW2V-AASISTL/W2V2-AASIST-teacher.pth', cudnn_deterministic_toggle=True, cudnn_benchmark_toggle=False, student_restore=False, KD_logits=False, KD_cosine=False, KD_mse=True, algo=3, nBands=5, minF=20, maxF=8000, minBW=100, maxBW=1000, minCoeff=10, maxCoeff=100, minG=0, maxG=0, minBiasLinNonLin=5, maxBiasLinNonLin=20, N_f=5, P=10, g_sd=2, SNRmin=10, SNRmax=40)
     track = 'DF'
     prefix_2021 = 'ASVspoof2021.{}'.format(track)
 
@@ -427,16 +473,27 @@ search_space = {
     # "hidden_rep_loss_weight": tune.uniform(0.0, 1.0),
     # "ce_loss_weight": tune.uniform(0.0, 1.0),
     ## =================== KD mse loss ===================
-    "feature_map_weight": tune.uniform(0.0, 1.0),
-    "ce_loss_weight": tune.uniform(0.0, 1.0),
+    # "feature_map_weight": tune.uniform(0.0, 1.0),
+    # "ce_loss_weight": tune.uniform(0.0, 1.0),
+    ## =================== Self KD loss ===================
+    # temperature=3, alpha=0.1, beta=1e-6
+    "temperature": tune.loguniform(1.0, 5.0),
+    "alpha": tune.uniform(0.0, 1.0),
+    "beta": tune.uniform(1e-6, 1e-4),
 }
+# Define the scheduler
+
+# Create a stopper object
+# stopper = ExperimentPlateauStopper(metric="val_loss", mode="min", patience =10, top=2)
+
 
 # Run the hyperparameter search
 analysis = tune.run(
     train_knowledge_distillation_config, 
     config=search_space, 
-    num_samples=40,  # Number of samples to run
+    num_samples=MAX_EPOCHS,  # Number of samples to run
     resources_per_trial={"cpu": 2, "gpu": 1},  # Resources to allocate per trial
+    # stop = stopper
 )
 
 # Get the best configuration

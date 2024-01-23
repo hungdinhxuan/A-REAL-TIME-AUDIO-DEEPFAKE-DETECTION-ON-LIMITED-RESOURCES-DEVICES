@@ -6,12 +6,12 @@ from torch.utils.data import DataLoader,TensorDataset
 from data_utils import genSpoof_list,Dataset_ASVspoof2019_train,Dataset_ASVspoof2021_eval
 from tensorboardX import SummaryWriter
 from startup_config import set_random_seed
-from student import Distil_W2V2_AASISTL, Distil_W2V2_AASISTL_Cosine, Distil_W2V2_AASISTL_Regressor, Distil_W2V2BASE_AASISTL, Distil_W2V2BASE_AASISTL_Cosine, Distil_W2V2BASE_AASISTL_Regressor, Distil_W2V2FTBASE_AASISTL, Distil_W2V2BASE_AASISTL_Self_KD, Distil_W2V2BASE_AASISTL_Self_KD_Teacher
+from student import Distil_W2V2_AASISTL, Distil_W2V2_AASISTL_Cosine, Distil_W2V2_AASISTL_Regressor, Distil_W2V2BASE_AASISTL, Distil_W2V2BASE_AASISTL_Cosine, Distil_W2V2BASE_AASISTL_Regressor, Distil_W2V2FTBASE_AASISTL, Distil_W2V2BASE_AASISTL_Self_KD, Distil_W2V2BASE_AASISTL_Self_KD_Teacher, Distil_W2V2BASEHG_AASISTL_Self_KD, Distil_W2V2BASEHG_AASISTL_Self_KD_Teacher, Distil_W2V2BASEHG_AASISTL_Self_KD_Teacher_Drop
 from teacher import W2V2_AASIST, W2V2_AASIST_Cosine, W2V2_AASIST_Regressor
 from kdtoolkit import train_knowledge_distillation, train_kd_cosine_loss, train_kd_mse_loss, kd_loss_function, feature_loss_function
 from menu import get_main_menu
 from utils import EarlyStopping, AverageMeter
-
+from torch.optim.lr_scheduler import StepLR
 
 import logging
 
@@ -22,9 +22,125 @@ logger.setLevel(logging.WARNING)  # Set level to WARNING, ERROR, or CRITICAL
 __author__ = "Hungdx"
 __email__ = "hungdx@soongsil.ac.kr"
 
-def sefl_KD_train_epoch(train_loader, model, lr,optimizer, device, scaler, temperature=3, alpha=0.1, beta=1e-6, use_amp = True):
+## Limit cpu threads
+torch.set_num_threads(32)
+
+def self_KD_Dropout_train_epoch(train_loader, teacher, student, optimizer, device, scaler, lr_scheduler, temperature=3, alpha=0.01, beta=1e-6, hidden_rep_loss_weight=0.15, hlambda=0.1, use_amp = True):
+    logging.log(logging.INFO, 'Training self KD Dropout with temperature = {} and alpha = {} and beta = {} and hidden_rep_loss_weight = {} and hlambda = {}'.format(temperature, alpha, beta , hidden_rep_loss_weight, hlambda))
+    running_loss = 0
+    running_total_label_loss = 0
+    running_total_kd_loss = 0
+    running_total_feature_loss = 0
+    running_total_kl_loss = 0
+    # kl_div_loss = nn.KLDivLoss(reduction='none')
+    
+    cosine_loss = nn.CosineEmbeddingLoss()
+    student.train()
+    teacher.eval()
+    weight = torch.FloatTensor([0.1, 0.9]).to(device)
+    criterion = nn.CrossEntropyLoss(weight=weight)
+    num_total = 0.0
+
+
+    for batch_x, batch_y in train_loader:
+        # Mixed precision training
+        with torch.autocast(device_type=device, dtype=torch.float16, enabled=use_amp):
+
+            batch_size = batch_x.size(0)
+            num_total += batch_size
+            batch_x = batch_x.to(device)
+            batch_out, batch_out2, spectral_output, temporal_output, graph_output_S, graph_output_T, hs_gal_output_S, hs_gal_output_T, middle_feature1, middle_feature2, final_feature1, final_feature2, student_hidden_representation = student(batch_x)
+            batch_y = batch_y.view(-1).type(torch.int64).to(device)
+
+            # Get teacher output
+            with torch.no_grad():
+                _, teacher_hidden_representation = teacher(batch_x)
+            
+            student_hidden_representation = student_hidden_representation.view(batch_size, -1)
+            teacher_hidden_representation = teacher_hidden_representation.view(batch_size, -1)
+
+            # Compute the KL divergence loss
+            loss_kl_1 = nn.functional.kl_div(torch.nn.functional.log_softmax(batch_out, dim=1), torch.nn.functional.softmax(batch_out2, dim=1), reduction="batchmean")
+            
+            loss_kl_2 = nn.functional.kl_div(torch.nn.functional.log_softmax(batch_out2, dim=1), torch.nn.functional.softmax(batch_out, dim=1), reduction="batchmean")
+            
+            total_kl_loss = loss_kl_1 + loss_kl_2
+
+            # Now pass the reshaped tensors to cosine_loss
+            hidden_rep_loss = cosine_loss(student_hidden_representation, teacher_hidden_representation, target=torch.ones(batch_size).to(device))
+
+            # Calculate loss (label loss)
+            batch_loss = criterion(batch_out, batch_y)
+            spectral_loss = criterion(spectral_output, batch_y)
+            temporal_loss = criterion(temporal_output, batch_y)
+            graph_loss_S = criterion(graph_output_S, batch_y)
+            graph_loss_T = criterion(graph_output_T, batch_y)
+            hs_gal_loss_S = criterion(hs_gal_output_S, batch_y)
+            hs_gal_loss_T = criterion(hs_gal_output_T, batch_y)
+
+            # Calculate KD loss
+            temp = batch_out / temperature
+            temp = torch.softmax(temp, dim=1)
+            temp_detach = temp.detach()
+            kd_spectral_loss = kd_loss_function(temporal_output, temp_detach, temperature) * (temperature**2)
+            kd_temporal_loss = kd_loss_function(temporal_output, temp_detach, temperature) * (temperature**2)
+            kd_graph_loss_S = kd_loss_function(graph_output_S, temp_detach, temperature) * (temperature**2)
+            kd_graph_loss_T = kd_loss_function(graph_output_T, temp_detach, temperature) * (temperature**2)
+            kd_hs_gal_loss_S = kd_loss_function(hs_gal_output_S, temp_detach, temperature) * (temperature**2)
+            kd_hs_gal_loss_T = kd_loss_function(hs_gal_output_T, temp_detach, temperature) * (temperature**2)
+
+            # Calculate loss (feature loss)
+            # We didn't apply backward for final feature
+            feature_loss_1 = feature_loss_function(middle_feature1, final_feature1.detach())
+            feature_loss_2 = feature_loss_function(middle_feature2, final_feature2.detach())
+
+            # Calculate total loss
+            # Total label loss
+            total_label_loss = batch_loss + spectral_loss + temporal_loss + graph_loss_S + graph_loss_T + hs_gal_loss_S + hs_gal_loss_T
+
+            # Total KD loss
+            total_kd_loss = kd_spectral_loss + kd_temporal_loss + kd_graph_loss_S + kd_graph_loss_T + kd_hs_gal_loss_S + kd_hs_gal_loss_T
+
+            # Total feature loss
+            total_feature_loss = feature_loss_1 + feature_loss_2
+
+            # Total loss
+            total_loss = (1 - alpha) * total_label_loss + alpha * total_kd_loss + beta * total_feature_loss + hidden_rep_loss_weight * hidden_rep_loss + hlambda * total_kl_loss
+
+        # Scaler
+        optimizer.zero_grad()
+        scaler.scale(total_loss).backward()
+        
+        scaler.step(optimizer)
+        scaler.update()
+
+        
+        running_loss += (total_loss.item() * batch_size)
+        # print('[TRAINING] running_loss: ', running_loss)
+        running_total_label_loss += (total_label_loss.item() * batch_size)
+        # print('[TRAINING] running_total_label_loss: ', running_total_label_loss)
+        running_total_kd_loss += (total_kd_loss.item() * batch_size)
+        # print('[TRAINING] running_total_kd_loss: ', running_total_kd_loss)
+        running_total_feature_loss += (total_feature_loss.item() * batch_size)
+        # print('[TRAINING] running_total_feature_loss: ', running_total_feature_loss)
+        running_total_kl_loss += (total_kl_loss.item() * batch_size)
+        # print('[TRAINING] running_total_kl_loss: ', running_total_kl_loss)
+    
+    lr_scheduler.step()
+    running_loss /= num_total
+    running_total_feature_loss /= num_total
+    running_total_label_loss /= num_total
+    running_total_kd_loss /= num_total
+    running_total_kl_loss /= num_total
+    return running_loss, running_total_label_loss, running_total_kd_loss, running_total_feature_loss, running_total_kl_loss
+
+
+def self_KD_train_epoch(train_loader, model, optimizer, device, scaler, temperature=3, alpha=0.1, beta=1e-6, use_amp = True):
     logging.log(logging.INFO, 'Training self KD with temperature = {} and alpha = {} and beta = {}'.format(temperature, alpha, beta))
     running_loss = 0
+    running_total_label_loss = 0
+    running_total_kd_loss = 0
+    running_total_feature_loss = 0
     model.train()
     weight = torch.FloatTensor([0.1, 0.9]).to(device)
     criterion = nn.CrossEntropyLoss(weight=weight)
@@ -70,14 +186,19 @@ def sefl_KD_train_epoch(train_loader, model, lr,optimizer, device, scaler, tempe
             # Calculate total loss
             # Total label loss
             total_label_loss = batch_loss + spectral_loss + temporal_loss + graph_loss_S + graph_loss_T + hs_gal_loss_S + hs_gal_loss_T
+            # print('[TRAINING] total_label_loss: ', total_label_loss)
 
             # Total KD loss
             total_kd_loss = kd_spectral_loss + kd_temporal_loss + kd_graph_loss_S + kd_graph_loss_T + kd_hs_gal_loss_S + kd_hs_gal_loss_T
+            # print('[TRAINING] total_kd_loss: ', total_kd_loss)
 
             # Total feature loss
             total_feature_loss = feature_loss_1 + feature_loss_2
+            # print('[TRAINING] total_feature_loss: ', total_feature_loss)
 
             total_loss = (1 - alpha) * total_label_loss + alpha * total_kd_loss + beta * total_feature_loss
+
+            # print('[TRAINING] total_loss: ', total_loss)
 
         # optimizer.zero_grad()
         # total_loss.backward()
@@ -91,14 +212,24 @@ def sefl_KD_train_epoch(train_loader, model, lr,optimizer, device, scaler, tempe
         
 
         running_loss += (total_loss.item() * batch_size)
+        running_total_label_loss += (total_label_loss.item() * batch_size)
+        running_total_kd_loss += (total_kd_loss.item() * batch_size)
+        running_total_feature_loss += (total_feature_loss.item() * batch_size)
     running_loss /= num_total
-    return running_loss
+    running_total_feature_loss /= num_total
+    running_total_label_loss /= num_total
+    running_total_kd_loss /= num_total
+    return running_loss, running_total_label_loss, running_total_kd_loss, running_total_feature_loss
 
-def sefl_KD_teacher_train_epoch(train_loader, student, teacher, lr,optimizer, device, scaler, temperature=3, alpha=0.1, beta=1e-6, hidden_rep_loss_weight=0.5, use_amp = True):
+def self_KD_teacher_train_epoch(train_loader, student, teacher, optimizer, device, scaler, temperature=3, alpha=0.1, beta=1e-6, hidden_rep_loss_weight=0.5, use_amp = True):
     logging.log(logging.INFO, 'Training self KD + teacher cosine with temperature = {} and alpha = {} and beta = {} and hidden_rep_loss_weight = {}'.format(temperature, alpha, beta, hidden_rep_loss_weight))
     running_loss = 0
+    running_total_label_loss = 0
+    running_total_kd_loss = 0
+    running_total_feature_loss = 0
     cosine_loss = nn.CosineEmbeddingLoss()
     student.train()
+    teacher.eval()
     weight = torch.FloatTensor([0.1, 0.9]).to(device)
     criterion = nn.CrossEntropyLoss(weight=weight)
     num_total = 0.0
@@ -167,12 +298,19 @@ def sefl_KD_teacher_train_epoch(train_loader, student, teacher, lr,optimizer, de
         scaler.step(optimizer)
         scaler.update()
         
-
+        
         running_loss += (total_loss.item() * batch_size)
-    running_loss /= num_total
-    return running_loss
+        running_total_label_loss += (total_label_loss.item() * batch_size)
+        running_total_kd_loss += (total_kd_loss.item() * batch_size)
+        running_total_feature_loss += (total_feature_loss.item() * batch_size)
 
-def sefl_KD_val_epoch(dev_loader, model,  device):
+    running_loss /= num_total
+    running_total_feature_loss /= num_total
+    running_total_label_loss /= num_total
+    running_total_kd_loss /= num_total
+    return running_loss, running_total_label_loss, running_total_kd_loss, running_total_feature_loss
+
+def self_KD_val_epoch(dev_loader, model,  device):
     logging.log(logging.INFO, 'Validation self KD')
     val_loss = 0
     model.eval()
@@ -187,6 +325,45 @@ def sefl_KD_val_epoch(dev_loader, model,  device):
             num_total += batch_size
             batch_x = batch_x.to(device)
             batch_out, spectral_output, temporal_output, graph_output_S, graph_output_T, hs_gal_output_S, hs_gal_output_T, middle_feature1, middle_feature2, final_feature1, final_feature2 = model(batch_x)
+            batch_y = batch_y.view(-1).type(torch.int64).to(device)
+
+            # Calculate loss (label loss)
+            batch_loss = criterion(batch_out, batch_y)
+            spectral_loss = criterion(spectral_output, batch_y)
+            temporal_loss = criterion(temporal_output, batch_y)
+            graph_loss_S = criterion(graph_output_S, batch_y)
+            graph_loss_T = criterion(graph_output_T, batch_y)
+            hs_gal_loss_S = criterion(hs_gal_output_S, batch_y)
+            hs_gal_loss_T = criterion(hs_gal_output_T, batch_y)
+
+            # Total label loss
+            total_label_loss = batch_loss + spectral_loss + temporal_loss + graph_loss_S + graph_loss_T + hs_gal_loss_S + hs_gal_loss_T
+            
+            total_loss = total_label_loss
+
+
+            val_loss += (total_loss.item() * batch_size)
+        val_loss /= num_total
+        return val_loss
+
+def self_KD_teacher_val_epoch(dev_loader, model, device, kd_method='self_KD_Teacher'):
+    logging.log(logging.INFO, 'Validation Teacher self KD')
+    val_loss = 0
+    model.eval()
+    weight = torch.FloatTensor([0.1, 0.9]).to(device)
+    criterion = nn.CrossEntropyLoss(weight=weight)
+    num_total = 0.0
+
+
+    with torch.inference_mode():
+        for batch_x, batch_y in dev_loader:
+            batch_size = batch_x.size(0)
+            num_total += batch_size
+            batch_x = batch_x.to(device)
+            if kd_method == 'self_KD_Teacher':
+                batch_out, spectral_output, temporal_output, graph_output_S, graph_output_T, hs_gal_output_S, hs_gal_output_T, middle_feature1, middle_feature2, final_feature1, final_feature2, hidden_features = model(batch_x)
+            else:
+                batch_out, batch_out2, spectral_output, temporal_output, graph_output_S, graph_output_T, hs_gal_output_S, hs_gal_output_T, middle_feature1, middle_feature2, final_feature1, final_feature2, hidden_features = model(batch_x)
             batch_y = batch_y.view(-1).type(torch.int64).to(device)
 
             # Calculate loss (label loss)
@@ -258,6 +435,10 @@ def produce_evaluation_file(dataset, model, device, save_path, kd_method=None, b
                 batch_out, _ = model(batch_x)
             elif kd_method == 'KD_mse':
                 batch_out, _ = model(batch_x)
+            elif kd_method == 'self_KD':
+                batch_out, spectral_output, temporal_output, graph_output_S, graph_output_T, hs_gal_output_S, hs_gal_output_T, middle_feature1, middle_feature2, final_feature1, final_feature2  = model(batch_x)
+            elif kd_method == 'self_KD_Teacher':
+                batch_out, spectral_output, temporal_output, graph_output_S, graph_output_T, hs_gal_output_S, hs_gal_output_T, middle_feature1, middle_feature2, final_feature1, final_feature2, hidden_features  = model(batch_x)
             else:
                 batch_out = model(batch_x)
           
@@ -368,27 +549,55 @@ if __name__ == '__main__':
             student = Distil_W2V2BASE_AASISTL_Regressor(device)
         kd_method = 'KD_mse'
     elif args.self_KD:
-        student = Distil_W2V2BASE_AASISTL_Self_KD(device)
-        kd_method = 'self_KD'
+        if args.self_KD_type == 'self_KD':
+            student = Distil_W2V2BASE_AASISTL_Self_KD(device)
+        elif args.self_KD_type == 'self_KD_Teacher':
+            student = Distil_W2V2BASE_AASISTL_Self_KD_Teacher(device)
+        elif args.self_KD_type == 'self_KD_HG':
+            student = Distil_W2V2BASEHG_AASISTL_Self_KD(device)
+            
+        elif args.self_KD_type == 'self_KD_Teacher_HG':
+            model = W2V2_AASIST_Cosine()
+            student = Distil_W2V2BASEHG_AASISTL_Self_KD_Teacher(device)
+        elif args.self_KD_type == 'self_KD_Teacher_HG_Cosine_Dropout':
+            model = W2V2_AASIST_Cosine()
+            student = Distil_W2V2BASEHG_AASISTL_Self_KD_Teacher_Drop(device)
+        
+        if not args.self_KD_type == 'self_KD_Teacher_HG':
+            kd_method = 'self_KD'
+        elif args.self_KD_type == 'self_KD_Teacher_HG_Cosine_Dropout':
+            kd_method = 'self_KD_Teacher_Dropout'
+        else:
+            kd_method = 'self_KD_Teacher'
     else:
         raise ValueError('Invalid KD method given')
 
     #print model parameters
-    if not args.self_KD:
+    if not args.self_KD or args.self_KD_type == 'self_KD_Teacher_HG' or args.self_KD_type == 'self_KD_Teacher_HG_Cosine_Dropout':
         nb_params = sum([param.view(-1).size()[0] for param in model.parameters()])
-        model =nn.DataParallel(model).to(device)
+        # model =nn.DataParallel(model).to(device)
+        # Load with distributed data parallel
+        model = nn.DataParallel(model).to(device)
         print('Teacher nb_params:',nb_params)
 
     nb_params = sum([param.view(-1).size()[0] for param in student.parameters()])
+    # student = nn.DataParallel(student).to(device)
     student = nn.DataParallel(student).to(device)
     print('Student nb_params:',nb_params)
 
     #set Adam optimizer
     optimizer = torch.optim.Adam(student.parameters(), lr=args.lr,weight_decay=args.weight_decay)
 
+    #set learning rate scheduler
+    lr_scheduler = StepLR(optimizer, step_size=10, gamma=0.1)
+
     if args.model_path:
         model.load_state_dict(torch.load(args.model_path,map_location=device))
         print('Model loaded : {}'.format(args.model_path))
+
+    # if args.student_ckpt:
+    #     student.load_state_dict(torch.load(args.student_ckpt,map_location=device))
+    #     print('Student model loaded : {}'.format(args.student_ckpt))
 
     if args.student_restore:
         try:        
@@ -410,7 +619,6 @@ if __name__ == '__main__':
         print('Loading student model from {}'.format(args.student_model_path))
         try:
             student.load_state_dict(torch.load(args.student_model_path,map_location=device))
-            student.load_state_dict(torch.load(args.student_model_path,map_location=device))
             print('Student model loaded : {}'.format(args.student_model_path))
         except Exception as e:
             print('No checkpoint student found in ', args.student_model_path)
@@ -424,6 +632,7 @@ if __name__ == '__main__':
         eval_set=Dataset_ASVspoof2021_eval(list_IDs = file_eval,base_dir = os.path.join(args.database_path+'ASVspoof2021_{}_eval/'.format(args.track)))
 
         # Produce evaluation file 
+
         produce_evaluation_file(eval_set, model if args.is_eval_teacher else student , device, args.eval_output, batch_size=args.batch_size_eval, kd_method=kd_method)
         
         sys.exit(0)
@@ -464,7 +673,7 @@ if __name__ == '__main__':
     
     num_epochs = args.num_epochs
     writer = SummaryWriter('logs/{}'.format(model_tag))
-    early_stopping = EarlyStopping(patience=7, verbose=True, model_save_path=model_save_path)
+    early_stopping = EarlyStopping(patience=args.patience, verbose=True, model_save_path=model_save_path)
     scaler = torch.cuda.amp.GradScaler(enabled=args.use_amp)
     
     for epoch in range(start_epoch, num_epochs):
@@ -482,7 +691,7 @@ if __name__ == '__main__':
             KD_method = 'KD_cosine'
         elif args.KD_mse:
             if args.ssl_type != 'Distil_XLSR':
-                running_loss = train_kd_cosine_loss(model, student, train_loader, optimizer, hidden_rep_loss_weight=0.742208, ce_loss_weight=0.483691, device=device)
+                running_loss = train_kd_mse_loss(model, student, train_loader, optimizer, feature_map_weight=0.742208, ce_loss_weight=0.483691, device=device)
             else:
                 running_loss = train_kd_mse_loss(model, student, train_loader, optimizer, feature_map_weight=0.25, ce_loss_weight=0.75, device=device)
             KD_method = 'KD_mse'
@@ -502,19 +711,39 @@ if __name__ == '__main__':
 
             # # Create a DataLoader
             # train_loader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
-            running_loss = sefl_KD_train_epoch(train_loader, student, args.lr, optimizer, device, scaler, args.use_amp)
+            if args.self_KD_type == 'self_KD_Teacher_HG':
+                running_loss, running_total_label_loss, running_total_kd_loss, running_total_feature_loss = self_KD_teacher_train_epoch(train_loader, student, model, optimizer, device, scaler, use_amp=args.use_amp)
+                val_loss = self_KD_teacher_val_epoch(dev_loader, student, device)
+                writer.add_scalar('running_total_label_loss', running_total_label_loss, epoch) 
+                writer.add_scalar('running_total_kd_loss', running_total_kd_loss, epoch)
+                writer.add_scalar('running_total_feature_loss', running_total_feature_loss, epoch)
+            elif args.self_KD_type == 'self_KD_Teacher_HG_Cosine_Dropout':
+                running_loss, running_total_label_loss, running_total_kd_loss, running_total_feature_loss,running_total_kl_loss = self_KD_Dropout_train_epoch(train_loader, model, student, optimizer, device, scaler,lr_scheduler, use_amp=args.use_amp)
+                val_loss = self_KD_teacher_val_epoch(dev_loader, student, device, kd_method='self_KD_Teacher_Dropout')
+                writer.add_scalar('running_total_label_loss', running_total_label_loss, epoch)
+                writer.add_scalar('running_total_kd_loss', running_total_kd_loss, epoch)
+                writer.add_scalar('running_total_feature_loss', running_total_feature_loss, epoch)
+                writer.add_scalar('running_total_kl_loss', running_total_kl_loss, epoch)
+            else:
+                running_loss, running_total_label_loss, running_total_kd_loss, running_total_feature_loss = self_KD_train_epoch(train_loader, student, optimizer, device, scaler, use_amp=args.use_amp)
+                val_loss = self_KD_val_epoch(dev_loader, student, device)
+                
+                writer.add_scalar('running_total_label_loss', running_total_label_loss, epoch)
+                writer.add_scalar('running_total_kd_loss', running_total_kd_loss, epoch)
+                writer.add_scalar('running_total_feature_loss', running_total_feature_loss, epoch)
             KD_method = 'self_KD'
         else:
             logging.log(logging.ERROR, 'Invalid KD method given')
             raise ValueError('Invalid KD method given')
         
+        
         # Validate student and save model
-        if args.self_KD:
-            val_loss = sefl_KD_val_epoch(dev_loader, student, device)
-        else:
+        if not args.self_KD:
             val_loss = evaluate_accuracy(dev_loader, student, device, kd_method=KD_method)
-        writer.add_scalar('val_loss', val_loss, epoch)
+
         writer.add_scalar('loss', running_loss, epoch)
+        writer.add_scalar('val_loss', val_loss, epoch)
+        
         print('\n{} - {} - {} '.format(epoch, running_loss,val_loss))
 
         if args.use_amp:

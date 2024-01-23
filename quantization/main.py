@@ -9,6 +9,7 @@ import numpy as np
 from torch import Tensor
 import onnx
 import torch.onnx
+from torch.utils.mobile_optimizer import optimize_for_mobile
 
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 device = "cpu"
@@ -49,19 +50,42 @@ class WrapperModel(nn.Module):
         return output[0][0]
 
 #Inference
-    
-input = torch.randn(1, 16000)
+input = torch.randn(1, 64000)
 model = WrapperModel(model).to(device)
 
-model = model.module if isinstance(model, nn.DataParallel) else model
+scripted_model = torch.jit.script(model)
+optimized_model = optimize_for_mobile(scripted_model)
+optimized_model._save_for_lite_interpreter("Distil_W2V2_AASISTL_Regressor.ptl")
+print("Done _save_for_lite_interpreter")
 
-print("converting to onnx model...")
+with torch.inference_mode():
+    print(optimized_model(input))
 
-# convert to ONNX
-onnx_path = "Distil_W2V2_AASISTL_Regressor.onnx"
-model=torch.onnx.export(model, input, onnx_path, export_params=True)
+# model = model.module if isinstance(model, nn.DataParallel) else model
 
-print(f"Model exported to {onnx_path}")
+# print("converting to onnx model...")
+
+# # convert to ONNX
+# onnx_path = "Distil_W2V2_AASISTL_Regressor3.onnx"
+# model=torch.onnx.export(model, input, onnx_path, export_params=True)
+
+# print(f"Model exported to {onnx_path}")
 
 #with torch.inference_mode():
     #print(model(input))
+
+
+            # Create dummy input data
+            # for inputs, targets in train_loader:
+            #     print(inputs.shape)
+            #     break
+            # inputs = torch.randn(64, 64600)  # Assuming input size is (3, 32, 32)
+
+            # # Create dummy target data
+            # targets = torch.randint(0, 2, (64,))  # Assuming binary classification
+
+            # # Create a TensorDataset
+            # dataset = TensorDataset(inputs, targets)
+
+            # # Create a DataLoader
+            # train_loader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
