@@ -12,3 +12,12 @@ eval*/keys
 distil*.txt
 tmp.txt
 saved_*
+teacher_cosine_emb/*
+w*.txt
+self*.txt
+W2V2*.txt
+Distil*.txt
+quantization/*.txt
+*.pt
+test*.py
+self_KD*.txt

@@ -1,0 +1,74 @@
+name: 'W2V2BASE_AASISTL_SelfKD_KDLoss_Cosine_DISTLoss_teacher_ReduceLROnPlateau_cnsl'
+model:
+  teacher:
+    name: 'W2V2_AASIST'
+    teacher_module_paths:
+      - 'out_layer'
+      - 'LL'
+    teacher_module_ios:
+      - 'False:True'
+      - 'False:True'
+    pretrained_path: '/nfs/datab/hungdx/KDW2V-AASISTL/supcon_jan22_longR3_epoch_43.pth'
+    is_parallel: False 
+
+  student:
+    name: 'SelfDistil_W2V2BASE_AASISTL'
+    student_module_paths:
+      - 'out_layer'
+      - 'LL'
+    student_module_ios:
+      - 'False:True'
+      - 'False:True'
+
+self_kd_config:
+  temperature: 3
+  alpha: 0.1
+  beta: 1e-6
+  hidden_rep_loss_weight: 0.5
+
+learning_rate_scheduler:
+  name: 'ReduceLROnPlateau'
+  params:
+    mode: 'min'
+    patience: 3
+    factor: 0.1
+    threshold_mode: 'rel'
+    verbose: False
+
+
+is_learning_rate_scheduler: True
+
+train:
+  learning_rate: 0.000001
+  weight_decay: 0.00001
+  batch_size: 64
+  num_epochs: 300
+  num_workers: 4
+  amp: True
+  teacher: True
+  patience: 30
+  seed: 142
+  student_resume: '/nfs/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_SelfKD_KDLoss_Without_teacher/best_checkpoint_126.pth'
+  augment_mode: 'rawboost'
+  dataset: 'supcon_jan22'
+
+criterion_weights: [0.75, 1]
+
+criterions:
+  - key: 'CosineLoss'
+    kwargs:
+      student_module_path: 'LL'
+      student_module_io: 'output'
+      teacher_module_path: 'LL'
+      teacher_module_io: 'output'
+      size: 64
+
+  - key: 'DISTLoss'
+    kwargs:
+      student_module_path: 'out_layer'
+      student_module_io: 'output'
+      teacher_module_path: 'out_layer'
+      teacher_module_io: 'output'
+      gamma: 0.45
+      beta: 0.56
+      tau: 3

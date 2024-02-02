@@ -51,6 +51,25 @@ CUDA_VISIBLE_DEVICES=0 python main.py --comment "KD_cosine" --student_restore --
 CUDA_VISIBLE_DEVICES=2 python main.py --comment "KD_logits" --student_restore --model_path='' --eval --KD_logits --batch_size=30 --eval_output "./KD_logits_test_150k.txt" --batch_size_eval=64 --num_eval_samples=150000
 ```
 
+### Evaluation with Self KD + Teacher Cosine (16bit half precision)
+```
+CUDA_VISIBLE_DEVICES=1 python main.py --student_ckpt="/datab/hungdx/KDW2V-AASISTL/models/model_DF_weighted_CCE_100_40_1e-06_self_KD_teacher_W2VBaseHG/best_checkpoint_42.pth" --self_KD_type="self_KD_Teacher_HG" --eval --half --eval_output="./self_KD_teacher_cosine_half_test_150k.txt" --self_KD --batch_size_eval=200 --num_eval_samples=150000
+```
+
+
+## Lastest command to train and evaluate
+### Train
+
+```
+CUDA_VISIBLE_DEVICES=1 OMP_NUM_THREADS=1 PYTHONPATH=$PYTHONPATH:/nfs/datab/hungdx/KDW2V-AASISTL/fairseq python torchdistill_main.py  --yaml ''
+```
+
+### Eval
+```
+CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=1 PYTHONPATH=$PYTHONPATH:/nfs/datab/hungdx/KDW2V-AASISTL/fairseq python eval.py --student_model_path "/nfs/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_SelfKD_KDLoss_Without_teacher_lr_scheduler/best_checkpoint_57.pth" --eval_output="./W2V2BASE_AASISTL_SelfKD_KDLoss_Without_teacher_lr_scheduler_CosineAnnealingWarmRestarts_150k.txt" --batch_size_eval=300 --num_eval_samples=150000 --wrapper_ssl
+```
+
+
 # Fairseq Error:
 1. ImportError: cannot import name 'metrics' from 'fairseq' (unknown location)
 Please refer to [fairseq issues](https://github.com/facebookresearch/av_hubert/issues/70#issuecomment-1646736723) for more details.

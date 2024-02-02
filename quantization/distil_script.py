@@ -20,12 +20,6 @@ logger.setLevel(logging.WARNING)  # Set level to WARNING, ERROR, or CRITICAL
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 device = "cpu"
 
-# model = W2V2_AASIST()
-# model = nn.DataParallel(model).to(device)
-# model_path = "/nfs/datab/hungdx/KDW2V-AASISTL/W2V2-AASIST-teacher.pth"
-# # Load the model
-# model.load_state_dict(torch.load(model_path,map_location=device))
-# print("Loaded model from {}".format(model_path))
 
 model = Distil_W2V2BASE_AASISTL_Self_KD(device=device)
 model = nn.DataParallel(model).to(device)
@@ -55,19 +49,6 @@ class WrapperModel(nn.Module):
         super().__init__()
         self.model = model
     
-    # @torch.jit.script
-    # def pad(x, max_len: int = 64600) -> Tensor:
-    #     x_len = torch.tensor(x.shape[0])
-    #     max_len = torch.tensor(max_len)
-
-    #     if torch.ge(x_len, max_len).item():
-    #         return x[:max_len]
-    #     # need to pad
-    #     num_repeats = int((max_len / x_len).ceil().item())
-        
-    #     padded_x = x.repeat((1, num_repeats))[:, :max_len][0]
-    #     return padded_x
-    
     def forward(self, x: Tensor):
      
         wav_padded = pad(x).unsqueeze(0)
@@ -95,8 +76,6 @@ with torch.no_grad():
     # convert audio to tensor
     audio = torch.from_numpy(audio).to(device)
     print(model(audio))
-
-
 
     # # Scripting module for mobile deployment
     scripted_model = torch.jit.script(model, input)

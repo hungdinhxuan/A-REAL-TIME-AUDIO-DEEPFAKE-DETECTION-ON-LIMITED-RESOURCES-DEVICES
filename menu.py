@@ -3,7 +3,7 @@ import argparse
 def get_main_menu():
     parser = argparse.ArgumentParser(description='ASVspoof2021 baseline system')
     # Dataset
-    parser.add_argument('--database_path', type=str, default='./databases/', help='Change this to user\'s full directory address of LA database (ASVspoof2019- for training & development (used as validation), ASVspoof2021 DF for evaluation scores). We assume that all three ASVspoof 2019 LA train, LA dev and ASVspoof2021 DF eval data folders are in the same database_path directory.') 
+    parser.add_argument('--database_path', type=str, default='/datab/hungdx/KDW2V-AASISTL/databases/', help='Change this to user\'s full directory address of LA database (ASVspoof2019- for training & development (used as validation), ASVspoof2021 DF for evaluation scores). We assume that all three ASVspoof 2019 LA train, LA dev and ASVspoof2021 DF eval data folders are in the same database_path directory.') 
     '''
     % database_path/
     %   |- DF
@@ -12,7 +12,7 @@ def get_main_menu():
     %      |- ASVspoof2019_LA_dev/flac
     '''
 
-    parser.add_argument('--protocols_path', type=str, default='./protocols/', help='Change with path to user\'s DF database protocols directory address')
+    parser.add_argument('--protocols_path', type=str, default='/datab/hungdx/KDW2V-AASISTL/protocols/', help='Change with path to user\'s DF database protocols directory address')
     '''
     % protocols_path/
     %   |- ASVspoof_LA_cm_protocols
@@ -26,8 +26,9 @@ def get_main_menu():
     '''
 
     # Hyperparameters
+    parser.add_argument('--yaml', type=str, default='config.yaml', help='YAML file for hyperparameters')
     parser.add_argument('--batch_size', type=int, default=14)
-    parser.add_argument('--num_epochs', type=int, default=100)
+    parser.add_argument('--num_epochs', type=int, default=100) #can change the defult like5
     parser.add_argument('--lr', type=float, default=0.000001)
     parser.add_argument('--weight_decay', type=float, default=0.0001)
     parser.add_argument('--loss', type=str, default='weighted_CCE')
@@ -35,6 +36,8 @@ def get_main_menu():
     # model
     parser.add_argument('--seed', type=int, default=1234, 
                         help='random seed (default: 1234)')
+    parser.add_argument('--workers', type=int, default=8, 
+                        help='numbers of worker')
     
     parser.add_argument('--model_path', type=str,
                         default='./W2V2-AASIST-teacher.pth', help='Model checkpoint')
@@ -42,15 +45,19 @@ def get_main_menu():
                         default=None, help='Student model checkpoint')
     parser.add_argument('--comment', type=str, default=None,
                         help='Comment to describe the saved model')
-    parser.add_argument('--student_ckpt', type=str, help='Student checkpoint', default='./student.pth')
+    parser.add_argument('--student_ckpt', type=str, help='Student checkpoint', default='')
     # Auxiliary arguments
     parser.add_argument('--track', type=str, default='DF',choices=['LA', 'PA','DF'], help='LA/PA/DF')
     parser.add_argument('--eval_output', type=str, default=None,
                         help='Path to save the evaluation result')
     parser.add_argument('--eval', action='store_true', default=False,
                         help='eval mode')
+    parser.add_argument('--wrapper_ssl', action='store_true', default=False,
+                        help='Wrapper ssl model to torchaudio')
     parser.add_argument('--use_amp', action='store_true', default=False,
                         help='use amp mode')
+    parser.add_argument('--qat', action='store_true', default=False,
+                        help='Enable Quantization Aware Training')
     parser.add_argument('--is_eval', action='store_true', default=False,help='eval database')
     parser.add_argument('--is_eval_teacher', action='store_true', default=False,help='eval teacher')
     parser.add_argument('--batch_size_eval', type=int, default=14)
@@ -63,7 +70,7 @@ def get_main_menu():
     parser.add_argument('--cudnn-benchmark-toggle', action='store_true', \
                         default=False, 
                         help='use cudnn-benchmark? (default false)') 
-    parser.add_argument('--num_eval_samples', type=int, default=1000, help='Number of evaluation samples')
+    parser.add_argument('--num_eval_samples', type=int, default=150000, help='Number of evaluation samples')
     parser.add_argument('--student_restore', action='store_true', default=False,
                         help='Student model checkpoint')
     

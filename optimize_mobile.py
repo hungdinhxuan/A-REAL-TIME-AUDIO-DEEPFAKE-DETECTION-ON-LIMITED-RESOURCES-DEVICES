@@ -1,8 +1,10 @@
-from student import Distil_W2V2_AASISTL, Distil_W2V2_AASISTL_Cosine, Distil_W2V2_AASISTL_Regressor
+from student import *
 from torch.utils.mobile_optimizer import optimize_for_mobile
 import torch
 from torch import nn
 import os
+
+
 
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 

@@ -1,3 +1,6 @@
 [submodule "fairseq"]
 	path = fairseq
 	url = https://github.com/hungdinhxuan/fairseq.git
+[submodule "torchdistill"]
+	path = torchdistill
+	url = https://github.com/hungdinhxuan/torchdistill

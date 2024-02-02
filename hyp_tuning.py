@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 from data_utils import genSpoof_list,Dataset_ASVspoof2019_train,Dataset_ASVspoof2021_eval, Dataset_ASVspoof2021_with_labels_eval
 from tensorboardX import SummaryWriter
 from startup_config import set_random_seed
-from student import Distil_W2V2_AASISTL, Distil_W2V2_AASISTL_Cosine, Distil_W2V2_AASISTL_Regressor, Distil_W2V2BASE_AASISTL_Cosine, Distil_W2V2BASE_AASISTL, Distil_W2V2BASE_AASISTL_Regressor, Distil_W2V2BASE_AASISTL_Self_KD
+from student import Distil_W2V2_AASISTL, Distil_W2V2_AASISTL_Cosine, Distil_W2V2_AASISTL_Regressor, Distil_W2V2BASE_AASISTL_Cosine, Distil_W2V2BASE_AASISTL, Distil_W2V2BASE_AASISTL_Regressor, Distil_W2V2BASE_AASISTL_Self_KD, Distil_W2V2BASEHG_AASISTL_Self_KD_Teacher
 from teacher import W2V2_AASIST, W2V2_AASIST_Cosine, W2V2_AASIST_Regressor
 from kdtoolkit import  train_kd_cosine_loss, train_kd_mse_loss
 from menu import get_hyp_tuning_menu
@@ -271,7 +271,7 @@ def train_knowledge_distillation_mse_loss(teacher, student, train_loader,dev_loa
     return running_loss, val_loss
 
 def train_knowledge_distillation_config(config):
-    args = Namespace(database_path='/nfs/datab/hungdx/KDW2V-AASISTL/databases/', protocols_path='/nfs/datab/hungdx/KDW2V-AASISTL/protocols/', batch_size=64, num_epochs=100, lr=1e-06, weight_decay=0.0001, loss='weighted_CCE', seed=1234, model_path='/nfs/datab/hungdx/KDW2V-AASISTL/W2V2-AASIST-teacher.pth', cudnn_deterministic_toggle=True, cudnn_benchmark_toggle=False, student_restore=False, KD_logits=False, KD_cosine=False, KD_mse=False, self_KD=True, algo=3, nBands=5, minF=20, maxF=8000, minBW=100, maxBW=1000, minCoeff=10, maxCoeff=100, minG=0, maxG=0, minBiasLinNonLin=5, maxBiasLinNonLin=20, N_f=5, P=10, g_sd=2, SNRmin=10, SNRmax=40)
+    args = Namespace(database_path='/nfs/datab/hungdx/KDW2V-AASISTL/databases/', protocols_path='/nfs/datab/hungdx/KDW2V-AASISTL/protocols/', batch_size=64, num_epochs=100, lr=1e-06, weight_decay=0.0001, loss='weighted_CCE', seed=1234, model_path='/nfs/datab/hungdx/KDW2V-AASISTL/W2V2-AASIST-teacher.pth', cudnn_deterministic_toggle=True, cudnn_benchmark_toggle=False, student_restore=False, KD_logits=False, KD_cosine=False, KD_mse=False, self_KD=False, self_KD_teacher=True, algo=3, nBands=5, minF=20, maxF=8000, minBW=100, maxBW=1000, minCoeff=10, maxCoeff=100, minG=0, maxG=0, minBiasLinNonLin=5, maxBiasLinNonLin=20, N_f=5, P=10, g_sd=2, SNRmin=10, SNRmax=40)
     set_random_seed(args.seed)
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'                  
@@ -318,6 +318,10 @@ def train_knowledge_distillation_config(config):
     elif args.self_KD:
         student = Distil_W2V2BASE_AASISTL_Self_KD(device)
         kd_method = 'KD_self'
+    elif args.self_KD_teacher:
+        model = W2V2_AASIST()
+        student = Distil_W2V2BASEHG_AASISTL_Self_KD_Teacher(device)
+        kd_method = 'KD_self_teacher'
     else:
         raise ValueError('Invalid KD method given')
 
