@@ -1,4 +1,4 @@
-name: 'W2V2BASE_AASISTL_DISTLosslr_scheduler_CosineAnnealingWarmRestarts_cnsl_no_freeze'
+name: 'W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations'
 model:
   teacher:
     name: 'W2V2_AASIST'
@@ -20,20 +20,18 @@ model:
       - 'False:True'
       - 'False:True'
 
-is_learning_rate_scheduler: True
+is_learning_rate_scheduler: False
 
 learning_rate_scheduler:
-  name: 'CosineAnnealingWarmRestarts'
+  name: 'MultiStepLR'
   params:
-    T_0: 8
-    T_mult: 1
-    eta_min: 0.000005
+    milestones: [20, 50]
+    gamma: 0.15
     verbose: False
 
-
 train:
-  learning_rate: 0.0005
-  weight_decay: 0.05
+  learning_rate: 0.00001
+  weight_decay: 0.00001
   batch_size: 64
   num_epochs: 300
   num_workers: 4
@@ -43,21 +41,23 @@ train:
   seed: 42
   freeze_ssl_num_epoch: 0 # 0 for no freeze
   dataset: 'supcon_jan22'
-  augment_mode: 'rawboost' # 'rawboost' for rawboost, 'audiomentations' for audiomentations
-  alpha: 0.9
+  augment_mode: 'audiomentations' # 'rawboost' for rawboost, 'audiomentations' for audiomentations
+  student_resume: '/nfs/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_DKDLoss_cnsl/best_checkpoint_52.pth'
+  
   cross_entropy_loss_weight: [0.21, 0.79]
+  
 
 criterion_weights: [1]
 
 criterions:
 
-  - key: 'DISTLoss'
+  - key: 'DKDLoss'
     kwargs:
       student_module_path: 'out_layer'
       student_module_io: 'output'
       teacher_module_path: 'out_layer'
       teacher_module_io: 'output'
-      gamma: 1
-      beta: 1
-      tau: 4
+      alpha: 1
+      beta: 8
+      T: 2
 

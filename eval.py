@@ -36,14 +36,22 @@ if args.wrapper_ssl:
     student_model.module.ssl_model = W2V2_TA(import_fairseq_model(student_model.module.ssl_model.model)).to(device)
     
 
+if args.dataset == 'DF21':
+    args.track = 'DF'
+    prefix_2021 = 'ASVspoof2021.{}'.format(args.track)
+    _,file_eval = genSpoof_list( dir_meta =  os.path.join(args.protocols_path+'ASVspoof_{}_cm_protocols/{}.cm.eval.trl.txt'.format(args.track,prefix_2021)),is_train=False,is_eval=True, num_eval_samples=args.num_eval_samples)
+    logger.info(f'no. of eval trials {len(file_eval)}')
+    eval_set=Dataset_ASVspoof2021_eval(list_IDs = file_eval,base_dir = os.path.join(args.database_path+'ASVspoof2021_{}_eval/'.format(args.track)))
+    kd_method = 'self_KD_Teacher'
+    logger.info("Start eval")
+    produce_evaluation_file(eval_set, student_model, device, args.eval_output, batch_size=args.batch_size_eval, kd_method=kd_method, is_half=args.half)
+    logger.info("Done eval")
 
-
-args.track = 'DF'
-prefix_2021 = 'ASVspoof2021.{}'.format(args.track)
-_,file_eval = genSpoof_list( dir_meta =  os.path.join(args.protocols_path+'ASVspoof_{}_cm_protocols/{}.cm.eval.trl.txt'.format(args.track,prefix_2021)),is_train=False,is_eval=True, num_eval_samples=args.num_eval_samples)
-print('no. of eval trials',len(file_eval))
-eval_set=Dataset_ASVspoof2021_eval(list_IDs = file_eval,base_dir = os.path.join(args.database_path+'ASVspoof2021_{}_eval/'.format(args.track)))
-kd_method = 'self_KD_Teacher'
-logger.info("Start eval")
-produce_evaluation_file(eval_set, student_model, device, args.eval_output, batch_size=args.batch_size_eval, kd_method=kd_method, is_half=args.half)
-logger.info("Done eval")
+else:
+    kd_method = 'self_KD_Teacher'
+    file_eval = genSpoof_list_v2(dir_meta = os.path.join(args.database_path, args.protocols_path), 
+                                            is_train=False, is_dev=False, is_eval=True)
+    logger.info(f'no. of eval trials {len(file_eval)}')
+    eval_set = Dataset_cnsl_eval(list_IDs = file_eval, base_dir = os.path.join(args.database_path))
+    produce_evaluation_file(eval_set, student_model, device, args.eval_output, batch_size=args.batch_size_eval, kd_method=kd_method, is_half=args.half)
+    

@@ -1,39 +1,27 @@
-name: 'W2V2BASE_AASISTL_DISTLosslr_scheduler_CosineAnnealingWarmRestarts_cnsl_no_freeze'
+name: 'W2V2BASE_AASISTL_PKTLoss_cnsl'
 model:
   teacher:
     name: 'W2V2_AASIST'
     teacher_module_paths:
-      - 'LL'
       - 'out_layer'
     teacher_module_ios:
-      - 'False:True'
-      - 'False:True'
+      - 'True:True'
     pretrained_path: '/nfs/datab/hungdx/KDW2V-AASISTL/supcon_jan22_longR3_epoch_43.pth'
     is_parallel: False
 
   student:
     name: 'SelfDistil_W2V2BASE_AASISTL'
     student_module_paths:
-      - 'LL'
       - 'out_layer'
     student_module_ios:
-      - 'False:True'
-      - 'False:True'
+      - 'True:True'
 
-is_learning_rate_scheduler: True
-
-learning_rate_scheduler:
-  name: 'CosineAnnealingWarmRestarts'
-  params:
-    T_0: 8
-    T_mult: 1
-    eta_min: 0.000005
-    verbose: False
+is_learning_rate_scheduler: False
 
 
 train:
-  learning_rate: 0.0005
-  weight_decay: 0.05
+  learning_rate: 0.000002
+  weight_decay: 0.00001
   batch_size: 64
   num_epochs: 300
   num_workers: 4
@@ -46,18 +34,16 @@ train:
   augment_mode: 'rawboost' # 'rawboost' for rawboost, 'audiomentations' for audiomentations
   alpha: 0.9
   cross_entropy_loss_weight: [0.21, 0.79]
+  
 
 criterion_weights: [1]
 
 criterions:
 
-  - key: 'DISTLoss'
+  - key: 'PKTLoss'
     kwargs:
       student_module_path: 'out_layer'
-      student_module_io: 'output'
+      student_module_io: 'input'
       teacher_module_path: 'out_layer'
-      teacher_module_io: 'output'
-      gamma: 1
-      beta: 1
-      tau: 4
+      teacher_module_io: 'input'
 

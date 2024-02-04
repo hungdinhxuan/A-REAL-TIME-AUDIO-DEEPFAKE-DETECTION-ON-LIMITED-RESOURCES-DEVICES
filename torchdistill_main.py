@@ -107,10 +107,10 @@ def self_KD_teacher_train_epoch(train_loader, student, teacher, optimizer, devic
     else:
         logger.info("Current learning rate: {}".format(optimizer.param_groups[0]['lr']))
     iters = len(train_loader)
-    for i, (batch_x, batch_y) in tqdm(enumerate(train_loader)):
+    pbar = tqdm(enumerate(train_loader), total=len(train_loader))
+    for i, (batch_x, batch_y) in pbar:
         
-        
-
+    
         # Mixed precision training
         with torch.autocast(device_type=device, dtype=torch.float16, enabled=use_amp):
             
@@ -224,6 +224,145 @@ def self_KD_teacher_train_epoch(train_loader, student, teacher, optimizer, devic
     running_total_kd_loss /= num_total
     return running_loss, running_total_label_loss, running_total_kd_loss, running_total_feature_loss, running_total_hidden_rep_loss
 
+def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, config, exp_lr_scheduler=None,  use_amp: bool = True):
+    logger.info('Training KD')
+    running_loss = 0
+    
+    student.train()
+    teacher.eval()
+    weight_config = config['train']['cross_entropy_loss_weight']
+
+    if "alpha" not in config['train']:
+        forward_target = True
+    else:
+        forward_target = False
+        alpha = float(config['train']['alpha'])
+  
+    weight = torch.FloatTensor(weight_config).to(device)
+    criterion = nn.CrossEntropyLoss(weight=weight)
+
+    num_total = 0.0
+    
+    if not config['train']['teacher']:
+        logger.info('No teacher')
+        del teacher
+    
+    if exp_lr_scheduler is not None and config['learning_rate_scheduler']['name'] != 'ReduceLROnPlateau':
+        logger.info("Current learning rate: {}".format(exp_lr_scheduler.get_last_lr()[0]))
+    else:
+        logger.info("Current learning rate: {}".format(optimizer.param_groups[0]['lr']))
+        
+    iters = len(train_loader)
+    # Create a progress bar
+    pbar = tqdm(enumerate(train_loader), total=len(train_loader))
+    for i, (batch_x, batch_y) in pbar:
+        
+    
+        # Mixed precision training
+        with torch.autocast(device_type=device, dtype=torch.float16, enabled=use_amp):
+            
+
+            batch_size = batch_x.size(0)
+            num_total += batch_size
+            batch_x = batch_x.to(device)
+            batch_out, spectral_output, temporal_output, graph_output_S, graph_output_T, hs_gal_output_S, hs_gal_output_T, middle_feature1, middle_feature2, final_feature1, final_feature2, student_hidden_representation = student(batch_x)
+            
+            student_io_dict = student_forward_hook_manager.pop_io_dict()
+
+            # Get teacher output
+            if config['train']['teacher']:
+                with torch.no_grad():
+                    _ = teacher(batch_x)
+                    teacher_io_dict = teacher_forward_hook_manager.pop_io_dict()
+
+            batch_y = batch_y.view(-1).type(torch.int64).to(device)
+
+
+            # Multiple loss
+            total_loss = 0
+
+            # Check if key exists
+
+            if 'criterions' in config and 'criterion_weights' in config:
+
+                if len(config['criterions']) != len(config['criterion_weights']):
+                    raise ValueError('Number of criterions and criterion_weights must be the same')
+
+                for loss, weight in zip(config['criterions'], config['criterion_weights']):
+                    weight = float(weight)
+                    loss_i = get_mid_level_loss(mid_level_criterion_config = loss)
+
+                    if forward_target is True:
+                        total_loss += (loss_i.forward(student_io_dict, teacher_io_dict, batch_y) * weight)
+                    else:
+                        total_loss += (loss_i.forward(student_io_dict, teacher_io_dict) * weight)
+
+            if forward_target is False:
+                batch_loss = criterion(batch_out, batch_y)
+                total_loss +=  (alpha * batch_loss)
+
+        # Scaler
+        optimizer.zero_grad()
+        scaler.scale(total_loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
+        
+        # Update LR
+        if exp_lr_scheduler is not None:
+            if config['learning_rate_scheduler']['name'] == 'CosineAnnealingWarmRestarts':
+                exp_lr_scheduler.step(epoch + i / iters)
+            elif config['learning_rate_scheduler']['name'] == 'ReduceLROnPlateau':
+                # Update learning rate scheduler in validation so do nothing here
+                pass
+            else:
+                exp_lr_scheduler.step()
+        
+        running_loss += (total_loss.item() * batch_size)
+        
+
+    running_loss /= num_total
+    
+    return running_loss
+
+def kd_val_epoch(dev_loader, model, device):
+    logger.info('Validation ----')
+    val_loss = 0
+    model.eval()
+    weight_config = config['train']['cross_entropy_loss_weight']
+    
+    weight = torch.FloatTensor(weight_config).to(device)
+    
+    criterion = nn.CrossEntropyLoss(weight=weight)
+    num_total = 0.0
+    num_correct = 0.0
+
+    with torch.inference_mode():
+        for batch_x, batch_y in tqdm(dev_loader):
+            batch_size = batch_x.size(0)
+            num_total += batch_size
+            batch_x = batch_x.to(device)
+            
+            batch_out, spectral_output, temporal_output, graph_output_S, graph_output_T, hs_gal_output_S, hs_gal_output_T, middle_feature1, middle_feature2, final_feature1, final_feature2, hidden_features = model(batch_x)
+            
+            batch_y = batch_y.view(-1).type(torch.int64).to(device)
+
+            # Calculate loss (label loss)
+            batch_loss = criterion(batch_out, batch_y)
+        
+            val_loss += (batch_loss.item() * batch_size)
+
+            probabilities = F.softmax(batch_out, dim=1)
+            predicted_labels = (probabilities[:,0] >= 0.5).int()
+
+            num_correct += (predicted_labels == batch_y).sum().item()
+            
+
+        accuracy = (num_correct / num_total) * 100
+        print("accuracy",accuracy)
+        val_loss /= num_total
+        print('[VALIDATION] eval_accuracy: ', accuracy)
+        return val_loss, accuracy
+
 args = get_main_menu()
 # Load configuration
 with open(args.yaml, 'r') as f:
@@ -259,8 +398,6 @@ if "pretrained_path" in config["model"]["teacher"]:
 else:
     teacher_model.load_state_dict(torch.load(args.model_path,map_location=device))
     logger.info("Loaded teacher model from {}".format(args.model_path))
-
-logger.info("Loaded teacher model from {}".format(args.model_path))
 
 
 if "student_resume" in config["train"]:
@@ -330,10 +467,12 @@ early_stopping = EarlyStopping(patience=config['train']['patience'], verbose=Tru
 logger.info("Start training")
 num_epochs = config['train']['num_epochs']
 
-temperature = float(config['self_kd_config']['temperature'])
-alpha = float(config['self_kd_config']['alpha'])
-beta = float(config['self_kd_config']['beta'])
 use_amp = bool(config['train']['amp'])
+
+if "self_kd_config" in config:
+    temperature = float(config['self_kd_config']['temperature'])
+    alpha = float(config['self_kd_config']['alpha'])
+    beta = float(config['self_kd_config']['beta'])
 
 if 'criterions' in config and 'criterion_weights' in config:
     logger.info('Use mid level loss')
@@ -343,23 +482,46 @@ if 'criterions' in config and 'criterion_weights' in config:
 for epoch in tqdm(range(num_epochs), colour='green'):
     logger.info('Epoch {}/{}'.format(epoch, num_epochs - 1))
 
+    ## Freeze SSL model for the first defined epochs
+    if 'freeze_ssl_num_epoch' in config['train'] and epoch < config['train']['freeze_ssl_num_epoch']:
+        logger.info('Freeze SSL model')
+        student_model.module.ssl_model.frozen()
+        
+    else:
+        if student_model.module.ssl_model.freeze:
+            logger.info('Unfreeze SSL model')
+            student_model.module.ssl_model.unfrozen()
+        else:
+            ## Do nothing
+            pass
+
+    ## 
+
     # Train
+        
+    if "self_kd_config" not in config:
+        
     
-    train_loss, train_total_label_loss, train_total_kd_loss, train_total_feature_loss, running_total_hidden_rep_loss = self_KD_teacher_train_epoch(train_loader, student_model, teacher_model, optimizer, device, scaler, config, exp_lr_scheduler, temperature=temperature, alpha=alpha, beta=beta, use_amp = use_amp)
-    # Eval
-    eval_loss, accuracy = self_KD_teacher_val_epoch(dev_loader, student_model, device)
+        train_loss = kd_train_epoch(train_loader, student_model, teacher_model, optimizer, device, scaler, config, exp_lr_scheduler, use_amp = use_amp)
+        eval_loss, accuracy = kd_val_epoch(dev_loader, student_model, device)
+        logger.info('Epoch: {} - train_loss: {} - eval_loss: {}'.format(epoch, train_loss, eval_loss))
+    else:
+        train_loss, train_total_label_loss, train_total_kd_loss, train_total_feature_loss, running_total_hidden_rep_loss = self_KD_teacher_train_epoch(train_loader, student_model, teacher_model, optimizer, device, scaler, config, exp_lr_scheduler, temperature=temperature, alpha=alpha, beta=beta, use_amp = use_amp)
+        # Eval
+        eval_loss, accuracy = self_KD_teacher_val_epoch(dev_loader, student_model, device)
+        writer.add_scalar('Loss/train_label', train_total_label_loss, epoch)
+        writer.add_scalar('Loss/train_kd', train_total_kd_loss, epoch)
+        writer.add_scalar('Loss/train_feature', train_total_feature_loss, epoch)
+        writer.add_scalar('Loss/train_hidden_rep', running_total_hidden_rep_loss, epoch)
+        logging.log(logging.INFO, 'Epoch: {} - train_loss: {} - train_total_label_loss: {} - train_total_kd_loss: {} - train_total_feature_loss: {} - running_total_hidden_rep_loss: {} - eval_loss: {}'.format(epoch, train_loss, train_total_label_loss, train_total_kd_loss, train_total_feature_loss, running_total_hidden_rep_loss, eval_loss))
 
     if exp_lr_scheduler is not None:
         if config['learning_rate_scheduler']['name'] == 'ReduceLROnPlateau':
             exp_lr_scheduler.step(eval_loss)
     
-    logging.log(logging.INFO, 'Epoch: {} - train_loss: {} - train_total_label_loss: {} - train_total_kd_loss: {} - train_total_feature_loss: {} - running_total_hidden_rep_loss: {} - eval_loss: {}'.format(epoch, train_loss, train_total_label_loss, train_total_kd_loss, train_total_feature_loss, running_total_hidden_rep_loss, eval_loss))
+
     # Log
     writer.add_scalar('Loss/train', train_loss, epoch)
-    writer.add_scalar('Loss/train_label', train_total_label_loss, epoch)
-    writer.add_scalar('Loss/train_kd', train_total_kd_loss, epoch)
-    writer.add_scalar('Loss/train_feature', train_total_feature_loss, epoch)
-    writer.add_scalar('Loss/train_hidden_rep', running_total_hidden_rep_loss, epoch)
     writer.add_scalar('Loss/eval', eval_loss, epoch)
     writer.add_scalar('Accuracy/eval', accuracy, epoch)
     # Write current learning rate to tensorboard
@@ -380,11 +542,10 @@ for epoch in tqdm(range(num_epochs), colour='green'):
         logger.info('Saved model at epoch {}'.format(epoch))
         # Remove old checkpoint
         if epoch > 0:
-            old_checkpoint = os.path.join(model_save_path, 'checkpoint_{}.pth'.format(epoch - 10))
+            old_checkpoint = os.path.join(model_save_path, 'checkpoint_{}.pth'.format(epoch - 1))
             if os.path.exists(old_checkpoint):
                 os.remove(old_checkpoint)
                 logger.info('Removed old checkpoint {}'.format(old_checkpoint))
-
 
 
 if use_amp:

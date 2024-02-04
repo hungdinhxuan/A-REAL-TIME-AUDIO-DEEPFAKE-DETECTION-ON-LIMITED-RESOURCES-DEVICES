@@ -1,56 +1,59 @@
-name: 'W2V2BASE_AASISTL_DISTLosslr_scheduler_CosineAnnealingWarmRestarts_cnsl_no_freeze'
+name: 'W2V2BASE_AASISTL_SelfKD_DISTLoss_teacher_CosineAnnealingLR_audiomentations_cnsl'
 model:
   teacher:
     name: 'W2V2_AASIST'
     teacher_module_paths:
-      - 'LL'
       - 'out_layer'
+      - 'LL'
     teacher_module_ios:
       - 'False:True'
       - 'False:True'
     pretrained_path: '/nfs/datab/hungdx/KDW2V-AASISTL/supcon_jan22_longR3_epoch_43.pth'
-    is_parallel: False
+    is_parallel: False 
 
   student:
     name: 'SelfDistil_W2V2BASE_AASISTL'
     student_module_paths:
-      - 'LL'
       - 'out_layer'
+      - 'LL'
     student_module_ios:
       - 'False:True'
       - 'False:True'
 
-is_learning_rate_scheduler: True
+self_kd_config:
+  temperature: 3
+  alpha: 0.1
+  beta: 1e-6
+  hidden_rep_loss_weight: 0.5
 
 learning_rate_scheduler:
-  name: 'CosineAnnealingWarmRestarts'
+  name: 'CosineAnnealingLR'
   params:
-    T_0: 8
-    T_mult: 1
-    eta_min: 0.000005
+    T_max: 32
+    eta_min: 0.000001
     verbose: False
 
 
+is_learning_rate_scheduler: True
+
 train:
-  learning_rate: 0.0005
-  weight_decay: 0.05
+  learning_rate: 0.00001
+  weight_decay: 0.00001
   batch_size: 64
   num_epochs: 300
   num_workers: 4
   amp: True
   teacher: True
   patience: 30
-  seed: 42
-  freeze_ssl_num_epoch: 0 # 0 for no freeze
-  dataset: 'supcon_jan22'
-  augment_mode: 'rawboost' # 'rawboost' for rawboost, 'audiomentations' for audiomentations
-  alpha: 0.9
-  cross_entropy_loss_weight: [0.21, 0.79]
+  seed: 1142
+  student_resume: '/nfs/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_SelfKD_KDLoss_Cosine_DISTLoss_teacher_ReduceLROnPlateau_cnsl/best_checkpoint_66.pth'
+  augment_mode: 'audiomentations' # 'rawboost' for rawboost, 'audiomentations' for audiomentations
+  dataset: 'supcon_jan22' # 'LA19' for ASVspoof2019LA, 'supcon_jan22' for supcon_jan22
+  freeze_ssl_num_epoch: 0
 
 criterion_weights: [1]
 
 criterions:
-
   - key: 'DISTLoss'
     kwargs:
       student_module_path: 'out_layer'
@@ -59,5 +62,4 @@ criterions:
       teacher_module_io: 'output'
       gamma: 1
       beta: 1
-      tau: 4
-
+      tau: 1

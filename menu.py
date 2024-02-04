@@ -27,6 +27,7 @@ def get_main_menu():
 
     # Hyperparameters
     parser.add_argument('--yaml', type=str, default='config.yaml', help='YAML file for hyperparameters')
+    parser.add_argument('--dataset', type=str, default='DF21', help='Dataset for evaluation')
     parser.add_argument('--batch_size', type=int, default=14)
     parser.add_argument('--num_epochs', type=int, default=100) #can change the defult like5
     parser.add_argument('--lr', type=float, default=0.000001)

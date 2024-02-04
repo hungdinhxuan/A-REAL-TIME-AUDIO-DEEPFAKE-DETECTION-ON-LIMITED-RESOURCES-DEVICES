@@ -385,7 +385,7 @@ class Dataset_cnsl_eval(Dataset):
             
         utt_id = self.list_IDs[index]
         X, fs = librosa.load(self.base_dir + "/" + utt_id, sr=16000)
-        X_pad = pad(X,utt_id,self.cut)
+        X_pad = pad_v2(X,utt_id,self.cut)
         
         x_inp = Tensor(X_pad)
         return x_inp, utt_id
@@ -555,7 +555,7 @@ def get_train_dev_dataloader(args, augment='rawboost', dataset='LA19'):
         print('no. of validation trials',len(file_dev))
         
         dev_set = Dataset_cnsl(args, list_IDs = file_dev, labels = d_label_dev, base_dir = args.database_path+'/', algo=args.algo)
-        dev_loader = DataLoader(dev_set, batch_size=args.batch_size, num_workers=args.workers, shuffle=False)
+        dev_loader = DataLoader(dev_set, batch_size=args.batch_size * 2, num_workers=args.workers, shuffle=False)
         del dev_set, d_label_dev
         return train_loader, dev_loader
     

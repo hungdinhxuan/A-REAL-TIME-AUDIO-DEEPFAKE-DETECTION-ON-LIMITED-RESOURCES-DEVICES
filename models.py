@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
 import fairseq
+import logging
 from fairseq.models.distilXLSR import DistilXLSR, DistilXLSRConfig
 from transformers import  Wav2Vec2ForCTC, Wav2Vec2Config
 from transformers import AutoProcessor, AutoModelForPreTraining, Wav2Vec2Processor, Wav2Vec2Model, Wav2Vec2PreTrainedModel, AutoConfig
@@ -142,12 +143,25 @@ class SSLModelBase(nn.Module):
         self.model = model[0]
         self.model = self.model.to(device)
         self.out_dim = 768
+        self.freeze = False
         print("Wav2Vec2 Base Fairseq Model init")
 
     def forward(self, input_data):
         input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data 
         emb = self.model(input_tmp, mask=False, features_only=True)['x']
         return emb
+    
+    def frozen(self):
+        logging.info("Freezing the model")
+        for param in self.model.parameters():
+            param.requires_grad = False
+        self.freeze = True
+    
+    def unfrozen(self):
+        logging.info("Unfreezing the model")
+        for param in self.model.parameters():
+            param.requires_grad = True
+        self.freeze = False
 
 class SSLModelFTBase(nn.Module):
     def __init__(self):
