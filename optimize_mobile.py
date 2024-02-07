@@ -3,21 +3,15 @@ from torch.utils.mobile_optimizer import optimize_for_mobile
 import torch
 from torch import nn
 import os
+from main import W2V2_TA
+from torchaudio.models.wav2vec2.utils import import_fairseq_model
 
+device = "cuda" if torch.cuda.is_available() else "cpu"
+cp_path = '/nfs/datab/hungdx/KDW2V-AASISTL/distilXLSR_xlsr128.pt'   # Change the pre-trained XLSR model path. 
+checkpoint = torch.load(cp_path, map_location=device)
+pretrained_model_cfg = checkpoint["Config"]["model"]
+pretrained_model_cfg = DistilXLSRConfig(pretrained_model_cfg)
+model = DistilXLSR(pretrained_model_cfg)
+model.load_state_dict(checkpoint["Student"], strict=False)
 
-
-os.environ["CUDA_VISIBLE_DEVICES"] = ""
-
-model = Distil_W2V2_AASISTL_Regressor(device="cpu")
-model = nn.DataParallel(model).to("cpu")
-# Load quantized model
-model.load_state_dict(torch.load("/nfs/datab/hungdx/KDW2V-AASISTL/compressed_model.pt",map_location="cpu"), strict=False)
-with torch.inference_mode():
-    result, _ = model(torch.randn(1,64000))
-    print(result)
-
-# trace_model = torch.jit.trace(model, torch.randn(1,64000))
-# optimized_trace_model = optimize_for_mobile(trace_model)
-
-# # Save the optimized model
-# optimized_trace_model._save_for_lite_interpreter("/nfs/datab/hungdx/KDW2V-AASISTL/KD_mse_auto_quantized_model_ckp23/best_model.ptl")
+torch.jit.script(model)

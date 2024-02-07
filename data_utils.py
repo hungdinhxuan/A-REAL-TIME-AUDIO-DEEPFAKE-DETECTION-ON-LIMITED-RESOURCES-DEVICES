@@ -1,12 +1,14 @@
 import os
 import numpy as np
 import torch
+import torchaudio
+from torchaudio.utils import download_asset
 import torch.nn as nn
 from torch import Tensor
 import librosa
 from torch.utils.data import Dataset
 from RawBoost import ISD_additive_noise,LnL_convolutive_noise,SSI_additive_noise,normWav
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, WeightedRandomSampler
 import audiomentations as aa
 import logging
 
@@ -368,6 +370,32 @@ class Dataset_cnsl(Dataset):
         
         return x_inp, target
 
+class Dataset_cnsl_augment(Dataset):
+    def __init__(self,args,list_IDs, labels, base_dir):
+        '''self.list_IDs	: list of strings (each string: utt key),
+            self.labels      : dictionary (key: utt key, value: label integer)'''
+            
+        self.list_IDs = list_IDs
+        self.labels = labels
+        self.base_dir = base_dir
+        self.args=args
+        self.cut=64600 # take ~4 sec audio (64600 samples)
+
+    def __len__(self):
+        return len(self.list_IDs)
+
+
+    def __getitem__(self, index):
+            
+        utt_id = self.list_IDs[index]
+        X, fs = librosa.load(self.base_dir + "/" + utt_id, sr=16000)
+        Y=process_audiomentations(X,fs)
+        X_pad= pad_v2(Y,utt_id,self.cut)
+        x_inp= Tensor(X_pad)
+        target = self.labels[utt_id]
+        
+        return x_inp, target
+
 class Dataset_cnsl_eval(Dataset):
     def __init__(self, list_IDs, base_dir):
         '''self.list_IDs	: list of strings (each string: utt key),
@@ -390,6 +418,40 @@ class Dataset_cnsl_eval(Dataset):
         x_inp = Tensor(X_pad)
         return x_inp, utt_id
 
+class Dataset_cnsl_augment_contrastive(Dataset):
+    """
+    Dataset class for contrastive learning
+    """
+    def __init__(self, list_ids, labels, base_dir):
+        """
+        list_ids: list of strings (each string: utt key),
+        labels: dictionary (key: utt key, value: label integer)
+        """
+        self.list_ids = list_ids
+        self.labels = labels
+        self.base_dir = base_dir
+        self.cut = 64600  # take ~4 sec audio (64600 samples)
+
+        # Calculate weights for WeightedRandomSampler
+        class_counts = np.bincount(list(self.labels.values()))
+        class_weights = 1. / class_counts
+        self.weights = [class_weights[self.labels[utt_id]] for utt_id in self.list_ids]
+
+    def __len__(self):
+        return len(self.list_ids)
+
+    def __getitem__(self, index):
+        utt_id = self.list_ids[index]
+        audio, fs = librosa.load(f"{self.base_dir}/{utt_id}", sr=16000)
+        processed_audio = process_audiomentations(audio, fs)
+        padded_audio = pad_v2(processed_audio, utt_id, self.cut)
+        audio_tensor = Tensor(padded_audio)
+        target = self.labels[utt_id]
+
+        return audio_tensor, target
+
+    def get_sampler(self):
+        return WeightedRandomSampler(self.weights, len(self.weights))
 
 #--------------Audiomentations---------------------------#
 def process_audiomentations(feature, sr):
@@ -407,6 +469,15 @@ def process_audiomentations(feature, sr):
         aa.Mp3Compression(min_bitrate=96, max_bitrate=320, p=0.3)
         ])
     return augment(samples=feature, sample_rate=sr)
+
+def process_torchaudio_augment(feature, sr):
+    """ DA using torchaudio library """
+    SAMPLE_WAV = download_asset("tutorial-assets/steam-train-whistle-daniel_simon.wav")
+    SAMPLE_RIR = download_asset("tutorial-assets/Lab41-SRI-VOiCES-rm1-impulse-mc01-stu-clo-8000hz.wav")
+    SAMPLE_SPEECH = download_asset("tutorial-assets/Lab41-SRI-VOiCES-src-sp0307-ch127535-sg0042-8000hz.wav")
+    SAMPLE_NOISE = download_asset("tutorial-assets/Lab41-SRI-VOiCES-rm1-babb-mc01-stu-clo-8000hz.wav")
+
+   
 
 def process_Rawboost_feature(feature, sr,args,algo):
     
@@ -540,8 +611,14 @@ def get_train_dev_dataloader(args, augment='rawboost', dataset='LA19'):
                                             is_train=True, is_dev=False, is_eval=False)
         
         print('no. of training trials',len(file_train))
-        
-        train_set = Dataset_cnsl(args, list_IDs = file_train, labels = d_label_trn, base_dir = args.database_path+'/', algo=args.algo)
+
+        if augment == 'rawboost':
+            train_set = Dataset_cnsl(args, list_IDs = file_train, labels = d_label_trn, base_dir = args.database_path+'/', algo=args.algo)
+        elif augment == 'audiomentations':
+            train_set = Dataset_cnsl_augment(args, list_IDs = file_train, labels = d_label_trn, base_dir = args.database_path+'/')
+        else:
+            logging.error("Invalid augment type: {}".format(augment))
+            exit(0)
         
         train_loader = DataLoader(train_set, batch_size=args.batch_size, num_workers=args.workers, shuffle=True, drop_last = True)
         
@@ -558,4 +635,28 @@ def get_train_dev_dataloader(args, augment='rawboost', dataset='LA19'):
         dev_loader = DataLoader(dev_set, batch_size=args.batch_size * 2, num_workers=args.workers, shuffle=False)
         del dev_set, d_label_dev
         return train_loader, dev_loader
+
+
+
+def get_train_dev_dataloader_contrastive(args):
+    logging.info("Using CNSL dataset with contrastive learning")
+        # define train dataloader
+    d_label_trn, file_train = genSpoof_list_v2(dir_meta = os.path.join(args.database_path, args.protocols_path), 
+                                            is_train=True, is_dev=False, is_eval=False)
+        
+    print('no. of training trials',len(file_train))
+
+    train_set = Dataset_cnsl_augment_contrastive(file_train, d_label_trn, base_dir = args.database_path+'/')
     
+    train_loader = DataLoader(train_set, batch_size=args.batch_size, num_workers=args.workers, shuffle=True, drop_last = True, sampler=train_set.get_sampler())
+
+
+    d_label_dev, file_dev = genSpoof_list_v2(dir_meta = os.path.join(args.database_path, args.protocols_path), 
+                                            is_train=False, is_dev=True, is_eval=False)
+        
+    print('no. of validation trials',len(file_dev))
+        
+    dev_set = Dataset_cnsl(args, list_IDs = file_dev, labels = d_label_dev, base_dir = args.database_path+'/', algo=args.algo)
+    dev_loader = DataLoader(dev_set, batch_size=args.batch_size * 2, num_workers=args.workers, shuffle=False)
+    del dev_set, d_label_dev
+    return train_loader, dev_loader

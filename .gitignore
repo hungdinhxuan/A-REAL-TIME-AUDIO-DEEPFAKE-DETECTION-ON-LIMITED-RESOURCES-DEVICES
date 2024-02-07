@@ -21,3 +21,4 @@ quantization/*.txt
 *.pt
 test*.py
 self_KD*.txt
+dict.ltr.txt

@@ -1,64 +1,45 @@
-name: 'W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations'
+name: 'W2V2BASE_AASISTL_SelfKD_KDLoss_Without_teacher'
 model:
   teacher:
     name: 'W2V2_AASIST'
     teacher_module_paths:
-      - 'LL'
       - 'out_layer'
     teacher_module_ios:
-      - 'False:True'
-      - 'False:True'
+      - 'True:True'
     pretrained_path: '/nfs/datab/hungdx/KDW2V-AASISTL/supcon_jan22_longR3_epoch_43.pth'
     is_parallel: False
 
   student:
     name: 'SelfDistil_W2V2BASE_AASISTL'
     student_module_paths:
-      - 'LL'
       - 'out_layer'
     student_module_ios:
-      - 'False:True'
-      - 'False:True'
+      - 'True:True'
 
 is_learning_rate_scheduler: False
 
-learning_rate_scheduler:
-  name: 'MultiStepLR'
-  params:
-    milestones: [20, 50]
-    gamma: 0.15
-    verbose: False
+self_kd_config:
+  temperature: 3
+  alpha: 0.1
+  beta: 1e-6
+  hidden_rep_loss_weight: 0.5
 
 train:
-
-  learning_rate: 0.00001
+  learning_rate: 0.0000001
   weight_decay: 0.00001
   batch_size: 64
   num_epochs: 300
   num_workers: 4
   amp: True
-  teacher: True
+  teacher: False
   patience: 30
   seed: 42
   freeze_ssl_num_epoch: 0 # 0 for no freeze
   dataset: 'supcon_jan22'
   augment_mode: 'audiomentations' # 'rawboost' for rawboost, 'audiomentations' for audiomentations
-  student_resume: '/nfs/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_DKDLoss_cnsl/best_checkpoint_52.pth'
-  
+  alpha: 0.9
+  beta: 0.5
   cross_entropy_loss_weight: [0.21, 0.79]
-  
-
-criterion_weights: [1]
-
+  student_resume: '/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations/best_checkpoint_78.pth'
+  raytune: False
 criterions:
-
-  - key: 'DKDLoss'
-    kwargs:
-      student_module_path: 'out_layer'
-      student_module_io: 'output'
-      teacher_module_path: 'out_layer'
-      teacher_module_io: 'output'
-      alpha: 1
-      beta: 8
-      T: 2
-

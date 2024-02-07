@@ -15,22 +15,6 @@ import logging
 from tensorboardX import SummaryWriter
 from tqdm import tqdm
 from main import W2V2_TA
-
-from contrast.supcontrastloss import SupConLoss
-
-
-class DistillKL(nn.Module):
-    """Distilling the Knowledge in a Neural Network"""
-
-    def __init__(self, T):
-        super(DistillKL, self).__init__()
-        self.T = T
-
-    def forward(self, y_s, y_t):
-        p_s = F.log_softmax(y_s / self.T, dim=1)
-        p_t = F.softmax(y_t / self.T, dim=1)
-        loss = F.kl_div(p_s, p_t, reduction='batchmean') * (self.T ** 2)
-        return loss
 # from neural_compressor.training import prepare_compression
 
 logger = logging.getLogger(__name__)
@@ -281,8 +265,7 @@ def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, co
     
         # Mixed precision training
         with torch.autocast(device_type=device, dtype=torch.float16, enabled=use_amp):
-            # Multiple loss
-            total_loss = torch.tensor(0.).to(device)
+            
 
             batch_size = batch_x.size(0)
             num_total += batch_size
@@ -300,7 +283,8 @@ def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, co
             batch_y = batch_y.view(-1).type(torch.int64).to(device)
 
 
-            
+            # Multiple loss
+            total_loss = 0
 
             # Check if key exists
 
@@ -319,25 +303,12 @@ def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, co
                         total_loss += (loss_i.forward(student_io_dict, teacher_io_dict) * weight)
 
             if not forward_target:
-
-                # CE loss
                 batch_loss = criterion(batch_out, batch_y)
                 total_loss +=  (alpha * batch_loss)
 
                 ## Total loss + KL divergence loss
-                kl_loss = DistillKL(T=config["train"].get("T", 2))
-                total_loss += (beta * kl_loss(batch_out, t_logits))
-            
-            if "sup_contrastive" in config["train"] and config["train"]["sup_contrastive"]:
-                sup_weights = config["train"].get("sup_contrastive_loss_weight", [0.07, 0.07])
-                sup_loss = SupConLoss(temperature=sup_weights[0], base_temperature=sup_weights[1])
-                sup_mode = config["train"].get("sup_contrastive_mode", "supcon")
-
-                if sup_mode == "supcon":
-                    sup_loss = sup_loss.forward(student_hidden_representation, batch_y)
-                else:
-                    sup_loss = sup_loss.forward(student_hidden_representation)
-                total_loss += sup_loss
+                
+                total_loss += (beta * F.kl_div(F.log_softmax(batch_out, dim=1), F.softmax(t_logits, dim=1), reduction='batchmean'))
 
         # Scaler
         optimizer.zero_grad()
@@ -407,195 +378,29 @@ with open('/datab/hungdx/KDW2V-AASISTL/distill-config/test.yaml', 'r') as f:
     logger.info('Load configuration file {}'.format(args.yaml))
     config = yaml.safe_load(f)
 
-
 seed = config['train']['seed']
 set_random_seed(seed, args)
 logger.info('Random seed: {}'.format(seed))
 
-
 teacher_model = get_model(config['model']['teacher']['name'], device=device).to(device)
-student_model = get_model(config['model']['student']['name'], device=device).to(device)
 
-teacher_forward_hook_manager = ForwardHookManager(device)
-student_forward_hook_manager = ForwardHookManager(device)
+teacher_model.load_state_dict(torch.load(config["model"]["teacher"]["pretrained_path"],map_location=device))
+logger.info("Loaded teacher model from {}".format(config["model"]["teacher"]["pretrained_path"]))
 
-student_model = torch.nn.DataParallel(student_model).to(device)
+print(teacher_model)
+# teacher_forward_hook_manager = ForwardHookManager(device)
+# student_forward_hook_manager = ForwardHookManager(device)
 
-if "is_parallel" in config["model"]["teacher"] and not config["model"]["teacher"]["is_parallel"]:
-    logger.info("Teacher model is not parallel")
-    teacher_model = teacher_model.to(device)
-else:
-    logger.info("Teacher model is parallel")
-    teacher_model = torch.nn.DataParallel(teacher_model).to(device)
+# student_model = torch.nn.DataParallel(student_model).to(device)
+# # teacher_model = torch.nn.DataParallel(teacher_model).to(device)
 
-if "pretrained_path" in config["model"]["teacher"]:
-    
-    teacher_model.load_state_dict(torch.load(config["model"]["teacher"]["pretrained_path"],map_location=device))
-    logger.info("Loaded teacher model from {}".format(config["model"]["teacher"]["pretrained_path"]))
-else:
-    teacher_model.load_state_dict(torch.load(args.model_path,map_location=device))
-    logger.info("Loaded teacher model from {}".format(args.model_path))
-
-
-if "student_resume" in config["train"]:
-    student_model.load_state_dict(torch.load(config["train"]["student_resume"],map_location=device))
-    logger.info("Loaded student model from {}".format(config["train"]["student_resume"]))
-
-# Register forward hook
-logger.info('Register forward hook for teacher')
-for module_path, ios in zip(config['model']['teacher']['teacher_module_paths'], config['model']['teacher']['teacher_module_ios']):
-    logger.info('Register teacher forward hook for {}'.format(module_path))
-    requires_input, requires_output =  ios.split(':')
-    requires_input, requires_output = bool(requires_input), bool(requires_output)
-    if "is_parallel" in config["model"]["teacher"] and not config["model"]["teacher"]["is_parallel"]:
-        teacher_forward_hook_manager.add_hook(teacher_model, module_path, requires_input=requires_input, requires_output=requires_output)
-    else:
-        teacher_forward_hook_manager.add_hook(teacher_model.module, module_path, requires_input=requires_input, requires_output=requires_output)
-
-logger.info('Register forward hook for student')
-for module_path, ios in zip(config['model']['student']['student_module_paths'], config['model']['student']['student_module_ios']):
-    logger.info('Register student forward hook for {}'.format(module_path))
-    requires_input, requires_output =  ios.split(':')
-    requires_input, requires_output = bool(requires_input), bool(requires_output)
-    student_forward_hook_manager.add_hook(student_model.module, module_path, requires_input=requires_input, requires_output=requires_output)
-
-
-logger.info('Prepare training, dev set .....')
-
-# if "augment_mode" in config["train"]:
-#     logger.info(f'Use new data augmentation {config["train"]["augment_mode"]}')
-#     if "dataset" in config["train"]:
-#         logger.info(f'Use {config["train"]["dataset"]} dataset')
-#         train_loader, dev_loader = get_train_dev_dataloader(args, config["train"]["augment_mode"], dataset=config["train"]["dataset"])
-#     else:
-#         train_loader, dev_loader = get_train_dev_dataloader(args, config["train"]["augment_mode"])
+# if "is_parallel" in config["model"]["teacher"] and not config["model"]["teacher"]["is_parallel"]:
+#     logger.info("Teacher model is not parallel")
+#     teacher_model = teacher_model.to(device)
 # else:
-#     logger.info('Use RawBoots data augmentation')
-#     if "dataset" in config["train"]:
-#         logger.info(f'Use {config["train"]["dataset"]} dataset')
-#         train_loader, dev_loader = get_train_dev_dataloader(args, dataset=config["train"]["dataset"])
-#     else:
-#         train_loader, dev_loader = get_train_dev_dataloader(args)
-augment_mode = config["train"].get("augment_mode", "rawboost")
-dataset = config["train"].get("dataset", "LA19")
+#     logger.info("Teacher model is parallel")
+#     teacher_model = torch.nn.DataParallel(teacher_model).to(device)
 
-logger.info(f'Use {augment_mode} data augmentation')
-if dataset:
-    logger.info(f'Use {dataset} dataset')
-
-
-if "sup_contrastive" in config["train"] and config["train"]["sup_contrastive"]:
-    logger.info('Use supervised contrastive learning')
-    train_loader, dev_loader = get_train_dev_dataloader_contrastive(args)
-else:
-    train_loader, dev_loader = get_train_dev_dataloader(args, augment_mode, dataset)
-
-optimizer = torch.optim.Adam(student_model.parameters(), lr=float(config['train']['learning_rate']),weight_decay=config['train']['weight_decay'])
-
-exp_lr_scheduler = None
-if 'is_learning_rate_scheduler' in config and config['is_learning_rate_scheduler']:
-    logger.info(f'Use learning rate scheduler {config["learning_rate_scheduler"]["name"]}')
-    # Initialize learning rate scheduler by using its name and its parameters
-    exp_lr_scheduler = getattr(torch.optim.lr_scheduler, config['learning_rate_scheduler']['name'])(optimizer, **config['learning_rate_scheduler']['params'])
-
-
-
-
-scaler = torch.cuda.amp.GradScaler(enabled=config['train']['amp'])
-writer = SummaryWriter('logs/{}'.format(config['name']))
-model_save_path = os.path.join("models", config['name'])
-
-if not os.path.exists(model_save_path):
-    os.makedirs(model_save_path)
-    logger.info('Created model save path {}'.format(model_save_path))
-
-
-early_stopping = EarlyStopping(patience=config['train']['patience'], verbose=True, model_save_path=model_save_path)
-
-# Train loop
-logger.info("Start training")
-num_epochs = config['train']['num_epochs']
-
-use_amp = bool(config['train']['amp'])
-
-if "self_kd_config" in config:
-    temperature = float(config['self_kd_config']['temperature'])
-    alpha = float(config['self_kd_config']['alpha'])
-    beta = float(config['self_kd_config']['beta'])
-
-if 'criterions' in config and 'criterion_weights' in config:
-    logger.info('Use mid level loss')
-    logger.info('Mid level loss config: {}'.format(config['criterions']))
-    logger.info('Mid level loss weight: {}'.format(config['criterion_weights']))
-
-for epoch in tqdm(range(num_epochs), colour='green'):
-    logger.info('Epoch {}/{}'.format(epoch, num_epochs - 1))
-
-    ## Freeze SSL model for the first defined epochs
-    if 'freeze_ssl_num_epoch' in config['train'] and epoch < config['train']['freeze_ssl_num_epoch']:
-        logger.info('Freeze SSL model')
-        student_model.module.ssl_model.frozen()
-        
-    else:
-        if student_model.module.ssl_model.freeze:
-            logger.info('Unfreeze SSL model')
-            student_model.module.ssl_model.unfrozen()
-        else:
-            ## Do nothing
-            pass
-
-    ## 
-
-    # Train
-        
-    if "self_kd_config" not in config:
-        
-    
-        train_loss = kd_train_epoch(train_loader, student_model, teacher_model, optimizer, device, scaler, config, exp_lr_scheduler, use_amp = use_amp)
-        eval_loss, accuracy = kd_val_epoch(dev_loader, student_model, device)
-        logger.info('Epoch: {} - train_loss: {} - eval_loss: {}'.format(epoch, train_loss, eval_loss))
-    else:
-        train_loss, train_total_label_loss, train_total_kd_loss, train_total_feature_loss, running_total_hidden_rep_loss = self_KD_teacher_train_epoch(train_loader, student_model, teacher_model, optimizer, device, scaler, config, exp_lr_scheduler, temperature=temperature, alpha=alpha, beta=beta, use_amp = use_amp)
-        # Eval
-        eval_loss, accuracy = self_KD_teacher_val_epoch(dev_loader, student_model, device)
-        writer.add_scalar('Loss/train_label', train_total_label_loss, epoch)
-        writer.add_scalar('Loss/train_kd', train_total_kd_loss, epoch)
-        writer.add_scalar('Loss/train_feature', train_total_feature_loss, epoch)
-        writer.add_scalar('Loss/train_hidden_rep', running_total_hidden_rep_loss, epoch)
-        logging.log(logging.INFO, 'Epoch: {} - train_loss: {} - train_total_label_loss: {} - train_total_kd_loss: {} - train_total_feature_loss: {} - running_total_hidden_rep_loss: {} - eval_loss: {}'.format(epoch, train_loss, train_total_label_loss, train_total_kd_loss, train_total_feature_loss, running_total_hidden_rep_loss, eval_loss))
-
-    if exp_lr_scheduler is not None:
-        if config['learning_rate_scheduler']['name'] == 'ReduceLROnPlateau':
-            exp_lr_scheduler.step(eval_loss)
-    
-
-    # Log
-    writer.add_scalar('Loss/train', train_loss, epoch)
-    writer.add_scalar('Loss/eval', eval_loss, epoch)
-    writer.add_scalar('Accuracy/eval', accuracy, epoch)
-    # Write current learning rate to tensorboard
-
-    if exp_lr_scheduler is not None and config['learning_rate_scheduler']['name'] != 'ReduceLROnPlateau':
-        writer.add_scalar('Lr/epoch', exp_lr_scheduler.get_last_lr()[0], epoch)
-    else:
-        writer.add_scalar('Lr/epoch', optimizer.param_groups[0]['lr'], epoch)
-
-    # Early stopping
-    early_stopping(eval_loss, student_model, epoch)
-    if early_stopping.early_stop:
-        logger.info("Early stopping")
-        break
-    # Save model
-    if epoch % 1 == 0:
-        torch.save(student_model.state_dict(), os.path.join(model_save_path, 'checkpoint_{}.pth'.format(epoch)))
-        logger.info('Saved model at epoch {}'.format(epoch))
-        # Remove old checkpoint
-        if epoch > 0:
-            old_checkpoint = os.path.join(model_save_path, 'checkpoint_{}.pth'.format(epoch - 1))
-            if os.path.exists(old_checkpoint):
-                os.remove(old_checkpoint)
-                logger.info('Removed old checkpoint {}'.format(old_checkpoint))
-
-
-if use_amp:
-    logger.info('End automatic mixed precision training')
+# if "pretrained_path" in config["model"]["teacher"]:
+#     teacher_model.load_state_dict(torch.load(config["model"]["teacher"]["pretrained_path"],map_location=device))
+#     logger.info("Loaded teacher model from {}".format(config["model"]["teacher"]["pretrained_path"]))
