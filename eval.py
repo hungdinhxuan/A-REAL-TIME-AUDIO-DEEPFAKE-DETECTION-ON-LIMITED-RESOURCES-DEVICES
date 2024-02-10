@@ -23,7 +23,7 @@ set_random_seed(args.seed, args)
 
 
 if args.is_eval_teacher:
-    print("eval teacher")
+    raise ValueError("This script is for evaluating student model only")
     sys.exit(0)
 
 student_model = SelfDistil_W2V2BASE_AASISTL(device)
@@ -31,9 +31,9 @@ student_model = torch.nn.DataParallel(student_model).to(device)
 student_model.load_state_dict(torch.load(args.student_model_path,map_location=device))
 logger.info("Loaded student model from {}".format(args.student_model_path))
 
-if args.wrapper_ssl:
-    logger.info("Wrapped ssl model to torchaudio")
-    student_model.module.ssl_model = W2V2_TA(import_fairseq_model(student_model.module.ssl_model.model)).to(device)
+
+logger.info("Wrapped ssl model to torchaudio")
+student_model.module.ssl_model = W2V2_TA(import_fairseq_model(student_model.module.ssl_model.model)).to(device)
     
 
 if args.dataset == 'DF21':

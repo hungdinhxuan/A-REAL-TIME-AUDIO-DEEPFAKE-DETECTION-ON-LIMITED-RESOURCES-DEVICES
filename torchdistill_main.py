@@ -15,7 +15,9 @@ import logging
 from tensorboardX import SummaryWriter
 from tqdm import tqdm
 from main import W2V2_TA
-
+import wandb
+from datetime import timedelta
+from wandb import AlertLevel
 from contrast.supcontrastloss import SupConLoss
 
 
@@ -44,7 +46,7 @@ def self_KD_teacher_val_epoch(dev_loader, model, device):
     logger.info('Validation Teacher self KD')
     val_loss = 0
     model.eval()
-    weight = torch.FloatTensor([0.1, 0.9]).to(device)
+    weight = torch.FloatTensor(config['train'].get('cross_entropy_loss_weight', [0.1, 0.9])).to(device)
     criterion = nn.CrossEntropyLoss(weight=weight)
     num_total = 0.0
     num_correct = 0.0
@@ -78,14 +80,7 @@ def self_KD_teacher_val_epoch(dev_loader, model, device):
 
             probabilities = F.softmax(batch_out, dim=1)
             predicted_labels = (probabilities[:,0] >= 0.5).int()
-            #batch_pred = torch.sigmoid(batch_out)
 
-            # # Batch prediction label if batch_pred > 0.5 then label = 1 else label = 0
-            # # In sigmoid it will return like [0.1, 0.9] where 0.1 is fake and 0.9 is genuine. However, we just care about fake value
-            # # So we just take the first value and compare it with 0.5 to get the label
-            # # If first value > 0.5 then label = 1 else label = 0
-            
-            
             # # Batch prediction label if batch_pred > 0.5 then label = 1 else label = 0
             num_correct += (predicted_labels == batch_y).sum().item()
 
@@ -103,14 +98,12 @@ def self_KD_teacher_train_epoch(train_loader, student, teacher, optimizer, devic
     running_total_kd_loss = 0
     running_total_feature_loss = 0
     running_total_hidden_rep_loss = 0
-    
+    running_sup_contrastive_loss = 0
     
     student.train()
     teacher.eval()
-    weight = torch.FloatTensor([0.1, 0.9]).to(device)
+    weight = torch.FloatTensor(config['train'].get('cross_entropy_loss_weight', [0.1, 0.9])).to(device)
     criterion = nn.CrossEntropyLoss(weight=weight)
-
-    cosine_loss = nn.CosineEmbeddingLoss()
 
     num_total = 0.0
     
@@ -122,11 +115,11 @@ def self_KD_teacher_train_epoch(train_loader, student, teacher, optimizer, devic
         logger.info("Current learning rate: {}".format(exp_lr_scheduler.get_last_lr()[0]))
     else:
         logger.info("Current learning rate: {}".format(optimizer.param_groups[0]['lr']))
+    
     iters = len(train_loader)
     pbar = tqdm(enumerate(train_loader), total=len(train_loader))
     for i, (batch_x, batch_y) in pbar:
-        
-    
+         
         # Mixed precision training
         with torch.autocast(device_type=device, dtype=torch.float16, enabled=use_amp):
             
@@ -162,12 +155,6 @@ def self_KD_teacher_train_epoch(train_loader, student, teacher, optimizer, devic
                     weight = float(weight)
                     loss_i = get_mid_level_loss(mid_level_criterion_config = loss)
                     total_mid_level_loss += (loss_i.forward(student_io_dict, teacher_io_dict) * weight)
-                # teacher_hidden_representation = teacher_io_dict['LL']['output']
-                # weight = float(config['criterion_weights'][0])
-                # student_hidden_representation = student_hidden_representation.view(batch_size, -1)
-                # teacher_hidden_representation = teacher_hidden_representation.view(batch_size, -1)
-                # hidden_rep_loss = cosine_loss(student_hidden_representation, teacher_hidden_representation, target=torch.ones(batch_size).to(device))
-                # total_mid_level_loss += (hidden_rep_loss * weight)
 
             # Calculate loss (label loss)
             batch_loss = criterion(batch_out, batch_y)
@@ -209,6 +196,18 @@ def self_KD_teacher_train_epoch(train_loader, student, teacher, optimizer, devic
                 total_loss = (1 - alpha) * total_label_loss + (alpha * total_kd_loss) + (beta * total_feature_loss) +  total_mid_level_loss
             else:
                 total_loss = (1 - alpha) * total_label_loss + (alpha * total_kd_loss) + (beta * total_feature_loss)
+            
+            if "sup_contrastive" in config["train"] and config["train"]["sup_contrastive"]:
+                sup_weights = config["train"].get("sup_contrastive_loss_weight", [0.07, 0.07])
+                sup_loss = SupConLoss(temperature=sup_weights[0], base_temperature=sup_weights[1])
+                sup_mode = config["train"].get("sup_contrastive_mode", "supcon")
+
+                if sup_mode == "supcon":
+                    sup_loss = sup_loss.forward(student_hidden_representation, batch_y)
+                else:
+                    sup_loss = sup_loss.forward(student_hidden_representation)
+                
+                total_loss += sup_loss
 
         # Scaler
         optimizer.zero_grad()
@@ -220,11 +219,11 @@ def self_KD_teacher_train_epoch(train_loader, student, teacher, optimizer, devic
         if exp_lr_scheduler is not None:
             if config['learning_rate_scheduler']['name'] == 'CosineAnnealingWarmRestarts':
                 exp_lr_scheduler.step(epoch + i / iters)
-            elif config['learning_rate_scheduler']['name'] == 'ReduceLROnPlateau':
-                # Update learning rate scheduler in validation so do nothing here
-                pass
-            else:
-                exp_lr_scheduler.step()
+            # elif config['learning_rate_scheduler']['name'] in ['ReduceLROnPlateau', 'MultiStepLR']:
+            #     # Update learning rate scheduler in validation so do nothing here
+            #     pass
+            # else:
+            #     exp_lr_scheduler.step()
         
         running_loss += (total_loss.item() * batch_size)
         running_total_label_loss += (total_label_loss.item() * batch_size)
@@ -233,12 +232,13 @@ def self_KD_teacher_train_epoch(train_loader, student, teacher, optimizer, devic
         
         if 'criterions' in config and 'criterion_weights' in config:
             running_total_hidden_rep_loss += (total_mid_level_loss.item() * batch_size)
-
+        if "sup_contrastive" in config["train"] and config["train"]["sup_contrastive"]:
+            running_sup_contrastive_loss += (sup_loss.item() * batch_size)
     running_loss /= num_total
     running_total_feature_loss /= num_total
     running_total_label_loss /= num_total
     running_total_kd_loss /= num_total
-    return running_loss, running_total_label_loss, running_total_kd_loss, running_total_feature_loss, running_total_hidden_rep_loss
+    return running_loss, running_total_label_loss, running_total_kd_loss, running_total_feature_loss, running_total_hidden_rep_loss, running_sup_contrastive_loss
 
 def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, config, exp_lr_scheduler=None,  use_amp: bool = True):
     logger.info('Training KD')
@@ -246,7 +246,6 @@ def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, co
     
     student.train()
     teacher.eval()
-    weight_config = config['train']['cross_entropy_loss_weight']
 
     if "alpha" not in config['train']:
         forward_target = True
@@ -259,7 +258,7 @@ def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, co
         else:
             beta = 0.5
   
-    weight = torch.FloatTensor(weight_config).to(device)
+    weight = torch.FloatTensor(config['train'].get('cross_entropy_loss_weight', [0.1, 0.9])).to(device)
     criterion = nn.CrossEntropyLoss(weight=weight)
 
     num_total = 0.0
@@ -329,7 +328,7 @@ def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, co
                 total_loss += (beta * kl_loss(batch_out, t_logits))
             
             if "sup_contrastive" in config["train"] and config["train"]["sup_contrastive"]:
-                sup_weights = config["train"].get("sup_contrastive_loss_weight", [0.07, 0.07])
+                sup_weights = config["train"].get("sup_contrastive_loss_weight", [0.1, 0.07])
                 sup_loss = SupConLoss(temperature=sup_weights[0], base_temperature=sup_weights[1])
                 sup_mode = config["train"].get("sup_contrastive_mode", "supcon")
 
@@ -349,7 +348,7 @@ def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, co
         if exp_lr_scheduler is not None:
             if config['learning_rate_scheduler']['name'] == 'CosineAnnealingWarmRestarts':
                 exp_lr_scheduler.step(epoch + i / iters)
-            elif config['learning_rate_scheduler']['name'] == 'ReduceLROnPlateau':
+            elif config['learning_rate_scheduler']['name'] == 'ReduceLROnPlateau' or config['learning_rate_scheduler']['name'] == 'MultiStepLR':
                 # Update learning rate scheduler in validation so do nothing here
                 pass
             else:
@@ -365,10 +364,8 @@ def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, co
 def kd_val_epoch(dev_loader, model, device):
     logger.info('Validation ----')
     val_loss = 0
-    model.eval()
-    weight_config = config['train']['cross_entropy_loss_weight']
-    
-    weight = torch.FloatTensor(weight_config).to(device)
+    model.eval()    
+    weight = torch.FloatTensor(config['train'].get('cross_entropy_loss_weight', [0.1, 0.9])).to(device)
     
     criterion = nn.CrossEntropyLoss(weight=weight)
     num_total = 0.0
@@ -403,12 +400,36 @@ def kd_val_epoch(dev_loader, model, device):
 
 args = get_main_menu()
 # Load configuration
-with open('/datab/hungdx/KDW2V-AASISTL/distill-config/test.yaml', 'r') as f:
+with open(args.yaml, 'r') as f:
     logger.info('Load configuration file {}'.format(args.yaml))
     config = yaml.safe_load(f)
 
 
-seed = config['train']['seed']
+seed = config['train'].get('seed', 1234)
+ce_weight = torch.FloatTensor(config['train'].get('cross_entropy_loss_weight', [0.1, 0.9])).to(device)
+student_resume_path = config['train'].get('student_resume', None)
+sup_contrastive = config['train'].get('sup_contrastive', False)
+is_learning_rate_scheduler = config['train'].get('is_learning_rate_scheduler', False)
+patience = config['train'].get('patience', 10)
+use_amp = config['train'].get('amp', False)
+learning_rate_scheduler_name = config['learning_rate_scheduler'].get('name', None)
+student_model_name = config['model']['student'].get('name', 'Distil_W2V2BASE_AASISTL')
+teacher_model_name = config['model']['teacher'].get('name', 'W2V2_TA')
+model_path = config['model']['teacher'].get('pretrained_path', None)
+student_model_path = config['train'].get('student_resume', None)
+augment_mode = config["train"].get("augment_mode", "rawboost")
+dataset = config["train"].get("dataset", "LA19")
+
+if augment_mode == "rawboost":
+    # DEFAULT rawboost 3
+    args.algo = config["train"].get("algo", 3)
+
+# Wandb
+args.batch_size = config['train'].get('batch_size', 32)
+wandb.init(project="torchdistill", config={
+    **config
+}, name=config['name'])
+
 set_random_seed(seed, args)
 logger.info('Random seed: {}'.format(seed))
 
@@ -476,8 +497,7 @@ logger.info('Prepare training, dev set .....')
 #         train_loader, dev_loader = get_train_dev_dataloader(args, dataset=config["train"]["dataset"])
 #     else:
 #         train_loader, dev_loader = get_train_dev_dataloader(args)
-augment_mode = config["train"].get("augment_mode", "rawboost")
-dataset = config["train"].get("dataset", "LA19")
+
 
 logger.info(f'Use {augment_mode} data augmentation')
 if dataset:
@@ -497,7 +517,8 @@ if 'is_learning_rate_scheduler' in config and config['is_learning_rate_scheduler
     logger.info(f'Use learning rate scheduler {config["learning_rate_scheduler"]["name"]}')
     # Initialize learning rate scheduler by using its name and its parameters
     exp_lr_scheduler = getattr(torch.optim.lr_scheduler, config['learning_rate_scheduler']['name'])(optimizer, **config['learning_rate_scheduler']['params'])
-
+else:
+    logger.info('No learning rate scheduler')
 
 
 
@@ -516,7 +537,6 @@ early_stopping = EarlyStopping(patience=config['train']['patience'], verbose=Tru
 logger.info("Start training")
 num_epochs = config['train']['num_epochs']
 
-use_amp = bool(config['train']['amp'])
 
 if "self_kd_config" in config:
     temperature = float(config['self_kd_config']['temperature'])
@@ -550,23 +570,25 @@ for epoch in tqdm(range(num_epochs), colour='green'):
         
     if "self_kd_config" not in config:
         
-    
         train_loss = kd_train_epoch(train_loader, student_model, teacher_model, optimizer, device, scaler, config, exp_lr_scheduler, use_amp = use_amp)
         eval_loss, accuracy = kd_val_epoch(dev_loader, student_model, device)
         logger.info('Epoch: {} - train_loss: {} - eval_loss: {}'.format(epoch, train_loss, eval_loss))
     else:
-        train_loss, train_total_label_loss, train_total_kd_loss, train_total_feature_loss, running_total_hidden_rep_loss = self_KD_teacher_train_epoch(train_loader, student_model, teacher_model, optimizer, device, scaler, config, exp_lr_scheduler, temperature=temperature, alpha=alpha, beta=beta, use_amp = use_amp)
+        train_loss, train_total_label_loss, train_total_kd_loss, train_total_feature_loss, running_total_hidden_rep_loss, running_sup_contrastive_loss = self_KD_teacher_train_epoch(train_loader, student_model, teacher_model, optimizer, device, scaler, config, exp_lr_scheduler, temperature=temperature, alpha=alpha, beta=beta, use_amp = use_amp)
         # Eval
         eval_loss, accuracy = self_KD_teacher_val_epoch(dev_loader, student_model, device)
         writer.add_scalar('Loss/train_label', train_total_label_loss, epoch)
         writer.add_scalar('Loss/train_kd', train_total_kd_loss, epoch)
         writer.add_scalar('Loss/train_feature', train_total_feature_loss, epoch)
         writer.add_scalar('Loss/train_hidden_rep', running_total_hidden_rep_loss, epoch)
-        logging.log(logging.INFO, 'Epoch: {} - train_loss: {} - train_total_label_loss: {} - train_total_kd_loss: {} - train_total_feature_loss: {} - running_total_hidden_rep_loss: {} - eval_loss: {}'.format(epoch, train_loss, train_total_label_loss, train_total_kd_loss, train_total_feature_loss, running_total_hidden_rep_loss, eval_loss))
+        writer.add_scalar('Loss/train_sup_contrastive', running_sup_contrastive_loss, epoch)
+        logging.log(logging.INFO, 'Epoch: {} - train_loss: {} - train_total_label_loss: {} - train_total_kd_loss: {} - train_total_feature_loss: {} - running_total_hidden_rep_loss: {} - train_sup_contrastive: {} - eval_loss: {}'.format(epoch, train_loss, train_total_label_loss, train_total_kd_loss, train_total_feature_loss, running_total_hidden_rep_loss, running_sup_contrastive_loss, eval_loss))
 
     if exp_lr_scheduler is not None:
         if config['learning_rate_scheduler']['name'] == 'ReduceLROnPlateau':
             exp_lr_scheduler.step(eval_loss)
+        elif config['learning_rate_scheduler']['name'] == 'MultiStepLR':
+            exp_lr_scheduler.step()
     
 
     # Log
@@ -577,9 +599,18 @@ for epoch in tqdm(range(num_epochs), colour='green'):
 
     if exp_lr_scheduler is not None and config['learning_rate_scheduler']['name'] != 'ReduceLROnPlateau':
         writer.add_scalar('Lr/epoch', exp_lr_scheduler.get_last_lr()[0], epoch)
+        wandb.log({"train_loss": train_loss, "eval_loss": eval_loss, "learning_rate": exp_lr_scheduler.get_last_lr()[0]})
     else:
         writer.add_scalar('Lr/epoch', optimizer.param_groups[0]['lr'], epoch)
+        wandb.log({"train_loss": train_loss, "eval_loss": eval_loss, "learning_rate": optimizer.param_groups[0]['lr']})
 
+    if train_loss < 0.001 and eval_loss < 0.001:
+        wandb.alert(
+            title='Low loss',
+            text=f'train_loss {train_loss} and eval_loss: {eval_loss} is below the acceptable threshold 0.001',
+            level=AlertLevel.WARN,
+            wait_duration=timedelta(minutes=5)
+        )
     # Early stopping
     early_stopping(eval_loss, student_model, epoch)
     if early_stopping.early_stop:

@@ -12,7 +12,7 @@ import torch.nn.init as init
 
 def knowledge_ensemble(feats, logits, args):
     batch_size = logits.size(0)
-    masks = torch.eye(batch_size).cuda()
+    masks = torch.eye(batch_size).to(logits.device)
     feats = nn.functional.normalize(feats, p=2, dim=1)
     logits = nn.functional.softmax(logits/args.T, dim=1)
     W = torch.matmul(feats, feats.permute(1, 0)) - masks * 1e9
@@ -22,8 +22,8 @@ def knowledge_ensemble(feats, logits, args):
 
 
 def BAKE(net, inputs, targets, criterion_cls, criterion_div, args):
-    loss_div = torch.tensor(0.).cuda()
-    loss_cls = torch.tensor(0.).cuda()
+    loss_div = torch.tensor(0.).to(inputs.device)
+    loss_cls = torch.tensor(0.).to(inputs.device)
     logits, features = net(inputs, embedding=True)
     with torch.no_grad():
         kd_targets = knowledge_ensemble(features.detach(), logits.detach(), args)

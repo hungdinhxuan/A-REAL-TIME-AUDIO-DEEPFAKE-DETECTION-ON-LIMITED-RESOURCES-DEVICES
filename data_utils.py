@@ -613,6 +613,7 @@ def get_train_dev_dataloader(args, augment='rawboost', dataset='LA19'):
         print('no. of training trials',len(file_train))
 
         if augment == 'rawboost':
+            logging.info("Using Rawboost for data augmentation with algo: {}".format(args.algo))
             train_set = Dataset_cnsl(args, list_IDs = file_train, labels = d_label_trn, base_dir = args.database_path+'/', algo=args.algo)
         elif augment == 'audiomentations':
             train_set = Dataset_cnsl_augment(args, list_IDs = file_train, labels = d_label_trn, base_dir = args.database_path+'/')
@@ -632,7 +633,7 @@ def get_train_dev_dataloader(args, augment='rawboost', dataset='LA19'):
         print('no. of validation trials',len(file_dev))
         
         dev_set = Dataset_cnsl(args, list_IDs = file_dev, labels = d_label_dev, base_dir = args.database_path+'/', algo=args.algo)
-        dev_loader = DataLoader(dev_set, batch_size=args.batch_size * 2, num_workers=args.workers, shuffle=False)
+        dev_loader = DataLoader(dev_set, batch_size=100, num_workers=args.workers, shuffle=False)
         del dev_set, d_label_dev
         return train_loader, dev_loader
 
@@ -648,7 +649,7 @@ def get_train_dev_dataloader_contrastive(args):
 
     train_set = Dataset_cnsl_augment_contrastive(file_train, d_label_trn, base_dir = args.database_path+'/')
     
-    train_loader = DataLoader(train_set, batch_size=args.batch_size, num_workers=args.workers, shuffle=True, drop_last = True, sampler=train_set.get_sampler())
+    train_loader = DataLoader(train_set, batch_size=args.batch_size, num_workers=args.workers, shuffle=False, drop_last = True, sampler=train_set.get_sampler())
 
 
     d_label_dev, file_dev = genSpoof_list_v2(dir_meta = os.path.join(args.database_path, args.protocols_path), 

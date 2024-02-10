@@ -13,7 +13,7 @@ import torch.nn.init as init
 class Custom_CrossEntropy_PSKD(nn.Module):
     def __init__(self):
         super(Custom_CrossEntropy_PSKD, self).__init__()
-        self.logsoftmax = nn.LogSoftmax(dim=1).cuda()
+        self.logsoftmax = nn.LogSoftmax(dim=1)
 
     def forward(self, output, targets):
         """
@@ -26,7 +26,7 @@ class Custom_CrossEntropy_PSKD(nn.Module):
         return loss     
 
 
-criterion_CE_pskd = Custom_CrossEntropy_PSKD().cuda()
+criterion_CE_pskd = Custom_CrossEntropy_PSKD()
 
 
 def PSKD(net, inputs, targets, input_indices, epoch, all_predictions, num_classes, args):
@@ -41,7 +41,7 @@ def PSKD(net, inputs, targets, input_indices, epoch, all_predictions, num_classe
         all_predictions[input_indices] = targets_one_hot
 
     soft_targets = ((1 - alpha_t) * targets_one_hot) + (alpha_t * all_predictions[input_indices])
-    soft_targets = soft_targets.cuda()
+    soft_targets = soft_targets.to(inputs.device)
 
     outputs = net(inputs)
     softmax_output = F.softmax(outputs, dim=1) 

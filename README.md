@@ -61,12 +61,12 @@ CUDA_VISIBLE_DEVICES=1 python main.py --student_ckpt="/datab/hungdx/KDW2V-AASIST
 ### Train
 
 ```
-CUDA_VISIBLE_DEVICES=1 OMP_NUM_THREADS=1 PYTHONPATH=$PYTHONPATH:/nfs/datab/hungdx/KDW2V-AASISTL/fairseq python torchdistill_main.py  --yaml ''
+CUDA_VISIBLE_DEVICES=1 OMP_NUM_THREADS=1 PYTHONPATH=$PYTHONPATH:/nfs/datab/hungdx/KDW2V-AASISTL/fairseq python torchdistill_main.py --database_path='/datab/Dataset/cnsl_real_fake_audio/supcon_cnsl_jan22' --protocols_path='protocol.txt' --batch_size=64 --yaml ''
 ```
 
 ### Eval
 ```
-CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=1 PYTHONPATH=$PYTHONPATH:/nfs/datab/hungdx/KDW2V-AASISTL/fairseq python eval.py --student_model_path "/nfs/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_SelfKD_KDLoss_Without_teacher/best_checkpoint_109.pth" --eval_output="./W2V2BASE_AASISTL_SelfKD_KDLoss_Without_teacher_best109_150k.txt" --batch_size_eval=300 --num_eval_samples=150000 --wrapper_ssl
+CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=1 PYTHONPATH=$PYTHONPATH:/nfs/datab/hungdx/KDW2V-AASISTL/fairseq python eval.py --student_model_path "/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_2/best_checkpoint_49.pth" --eval_output="./W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_2_best49.txt" --batch_size_eval=300 --num_eval_samples=150000 
 ```
 
 ### CNSL dataset
@@ -92,13 +92,14 @@ CUDA_VISIBLE_DEVICES=2 OMP_NUM_THREADS=1 PYTHONPATH=$PYTHONPATH:/nfs/datab/hungd
 
 #### DKD Loss
 ```
-CUDA_VISIBLE_DEVICES=3 OMP_NUM_THREADS=1 PYTHONPATH=$PYTHONPATH:/nfs/datab/hungdx/KDW2V-AASISTL/fairseq python eval.py --student_model_path "/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations/best_checkpoint_78.pth" --eval_output="./W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_best78.txt" --batch_size_eval=300 --wrapper_ssl --dataset='cnsl' --database_path='/datab/Dataset/cnsl_real_fake_audio/supcon_cnsl_jan22' --protocols_path='protocol.txt'
+CUDA_VISIBLE_DEVICES=3 OMP_NUM_THREADS=1 PYTHONPATH=$PYTHONPATH:/nfs/datab/hungdx/KDW2V-AASISTL/fairseq python eval.py --student_model_path "/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_2/best_checkpoint_49.pth" --eval_output="./W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations2_best49.txt" --batch_size_eval=300 --wrapper_ssl --dataset='cnsl' --database_path='/datab/Dataset/cnsl_real_fake_audio/supcon_cnsl_jan22' --protocols_path='protocol.txt'
 ```
 
 ## Calculate EER
 ```
-python score_file_to_eer.py './W2V2BASE_AASISTL_PKTLoss_cnsl_audioagument_best52.txt' '/datab/Dataset/cnsl_real_fake_audio/supcon_cnsl_jan22/protocol_deduped.txt' 'eval'
+python score_file_to_eer.py './W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations3_v3_best83.txt' '/datab/Dataset/cnsl_real_fake_audio/supcon_cnsl_jan22/protocol_deduped.txt' 'eval'
 ```
+
 
 # Fairseq Error:
 1. ImportError: cannot import name 'metrics' from 'fairseq' (unknown location)

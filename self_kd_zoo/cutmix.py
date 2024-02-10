@@ -29,17 +29,28 @@ def rand_bbox(size, lam):
     return bbx1, bby1, bbx2, bby2
 
     
+# def cutmix_data(x, y, alpha=1.0):
+#     '''Returns mixed inputs, pairs of targets, and lambda'''
+#     lam = np.random.beta(alpha, alpha)
+#     batch_size = x.size()[0]
+#     rand_index = torch.randperm(x.size()[0]).to(x.device)
+#     target_a = y
+#     target_b = y[rand_index]
+#     bbx1, bby1, bbx2, bby2 = rand_bbox(x.size(), lam)
+#     x[:, :, bbx1:bbx2, bby1:bby2] = x[rand_index, :, bbx1:bbx2, bby1:bby2]
+#     # adjust lambda to exactly match pixel ratio
+#     lam = 1 - ((bbx2 - bbx1) * (bby2 - bby1) / (x.size()[-1] * x.size()[-2]))
+#     return x, target_a, target_b, lam, rand_index
 def cutmix_data(x, y, alpha=1.0):
     '''Returns mixed inputs, pairs of targets, and lambda'''
     lam = np.random.beta(alpha, alpha)
-    batch_size = x.size()[0]
-    rand_index = torch.randperm(x.size()[0]).cuda()
+    rand_index = torch.randperm(x.size()[0]).to(x.device)
     target_a = y
     target_b = y[rand_index]
-    bbx1, bby1, bbx2, bby2 = rand_bbox(x.size(), lam)
-    x[:, :, bbx1:bbx2, bby1:bby2] = x[rand_index, :, bbx1:bbx2, bby1:bby2]
-    # adjust lambda to exactly match pixel ratio
-    lam = 1 - ((bbx2 - bbx1) * (bby2 - bby1) / (x.size()[-1] * x.size()[-2]))
+    cut_point = np.int32(x.size()[1] * lam)
+    x[:, :cut_point] = x[rand_index, :cut_point]
+    # adjust lambda to exactly match ratio
+    lam = 1 - (cut_point / x.size()[1])
     return x, target_a, target_b, lam, rand_index
 
 

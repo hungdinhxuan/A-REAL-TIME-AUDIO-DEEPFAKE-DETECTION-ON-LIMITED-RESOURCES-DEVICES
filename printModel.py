@@ -16,7 +16,7 @@ from tensorboardX import SummaryWriter
 from tqdm import tqdm
 from main import W2V2_TA
 # from neural_compressor.training import prepare_compression
-
+from transformers  import  AutoConfig, WavLMModel
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
@@ -374,7 +374,7 @@ def kd_val_epoch(dev_loader, model, device):
 
 args = get_main_menu()
 # Load configuration
-with open('/datab/hungdx/KDW2V-AASISTL/distill-config/test.yaml', 'r') as f:
+with open(args.yaml, 'r') as f:
     logger.info('Load configuration file {}'.format(args.yaml))
     config = yaml.safe_load(f)
 
@@ -382,17 +382,14 @@ seed = config['train']['seed']
 set_random_seed(seed, args)
 logger.info('Random seed: {}'.format(seed))
 
+
 teacher_model = get_model(config['model']['teacher']['name'], device=device).to(device)
+student_model = get_model(config['model']['student']['name'], device=device).to(device)
 
-teacher_model.load_state_dict(torch.load(config["model"]["teacher"]["pretrained_path"],map_location=device))
-logger.info("Loaded teacher model from {}".format(config["model"]["teacher"]["pretrained_path"]))
-
-print(teacher_model)
-# teacher_forward_hook_manager = ForwardHookManager(device)
+teacher_forward_hook_manager = ForwardHookManager(device)
 # student_forward_hook_manager = ForwardHookManager(device)
 
-# student_model = torch.nn.DataParallel(student_model).to(device)
-# # teacher_model = torch.nn.DataParallel(teacher_model).to(device)
+#student_model = torch.nn.DataParallel(student_model).to(device)
 
 # if "is_parallel" in config["model"]["teacher"] and not config["model"]["teacher"]["is_parallel"]:
 #     logger.info("Teacher model is not parallel")
@@ -402,5 +399,25 @@ print(teacher_model)
 #     teacher_model = torch.nn.DataParallel(teacher_model).to(device)
 
 # if "pretrained_path" in config["model"]["teacher"]:
+    
 #     teacher_model.load_state_dict(torch.load(config["model"]["teacher"]["pretrained_path"],map_location=device))
 #     logger.info("Loaded teacher model from {}".format(config["model"]["teacher"]["pretrained_path"]))
+# else:
+#     teacher_model.load_state_dict(torch.load(args.model_path,map_location=device))
+#     logger.info("Loaded teacher model from {}".format(args.model_path))
+
+
+# if "student_resume" in config["train"]:
+#     student_model.load_state_dict(torch.load(config["train"]["student_resume"],map_location=device))
+#     logger.info("Loaded student model from {}".format(config["train"]["student_resume"]))
+
+# huggingface_url='microsoft/wavlm-base-plus'
+# # torch modules
+# teacher = WavLMModel.from_pretrained(
+#    huggingface_url,
+#     config=AutoConfig.from_pretrained(huggingface_url),
+#     ignore_mismatched_sizes=False,
+# )
+
+# for idx, (name, layer) in enumerate(teacher.named_modules()):
+#     print(f"Index: {idx}, Layer Name: {name}, Layer Type: {layer.__class__.__name__}")

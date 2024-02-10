@@ -11,8 +11,8 @@ import torch.nn.init as init
 
 
 def DKS(net, inputs, targets, criterion_cls, criterion_div):
-    loss_div = torch.tensor(0.).cuda()
-    loss_cls = torch.tensor(0.).cuda()
+    loss_div = torch.tensor(0.).to(inputs.device)
+    loss_cls = torch.tensor(0.).to(inputs.device)
 
     
     outputs = net(inputs)

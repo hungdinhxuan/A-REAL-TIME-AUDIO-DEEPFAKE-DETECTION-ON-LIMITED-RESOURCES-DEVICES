@@ -10,8 +10,8 @@ import torch.nn.functional as F
 import torch.nn.init as init
 
 def DDGSD(net, inputs, targets, criterion_cls, criterion_div):
-    loss_div = torch.tensor(0.).cuda()
-    loss_cls = torch.tensor(0.).cuda()
+    loss_div = torch.tensor(0.).to(inputs.device)
+    loss_cls = torch.tensor(0.).to(inputs.device)
 
     inputs = torch.cat(inputs, dim=0)
     batch_size = inputs.size(0) // 2

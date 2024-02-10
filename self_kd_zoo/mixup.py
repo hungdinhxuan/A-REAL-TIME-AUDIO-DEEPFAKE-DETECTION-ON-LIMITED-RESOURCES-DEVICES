@@ -1,13 +1,6 @@
-import os
-import sys
-import time
-import math
-
 import numpy as np
-import torch.nn as nn
 import torch
-import torch.nn.functional as F
-import torch.nn.init as init
+
 
 
 def mixup_data(x, y, alpha=0.4):
@@ -18,7 +11,7 @@ def mixup_data(x, y, alpha=0.4):
         lam = 0.5
 
     batch_size = x.size()[0]
-    index = torch.randperm(batch_size).cuda()
+    index = torch.randperm(batch_size).to(x.device)
 
     mixed_x = lam * x + (1 - lam) * x[index, :]
     y_a, y_b = y, y[index]

@@ -28,8 +28,8 @@ class Attention(nn.Module):
 AT = Attention()
 
 def FRSKD(net, inputs, targets, criterion_cls, criterion_div):
-    loss_div = torch.tensor(0.).cuda()
-    loss_cls = torch.tensor(0.).cuda()
+    loss_div = torch.tensor(0.).to(inputs.device)
+    loss_cls = torch.tensor(0.).to(inputs.device)
 
     logit, features, bi_feats, bi_logits = net(inputs)
 
