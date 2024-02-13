@@ -66,12 +66,12 @@ CUDA_VISIBLE_DEVICES=1 OMP_NUM_THREADS=1 PYTHONPATH=$PYTHONPATH:/nfs/datab/hungd
 
 ### Eval
 ```
-CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=1 PYTHONPATH=$PYTHONPATH:/nfs/datab/hungdx/KDW2V-AASISTL/fairseq python eval.py --student_model_path "/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_2/best_checkpoint_49.pth" --eval_output="./W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_2_best49.txt" --batch_size_eval=300 --num_eval_samples=150000 
+CUDA_VISIBLE_DEVICES=2 OMP_NUM_THREADS=1 PYTHONPATH=$PYTHONPATH:/nfs/datab/hungdx/KDW2V-AASISTL/fairseq python eval.py --student_model_path "/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_3_v4/best_checkpoint_63.pth" --eval_output="./W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_3_v4_best63_150k.txt" --batch_size_eval=300 --num_eval_samples=150000 
 ```
 
 ### CNSL dataset
 ```
-CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=1 PYTHONPATH=$PYTHONPATH:/nfs/datab/hungdx/KDW2V-AASISTL/fairseq python torchdistill_main.py  --yaml '/nfs/datab/hungdx/KDW2V-AASISTL/distill-config/trial16.yaml' --database_path='/datab/Dataset/cnsl_real_fake_audio/supcon_cnsl_jan22' --protocols_path='protocol.txt' --batch_size=64
+CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=1 PYTHONPATH=$PYTHONPATH:/nfs/datab/hungdx/KDW2V-AASISTL/fairseq python torchdistill_main.py  --yaml '/nfs/datab/hungdx/KDW2V-AASISTL/distill-config/trial32.yaml' --database_path='/datab/Dataset/cnsl_real_fake_audio/supcon_cnsl_jan22' --protocols_path='protocol.txt' 
 ```
 
 ### Eval CNSL
@@ -92,12 +92,12 @@ CUDA_VISIBLE_DEVICES=2 OMP_NUM_THREADS=1 PYTHONPATH=$PYTHONPATH:/nfs/datab/hungd
 
 #### DKD Loss
 ```
-CUDA_VISIBLE_DEVICES=3 OMP_NUM_THREADS=1 PYTHONPATH=$PYTHONPATH:/nfs/datab/hungdx/KDW2V-AASISTL/fairseq python eval.py --student_model_path "/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_2/best_checkpoint_49.pth" --eval_output="./W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations2_best49.txt" --batch_size_eval=300 --wrapper_ssl --dataset='cnsl' --database_path='/datab/Dataset/cnsl_real_fake_audio/supcon_cnsl_jan22' --protocols_path='protocol.txt'
+CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=1 PYTHONPATH=$PYTHONPATH:/nfs/datab/hungdx/KDW2V-AASISTL/fairseq python eval.py --student_model_path "/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_3_v10/best_checkpoint_63.pth" --eval_output="./W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_3_v10_best63.txt" --batch_size_eval=300 --wrapper_ssl --dataset='cnsl' --database_path='/datab/Dataset/cnsl_real_fake_audio/supcon_cnsl_jan22' --protocols_path='protocol.txt'
 ```
 
 ## Calculate EER
 ```
-python score_file_to_eer.py './W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations3_v3_best83.txt' '/datab/Dataset/cnsl_real_fake_audio/supcon_cnsl_jan22/protocol_deduped.txt' 'eval'
+python score_file_to_eer.py ./W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_3_v10_best63.txt '/datab/Dataset/cnsl_real_fake_audio/supcon_cnsl_jan22/protocol_deduped.txt' 'eval'
 ```
 
 
@@ -109,3 +109,5 @@ In short you can fix it by adding the following line to your command:
 PYTHONPATH=$PYTHONPATH:<your absolute path to fairseq submodule> python <your comand here>
 ```
 PYTHONPATH=$PYTHONPATH:/nfs/datab/hungdx/KDW2V-AASISTL/fairseq
+
+CUDA_VISIBLE_DEVICES=1 OMP_NUM_THREADS=1 PYTHONPATH=$PYTHONPATH:/nfs/datab/hungdx/KDW2V-AASISTL/fairseq python torchdistill_main.py  --yaml '/datab/hungdx/KDW2V-AASISTL/distill-config/trial36.yaml' --database_path='/datab/Dataset/cnsl_real_fake_audio/supcon_cnsl_jan22' --protocols_path='protocol.txt'

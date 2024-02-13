@@ -396,6 +396,32 @@ class Dataset_cnsl_augment(Dataset):
         
         return x_inp, target
 
+class Dataset_cnsl_augment_v2(Dataset):
+    def __init__(self,args,list_IDs, labels, base_dir):
+        '''self.list_IDs	: list of strings (each string: utt key),
+            self.labels      : dictionary (key: utt key, value: label integer)'''
+            
+        self.list_IDs = list_IDs
+        self.labels = labels
+        self.base_dir = base_dir
+        self.args=args
+        self.cut=64600 # take ~4 sec audio (64600 samples)
+
+    def __len__(self):
+        return len(self.list_IDs)
+
+
+    def __getitem__(self, index):
+            
+        utt_id = self.list_IDs[index]
+        X, fs = librosa.load(self.base_dir + "/" + utt_id, sr=16000)
+        Y=process_audiomentations_v2(X,fs)
+        X_pad= pad_v2(Y,utt_id,self.cut)
+        x_inp= Tensor(X_pad)
+        target = self.labels[utt_id]
+        
+        return x_inp, target
+
 class Dataset_cnsl_eval(Dataset):
     def __init__(self, list_IDs, base_dir):
         '''self.list_IDs	: list of strings (each string: utt key),
@@ -467,6 +493,28 @@ def process_audiomentations(feature, sr):
         aa.AirAbsorption(min_distance=1.0, max_distance=20.0, p=0.75),
         aa.TimeMask(min_band_part=0.1, max_band_part=0.15, fade=True, p=0.5),
         aa.Mp3Compression(min_bitrate=96, max_bitrate=320, p=0.3)
+        ])
+    return augment(samples=feature, sample_rate=sr)
+
+def process_audiomentations_v2(feature, sr):
+    """ DA using audiomentations library    
+    """
+    # aa.ApplyImpulseResponse(ir_path="/path/to/sound_folder", p=1.0)
+
+    augment = aa.Compose([
+      
+        aa.AddGaussianNoise(
+            min_amplitude=0.001,
+            max_amplitude=0.015,
+            p=0.75
+        ),
+        aa.TanhDistortion(
+            min_distortion=0.01,
+            max_distortion=0.7,
+            p=0.75
+        ),
+        aa.PitchShift(min_semitones=-4, max_semitones=4, p=0.5),
+        aa.Shift(p=0.5),
         ])
     return augment(samples=feature, sample_rate=sr)
 
@@ -617,6 +665,8 @@ def get_train_dev_dataloader(args, augment='rawboost', dataset='LA19'):
             train_set = Dataset_cnsl(args, list_IDs = file_train, labels = d_label_trn, base_dir = args.database_path+'/', algo=args.algo)
         elif augment == 'audiomentations':
             train_set = Dataset_cnsl_augment(args, list_IDs = file_train, labels = d_label_trn, base_dir = args.database_path+'/')
+        elif augment == 'audiomentations_v2':
+            train_set = Dataset_cnsl_augment_v2(args, list_IDs = file_train, labels = d_label_trn, base_dir = args.database_path+'/')
         else:
             logging.error("Invalid augment type: {}".format(augment))
             exit(0)

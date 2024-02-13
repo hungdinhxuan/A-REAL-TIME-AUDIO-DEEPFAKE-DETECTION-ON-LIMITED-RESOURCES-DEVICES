@@ -8,7 +8,7 @@ from torch.utils.mobile_optimizer import optimize_for_mobile
 
 
 from menu import get_main_menu
-from utils import *
+# from data_utils import pad
 from startup_config import set_random_seed
 from main import W2V2_TA
 import logging
@@ -16,7 +16,14 @@ import logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-
+def pad(x, max_len: int = 64600) -> torch.Tensor:
+    x_len = x.shape[0]
+    if x_len >= max_len:
+        return x[:max_len]
+    # need to pad
+    num_repeats = int(max_len / x_len) + 1
+    padded_x = x.repeat((1, num_repeats))[:, :max_len][0]
+    return padded_x
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 logger.debug(f"Using device {device}")
@@ -30,14 +37,14 @@ class WrapperModel(nn.Module):
         super().__init__()
         self.model = model
         self.softmax = nn.Softmax(dim=1)
-    def forward(self, x: Tensor):
+    def forward(self, x):
         wav_padded = pad(x).unsqueeze(0)
         output, spectral_output, temporal_output, graph_output_S, graph_output_T, hs_gal_output_S, hs_gal_output_T, middle_feature1, middle_feature2, final_feature1, final_feature2, x_ssl_feat = self.model(wav_padded)
         output = self.softmax(output)[:,0]
         return output
 
 input = torch.randn(1, 64600).to(device)
-checkpoint = '/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_SelfKD_KDLoss_Without_teacher/best_checkpoint_126.pth'
+checkpoint = '/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_3_v4/best_checkpoint_63.pth'
 
 model = SelfDistil_W2V2BASE_AASISTL(device)
 model = nn.DataParallel(model).to(device)
@@ -60,6 +67,8 @@ with torch.no_grad():
 
 print("After replace")
 
+model.eval()
+
 with torch.no_grad():
     after,spectral_output, temporal_output, graph_output_S, graph_output_T, hs_gal_output_S, hs_gal_output_T, middle_feature1, middle_feature2, final_feature1, final_feature2, x_ssl_feat = model(input)
     print(after)
@@ -71,9 +80,9 @@ model_fp32 = WrapperModel(model.module).to(device)
 model_fp32.eval()
 
 # Dynamic quantization
-model_int8 = torch.quantization.quantize_dynamic(
-    model_fp32, {nn.LSTM, nn.Linear}, dtype=torch.qint8
-)
+# model_int8 = torch.quantization.quantize_dynamic(
+#     model_fp32, {nn.LSTM, nn.Linear}, dtype=torch.qint8
+# )
 # jit_model = torch.jit.script(model_int8)
 # print("After script")
 # opt_model = optimize_for_mobile(jit_model)
@@ -92,8 +101,8 @@ with torch.no_grad():
     after = opt_model(input)
     print(after)
 
-# opt_model.save("W2V2BASE_AASISTL_SelfKD_KDLoss_Without_teacher_best_checkpoint_126.pt")
+opt_model.save("W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_3_v4_best63.pt")
 
 # Save
-opt_model._save_for_lite_interpreter("W2V2BASE_AASISTL_SelfKD_KDLoss_Without_teacher_best_checkpoint_126.ptl")
+# opt_model._save_for_lite_interpreter("W2V2BASE_AASISTL_SelfKD_KDLoss_Without_teacher_best_checkpoint_126.ptl")
 print("Done~")

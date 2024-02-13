@@ -19,7 +19,8 @@ import wandb
 from datetime import timedelta
 from wandb import AlertLevel
 from contrast.supcontrastloss import SupConLoss
-
+from engine.dot import DistillationOrientedTrainer
+import eval_metrics_DF as em
 
 class DistillKL(nn.Module):
     """Distilling the Knowledge in a Neural Network"""
@@ -260,6 +261,7 @@ def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, co
   
     weight = torch.FloatTensor(config['train'].get('cross_entropy_loss_weight', [0.1, 0.9])).to(device)
     criterion = nn.CrossEntropyLoss(weight=weight)
+    dot = config['train'].get('dot', False)
 
     num_total = 0.0
     
@@ -282,6 +284,8 @@ def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, co
         with torch.autocast(device_type=device, dtype=torch.float16, enabled=use_amp):
             # Multiple loss
             total_loss = torch.tensor(0.).to(device)
+            kd_loss = torch.tensor(0.).to(device)
+            ce_loss = torch.tensor(0.).to(device)
 
             batch_size = batch_x.size(0)
             num_total += batch_size
@@ -311,21 +315,27 @@ def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, co
                 for loss, weight in zip(config['criterions'], config['criterion_weights']):
                     weight = float(weight)
                     loss_i = get_mid_level_loss(mid_level_criterion_config = loss)
+                    loss_i.train()
 
                     if forward_target:
                         total_loss += (loss_i.forward(student_io_dict, teacher_io_dict, batch_y) * weight)
+                        kd_loss += (loss_i.forward(student_io_dict, teacher_io_dict, batch_y) * weight)
                     else:
                         total_loss += (loss_i.forward(student_io_dict, teacher_io_dict) * weight)
+                        kd_loss += (loss_i.forward(student_io_dict, teacher_io_dict) * weight)
 
-            if not forward_target:
 
+            if not forward_target or dot:
+                alpha = 1
                 # CE loss
                 batch_loss = criterion(batch_out, batch_y)
                 total_loss +=  (alpha * batch_loss)
+                ce_loss += (alpha * batch_loss)
 
-                ## Total loss + KL divergence loss
-                kl_loss = DistillKL(T=config["train"].get("T", 2))
-                total_loss += (beta * kl_loss(batch_out, t_logits))
+                # ## Total loss + KL divergence loss
+                # kl_loss = DistillKL(T=config["train"].get("T", 2))
+                # total_loss += (beta * kl_loss(batch_out, t_logits))
+            
             
             if "sup_contrastive" in config["train"] and config["train"]["sup_contrastive"]:
                 sup_weights = config["train"].get("sup_contrastive_loss_weight", [0.1, 0.07])
@@ -339,11 +349,19 @@ def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, co
                 total_loss += sup_loss
 
         # Scaler
-        optimizer.zero_grad()
-        scaler.scale(total_loss).backward()
-        scaler.step(optimizer)
-        scaler.update()
-        
+        if not dot:
+            optimizer.zero_grad()
+            scaler.scale(total_loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
+        else:
+            optimizer.zero_grad(set_to_none=True)
+            
+            kd_loss.backward(retain_graph=True)
+            optimizer.step_kd()
+            optimizer.zero_grad(set_to_none=True)
+            ce_loss.backward()
+            optimizer.step()
         # Update LR
         if exp_lr_scheduler is not None:
             if config['learning_rate_scheduler']['name'] == 'CosineAnnealingWarmRestarts':
@@ -353,9 +371,13 @@ def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, co
                 pass
             else:
                 exp_lr_scheduler.step()
-        
-        running_loss += (total_loss.item() * batch_size)
-        
+        if not dot:
+            running_loss += (total_loss.item() * batch_size)
+        else:
+            # logger.info("KD loss: {} - CE loss: {}".format(kd_loss.item(), ce_loss.item()))
+            running_loss += (ce_loss.item() + kd_loss.item()) * batch_size
+            
+
 
     running_loss /= num_total
     
@@ -370,6 +392,8 @@ def kd_val_epoch(dev_loader, model, device):
     criterion = nn.CrossEntropyLoss(weight=weight)
     num_total = 0.0
     num_correct = 0.0
+    bona_scores = []
+    spoof_scores = []
 
     with torch.inference_mode():
         for batch_x, batch_y in tqdm(dev_loader):
@@ -390,8 +414,16 @@ def kd_val_epoch(dev_loader, model, device):
             predicted_labels = (probabilities[:,0] >= 0.5).int()
 
             num_correct += (predicted_labels == batch_y).sum().item()
-            
 
+            # Calculate EER
+            # for x, y in zip(batch_x, batch_y):
+            #     if y == 1:
+            #         bona_scores.append(x)
+            #     else:
+            #         spoof_scores.append(x)
+            
+        # eer_cm, th = em.compute_eer(bona_scores, spoof_scores) * 100
+        # logger.info("EER: {}% - Threshold: {}".format(eer_cm , th))
         accuracy = (num_correct / num_total) * 100
         print("accuracy",accuracy)
         val_loss /= num_total
@@ -419,6 +451,7 @@ model_path = config['model']['teacher'].get('pretrained_path', None)
 student_model_path = config['train'].get('student_resume', None)
 augment_mode = config["train"].get("augment_mode", "rawboost")
 dataset = config["train"].get("dataset", "LA19")
+dot = config["train"].get("dot", False)
 
 if augment_mode == "rawboost":
     # DEFAULT rawboost 3
@@ -510,7 +543,18 @@ if "sup_contrastive" in config["train"] and config["train"]["sup_contrastive"]:
 else:
     train_loader, dev_loader = get_train_dev_dataloader(args, augment_mode, dataset)
 
-optimizer = torch.optim.Adam(student_model.parameters(), lr=float(config['train']['learning_rate']),weight_decay=config['train']['weight_decay'])
+if not dot:
+    optimizer = torch.optim.Adam(student_model.parameters(), lr=float(config['train']['learning_rate']),weight_decay=config['train']['weight_decay'])
+else:
+    '''
+        Initialize optimizer for Distillation-Oriented Trainer
+    '''
+    momentum = float(config['train'].get('momentum', 0.9))
+    delta = float(config['train'].get('delta', 0.0075))
+    m_task = momentum - delta
+    m_kd = momentum + delta
+    optimizer = DistillationOrientedTrainer(student_model.parameters(), lr=float(config['train']['learning_rate']), momentum=m_task, momentum_kd=m_kd, weight_decay=config['train']['weight_decay'])
+    logger.info('Use Distillation-Oriented Trainer with momentum = {} and momentum_kd = {}'.format(m_task, m_kd))
 
 exp_lr_scheduler = None
 if 'is_learning_rate_scheduler' in config and config['is_learning_rate_scheduler']:
