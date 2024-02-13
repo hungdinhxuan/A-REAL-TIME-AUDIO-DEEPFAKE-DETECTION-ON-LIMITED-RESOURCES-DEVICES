@@ -1,0 +1,52 @@
+name: 'W2V2BASE_AASISTL_SelfKD_KDLoss_MSE_Embedding_Teacher_lr_scheduler_CosineAnnealingWarmRestarts'
+model:
+  teacher:
+    name: 'W2V2_AASIST'
+    teacher_module_paths:
+      - 'LL'
+    teacher_module_ios:
+      - 'False:True'
+
+  student:
+    name: 'SelfDistil_W2V2BASE_AASISTL'
+    student_module_paths:
+      - 'LL'
+    student_module_ios:
+      - 'False:True'
+
+self_kd_config:
+  temperature: 3
+  alpha: 0.1
+  beta: 1e-6
+
+is_learning_rate_scheduler: True
+
+learning_rate_scheduler:
+  name: 'CosineAnnealingWarmRestarts'
+  params:
+    T_0: 8
+    T_mult: 1
+    eta_min: 0.000001
+    verbose: False
+
+train:
+  learning_rate: 0.00001
+  weight_decay: 0.0001
+  batch_size: 64
+  num_epochs: 300
+  num_workers: 4
+  amp: True
+  teacher: True
+  patience: 30
+  seed: 42
+
+
+criterion_weights: [0.5]
+
+criterions:
+  - key: 'MSELoss'
+    kwargs:
+      student_module_path: 'LL'
+      student_module_io: 'output'
+      teacher_module_path: 'LL'
+      teacher_module_io: 'output'

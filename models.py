@@ -6,9 +6,15 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
 import fairseq
+import logging
 from fairseq.models.distilXLSR import DistilXLSR, DistilXLSRConfig
-from transformers import  AutoFeatureExtractor, AutoModelForCTC
+from transformers import  Wav2Vec2ForCTC, Wav2Vec2Config
+from transformers import AutoProcessor, AutoModelForPreTraining, Wav2Vec2Processor, Wav2Vec2Model, Wav2Vec2PreTrainedModel, AutoConfig
 from torchaudio.models.wav2vec2.utils.import_huggingface import import_huggingface_model
+from torchaudio.pipelines import WAV2VEC2_ASR_BASE_960H, WAV2VEC2_BASE
+from torchaudio.models.wav2vec2.utils import import_fairseq_model
+from transformers.models.wav2vec2.convert_wav2vec2_original_pytorch_checkpoint_to_pytorch import recursively_load_weights
+
 # class Wav2Vec2Model(nn.Module):
 
 #     def __init__(self, cp_path, device, model_type='base'):
@@ -52,46 +58,110 @@ from torchaudio.models.wav2vec2.utils.import_huggingface import import_huggingfa
 #             x = layer_hiddens[-1]
 #             return x
 
-class SSLHuggingFaceModel(nn.Module):
-    def __init__(self, model_name="facebook/wav2vec2-base", sampling_rate=16000, out_dim=768):
-        super().__init__()
-        self.sampling_rate = sampling_rate
-        self.model = AutoModelForCTC.from_pretrained(model_name, gradient_checkpointing=True)
-        self.model = import_huggingface_model(self.model)
-        self.out_dim = out_dim
-    
-    def forward(self, input_data) -> Tensor:
-        
-        # input_values = self.feature_extractor(input_data, return_tensors="pt", sampling_rate=self.sampling_rate, padding=False).input_values
-        # # Remove an dimension to make it 3D, current  input_values can be 4D or 5D already
-        # while input_values.dim() > 2:
-        #     input_values = input_values.squeeze(1)
-        
-        # print("After squeeze: ", input_values.shape)
-        # output = self.model(input_values, output_hidden_states=True)
-        # print(output["hidden_states"][0].shape)
-        
-        # return output["hidden_states"][0]
-        input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data        
-        # [batch, length, dim]
-        emb = self.model.extract_features(input_tmp)[0][0]
-        return emb
-    
 
-class SSLModelBase(nn.Module):
-    def __init__(self):
+
+class SSL_WAV2VEC2_ASR_BASE_960H_TA(nn.Module):
+    def __init__(self, device):
+        super().__init__()
+        self.model = WAV2VEC2_ASR_BASE_960H.get_model().to(device)
+        self.out_dim = 768
+    def forward(self, input_data):
+        input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data 
+        features, _ = self.model.extract_features(input_tmp)
+        features = features[0]
+        return features
+    
+class SSL_WAV2VEC2_BASE_TA(nn.Module):
+    def __init__(self, device):
+        super().__init__()
+        self.model = WAV2VEC2_BASE.get_model().to(device)
+        self.out_dim = 768
+    def forward(self, input_data):
+        input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data 
+        features, _ = self.model.extract_features(input_tmp)
+        features = features[0]
+        return features
+
+class SSL_WAV2VEC2_BASE_FSTA(nn.Module):
+    def __init__(self, device):
         super().__init__()
         cp_path = '/nfs/datab/hungdx/KDW2V-AASISTL/wav2vec_small.pt'   # Change the pre-trained XLSR model path. 
         model, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([cp_path])
         self.model = model[0]
+        self.model = import_fairseq_model(self.model)
+        self.model = self.model.to(device)
         self.out_dim = 768
-     
-        print("Wav2Vec2 Model loaded successfully.")
+    def forward(self, input_data):
+        input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data 
+        features, _ = self.model.extract_features(input_tmp)
+        features = features[0]
+        return features
+
+class Distil_SSL_WAV2VEC2_BASE_TAHG(nn.Module):
+    def __init__(self, device):
+        super().__init__()
+        self.model = Wav2Vec2ForCTC.from_pretrained('OthmaneJ/distil-wav2vec2')
+        self.model = import_huggingface_model(self.model)
+        self.model = self.model.to(device)
+        self.out_dim = 768
+    def forward(self, input_data):
+        input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data 
+        features, _ = self.model.extract_features(input_tmp)
+        print(features)
+        features = features[0]
+        return features
+
+class SSLHuggingFaceModel(nn.Module):
+    def __init__(self, model_name="facebook/wav2vec2-base", out_dim=768, device="cuda"):
+        super().__init__()
+        
+        # fairseq_model, _, _ = fairseq.checkpoint_utils.load_model_ensemble_and_task(["wav2vec_small.pt"])
+        # fairseq_model = fairseq_model[0]
+
+        
+        config = Wav2Vec2Config.from_pretrained(model_name)
+        # self.model = AutoModelForPreTraining.from_pretrained(model_name, config=config)
+        self.model = Wav2Vec2Model.from_pretrained(model_name, config=config)
+
+        # Recursively load weights from fairseq model
+        # recursively_load_weights(fairseq_model, self.model, is_headless=False)
+        # del fairseq_model
+        self.model = self.model.to(device)
+        self.out_dim = out_dim
+    
+    def forward(self, input_data) -> Tensor:
+        input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data        
+        emb = self.model(input_tmp, output_hidden_states=True).hidden_states[-1]
+        return emb
+
+
+class SSLModelBase(nn.Module):
+    def __init__(self, device):
+        super().__init__()
+        cp_path = '/nfs/datab/hungdx/KDW2V-AASISTL/wav2vec_small.pt'   # Change the pre-trained XLSR model path. 
+        model, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([cp_path])
+        self.model = model[0]
+        self.model = self.model.to(device)
+        self.out_dim = 768
+        self.freeze = False
+        print("Wav2Vec2 Base Fairseq Model init")
 
     def forward(self, input_data):
         input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data 
         emb = self.model(input_tmp, mask=False, features_only=True)['x']
         return emb
+    
+    def frozen(self):
+        logging.info("Freezing the model")
+        for param in self.model.parameters():
+            param.requires_grad = False
+        self.freeze = True
+    
+    def unfrozen(self):
+        logging.info("Unfreezing the model")
+        for param in self.model.parameters():
+            param.requires_grad = True
+        self.freeze = False
 
 class SSLModelFTBase(nn.Module):
     def __init__(self):
@@ -111,11 +181,12 @@ class SSLModelFTBase(nn.Module):
         return emb
     
 class SSLModel(nn.Module):
-    def __init__(self):
+    def __init__(self, device):
         super().__init__()
         cp_path = '/nfs/datab/hungdx/KDW2V-AASISTL/xlsr2_300m.pt'   # Change the pre-trained XLSR model path. 
         model, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([cp_path])
         self.model = model[0]
+        self.model = self.model.to(device)
         self.out_dim = 1024
 
     def extract_feat(self, input_data):

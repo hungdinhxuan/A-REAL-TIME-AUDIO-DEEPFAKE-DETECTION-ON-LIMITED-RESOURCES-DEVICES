@@ -1,0 +1,55 @@
+name: 'W2V2BASE_AASISTL_SelfKD_KDLoss_EmbeddingLoss'
+model:
+  teacher:
+    name: 'W2V2_AASIST'
+    teacher_module_paths:
+      - 'LL'
+      - 'out_layer'
+    teacher_module_ios:
+      - 'False:True'
+      - 'False:True'
+
+  student:
+    name: 'SelfDistil_W2V2BASE_AASISTL'
+    student_module_paths:
+      - 'LL'
+      - 'out_layer'
+    student_module_ios:
+      - 'False:True'
+      - 'False:True'
+train:
+  learning_rate: 0.000001
+  weight_decay: 0.0001
+  batch_size: 64
+  num_epochs: 300
+  num_workers: 4
+  amp: True
+  teacher: True
+  patience: 30
+  seed: 42
+
+criterion_weights: [0.1, 0.05]
+
+selfKD:
+  temperature: 3 
+  alpha: 0.1 
+  beta: 1e-6
+  hidden_rep_loss_weight: 0.5
+
+criterions:
+  - key: 'SPKDLoss'
+    kwargs:
+      teacher_output_path: 'LL'
+      student_output_path: 'LL'
+      reduction: 'batchmean'
+
+  - key: 'DISTLoss'
+    kwargs:
+      student_module_path: 'out_layer'
+      student_module_io: 'output'
+      teacher_module_path: 'out_layer'
+      teacher_module_io: 'output'
+      beta: 0.25
+      gamma: 0.75
+      tau: 2.5
+ 

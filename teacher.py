@@ -2,10 +2,11 @@ from torch import nn
 import torch
 from models import SSLModel, GraphAttentionLayer, GraphPool, HtrgGraphAttentionLayer, Residual_block
 import torch.nn.functional as F
+from torchdistill.models.registry import register_model
 
-
+@register_model(key="W2V2_AASIST")
 class W2V2_AASIST(nn.Module):
-    def __init__(self):
+    def __init__(self, device):
         super().__init__()
     
         # AASIST parameters
@@ -18,7 +19,7 @@ class W2V2_AASIST(nn.Module):
         # create network wav2vec 2.0
         ####
 
-        self.ssl_model = SSLModel()
+        self.ssl_model = SSLModel(device).to(device)
         self.LL = nn.Linear(self.ssl_model.out_dim, 128)
 
         self.first_bn = nn.BatchNorm2d(num_features=1)
@@ -173,7 +174,7 @@ class W2V2_AASIST(nn.Module):
 
 
 class W2V2_AASIST_Cosine(nn.Module):
-    def __init__(self):
+    def __init__(self, device):
         super().__init__()
     
         # AASIST parameters
@@ -186,7 +187,7 @@ class W2V2_AASIST_Cosine(nn.Module):
         # create network wav2vec 2.0
         ####
 
-        self.ssl_model = SSLModel()
+        self.ssl_model = SSLModel(device).to(device)
         self.LL = nn.Linear(self.ssl_model.out_dim, 128)
 
         self.first_bn = nn.BatchNorm2d(num_features=1)
@@ -343,7 +344,7 @@ class W2V2_AASIST_Cosine(nn.Module):
         return output, flattened_conv_output
 
 class W2V2_AASIST_Regressor(nn.Module):
-    def __init__(self):
+    def __init__(self, device):
         super().__init__()
     
         # AASIST parameters
@@ -356,7 +357,7 @@ class W2V2_AASIST_Regressor(nn.Module):
         # create network wav2vec 2.0
         ####
 
-        self.ssl_model = SSLModel()
+        self.ssl_model = SSLModel(device).to(device)
         self.LL = nn.Linear(self.ssl_model.out_dim, 128)
 
         self.first_bn = nn.BatchNorm2d(num_features=1)
@@ -512,7 +513,7 @@ class W2V2_AASIST_Regressor(nn.Module):
 
 ## Self - Knowledge Distillation
 class W2V2_AASIST_Self_KD(nn.Module):
-    def __init__(self):
+    def __init__(self, device):
         super().__init__()
     
         # AASIST parameters
@@ -525,7 +526,7 @@ class W2V2_AASIST_Self_KD(nn.Module):
         # create network wav2vec 2.0
         ####
 
-        self.ssl_model = SSLModel()
+        self.ssl_model = SSLModel(device).to(device)
         self.LL = nn.Linear(self.ssl_model.out_dim, 128)
 
         self.first_bn = nn.BatchNorm2d(num_features=1)
