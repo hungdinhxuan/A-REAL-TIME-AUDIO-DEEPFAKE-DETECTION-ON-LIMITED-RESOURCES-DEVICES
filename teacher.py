@@ -6,7 +6,7 @@ from torchdistill.models.registry import register_model
 
 @register_model(key="W2V2_AASIST")
 class W2V2_AASIST(nn.Module):
-    def __init__(self, device):
+    def __init__(self, device, ssl_cpkt_path):
         super().__init__()
     
         # AASIST parameters
@@ -19,7 +19,7 @@ class W2V2_AASIST(nn.Module):
         # create network wav2vec 2.0
         ####
 
-        self.ssl_model = SSLModel(device).to(device)
+        self.ssl_model = SSLModel(device, ssl_cpkt_path, 1024).to(device)
         self.LL = nn.Linear(self.ssl_model.out_dim, 128)
 
         self.first_bn = nn.BatchNorm2d(num_features=1)

@@ -44,6 +44,8 @@ def get_main_menu():
                         default='./W2V2-AASIST-teacher.pth', help='Model checkpoint')
     parser.add_argument('--student_model_path', type=str,
                         default=None, help='Student model checkpoint')
+    parser.add_argument('--student_model_type', type=str,
+                        default='SelfDistil_W2V2BASE_AASISTL', help='Type of student model')
     parser.add_argument('--comment', type=str, default=None,
                         help='Comment to describe the saved model')
     parser.add_argument('--student_ckpt', type=str, help='Student checkpoint', default='')

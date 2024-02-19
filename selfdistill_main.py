@@ -81,7 +81,7 @@ def kd_train_epoch(train_loader, student, optimizer, device, scaler, config, cri
                 logit = student(batch_x)
                 loss_cls += criterion_cls(logit, batch_y)
             elif method == 'mixup':   
-                logit, mixup_loss = Mixup(student, batch_x, batch_y, criterion_cls, alpha=0.4)
+                logit, mixup_loss = Mixup(student, batch_x, batch_y, criterion_cls, alpha=0.1)
                 loss_cls += mixup_loss
             elif method == 'manifold_mixup':   
                 logit, manifold_mixup_loss = ManifoldMixup(student, batch_x, batch_y, criterion_cls, alpha=2.0)

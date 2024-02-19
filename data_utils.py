@@ -12,6 +12,7 @@ from torch.utils.data import DataLoader, WeightedRandomSampler
 import audiomentations as aa
 import logging
 
+
 ___author__ = "Hemlata Tak"
 __email__ = "tak@eurecom.fr"
 
@@ -417,7 +418,7 @@ class Dataset_cnsl_augment_v2(Dataset):
         X, fs = librosa.load(self.base_dir + "/" + utt_id, sr=16000)
         Y=process_audiomentations_v2(X,fs)
         X_pad= pad_v2(Y,utt_id,self.cut)
-        x_inp= Tensor(X_pad)
+        x_inp= Tensor(X_pad.copy())
         target = self.labels[utt_id]
         
         return x_inp, target
@@ -496,26 +497,25 @@ def process_audiomentations(feature, sr):
         ])
     return augment(samples=feature, sample_rate=sr)
 
+
 def process_audiomentations_v2(feature, sr):
     """ DA using audiomentations library    
     """
     # aa.ApplyImpulseResponse(ir_path="/path/to/sound_folder", p=1.0)
-
     augment = aa.Compose([
-      
-        aa.AddGaussianNoise(
-            min_amplitude=0.001,
-            max_amplitude=0.015,
-            p=0.75
+        aa.AddGaussianSNR(
+            min_snr_db=5.0,
+            max_snr_db=40.0,
+            p=0.5
         ),
-        aa.TanhDistortion(
-            min_distortion=0.01,
-            max_distortion=0.7,
-            p=0.75
+        aa.PitchShift(
+            min_semitones=-12,
+            max_semitones=12,
+            p=0.5
         ),
-        aa.PitchShift(min_semitones=-4, max_semitones=4, p=0.5),
-        aa.Shift(p=0.5),
-        ])
+        aa.Reverse(p=0.75),
+        # aa.RepeatPart(mode="replace", p=0.75)
+    ])
     return augment(samples=feature, sample_rate=sr)
 
 def process_torchaudio_augment(feature, sr):

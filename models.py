@@ -181,18 +181,28 @@ class SSLModelFTBase(nn.Module):
         return emb
     
 class SSLModel(nn.Module):
-    def __init__(self, device):
+    def __init__(self, device, cp_path, out_dim):
         super().__init__()
-        cp_path = '/nfs/datab/hungdx/KDW2V-AASISTL/xlsr2_300m.pt'   # Change the pre-trained XLSR model path. 
         model, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([cp_path])
         self.model = model[0]
         self.model = self.model.to(device)
-        self.out_dim = 1024
+        self.out_dim = out_dim
 
     def extract_feat(self, input_data):
         input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data 
         emb = self.model(input_tmp, mask=False, features_only=True)['x']
         return emb
+    def frozen(self):
+        logging.info("Freezing the model")
+        for param in self.model.parameters():
+            param.requires_grad = False
+        self.freeze = True
+    
+    def unfrozen(self):
+        logging.info("Unfreezing the model")
+        for param in self.model.parameters():
+            param.requires_grad = True
+        self.freeze = False
 
 class DistilSSLModel(nn.Module):
     def __init__(self, device):

@@ -2771,7 +2771,7 @@ class Distil_SSL_WAV2VEC2_TA_Self_KD_Teacher2(nn.Module):
 
 @register_model(key='SelfDistil_W2V2BASE_AASISTL')
 class SelfDistil_W2V2BASE_AASISTL(nn.Module):
-    def __init__(self, device):
+    def __init__(self, device, ssl_cpkt_path):
         super().__init__()
         # AASIST parameters
         filts = [128, [1, 32], [32, 32], [32, 24], [24, 24]]
@@ -2782,7 +2782,7 @@ class SelfDistil_W2V2BASE_AASISTL(nn.Module):
         ####
         # create network wav2vec 2.0
         ####
-        self.ssl_model = SSLModelBase(device).to(device)
+        self.ssl_model = SSLModel(device, ssl_cpkt_path, 768).to(device)
         self.LL = nn.Linear(self.ssl_model.out_dim, 128)
         self.first_bn = nn.BatchNorm2d(num_features=1)
         self.first_bn1 = nn.BatchNorm2d(num_features=24)
@@ -2973,7 +2973,7 @@ class SelfDistil_W2V2BASE_AASISTL(nn.Module):
     
 @register_model(key='Distil_W2V2BASE_AASISTL')
 class Distil_W2V2BASE_AASISTL(nn.Module):
-    def __init__(self, device):
+    def __init__(self, device, ssl_cpkt_path):
         super().__init__()
         # AASIST parameters
         filts = [128, [1, 32], [32, 32], [32, 24], [24, 24]]
@@ -2984,7 +2984,7 @@ class Distil_W2V2BASE_AASISTL(nn.Module):
         ####
         # create network wav2vec 2.0
         ####
-        self.ssl_model = SSLModelBase(device).to(device)
+        self.ssl_model = SSLModel(device, ssl_cpkt_path, 768).to(device)
         self.LL = nn.Linear(self.ssl_model.out_dim, 128)
         self.first_bn = nn.BatchNorm2d(num_features=1)
         self.first_bn1 = nn.BatchNorm2d(num_features=24)

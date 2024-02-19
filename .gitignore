@@ -23,3 +23,10 @@ test*.py
 self_KD*.txt
 dict.ltr.txt
 wandb
+vocoded_data
+pretrained*
+project*
+data
+code
+test_mobile_samples
+*.zip
