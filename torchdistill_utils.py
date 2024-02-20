@@ -2,6 +2,12 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import logging
+from tqdm import tqdm
+from kdtoolkit import kd_loss_function, feature_loss_function
+from torchdistill.losses.registry import get_mid_level_loss
+from contrast.supcontrastloss import SupConLoss
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
@@ -18,7 +24,7 @@ class DistillKL(nn.Module):
         loss = F.kl_div(p_s, p_t, reduction='batchmean') * (self.T ** 2)
         return loss
 
-def self_KD_teacher_val_epoch(dev_loader, model, device):
+def self_KD_teacher_val_epoch(dev_loader, model, device, config):
     logger.info('Validation Teacher self KD')
     val_loss = 0
     model.eval()
@@ -67,7 +73,7 @@ def self_KD_teacher_val_epoch(dev_loader, model, device):
         print('[VALIDATION] eval_accuracy: ', accuracy)
         return val_loss, accuracy
 
-def self_KD_teacher_train_epoch(train_loader, student, teacher, optimizer, device, scaler, config, exp_lr_scheduler=None, temperature: float =3, alpha: float =0.1, beta: float = 1e-6,  use_amp: bool = True):
+def self_KD_teacher_train_epoch(train_loader, student, teacher, optimizer, device, scaler, config, student_forward_hook_manager, teacher_forward_hook_manager,   exp_lr_scheduler=None, temperature: float =3, alpha: float =0.1, beta: float = 1e-6,  use_amp: bool = True):
     logger.info('Training self KD + teacher cosine with temperature = {} and alpha = {} and beta = {}'.format(temperature, alpha, beta))
     running_loss = 0
     running_total_label_loss = 0
@@ -199,11 +205,11 @@ def self_KD_teacher_train_epoch(train_loader, student, teacher, optimizer, devic
         if exp_lr_scheduler is not None:
             if config['learning_rate_scheduler']['name'] == 'CosineAnnealingWarmRestarts':
                 exp_lr_scheduler.step(epoch + i / iters)
-            # elif config['learning_rate_scheduler']['name'] in ['ReduceLROnPlateau', 'MultiStepLR']:
-            #     # Update learning rate scheduler in validation so do nothing here
-            #     pass
-            # else:
-            #     exp_lr_scheduler.step()
+            elif config['learning_rate_scheduler']['name'] in ['ReduceLROnPlateau', 'MultiStepLR', 'StepLR']:
+                # Update learning rate scheduler in validation so do nothing here
+                pass
+            else:
+                exp_lr_scheduler.step()
         
         running_loss += (total_loss.item() * batch_size)
         running_total_label_loss += (total_label_loss.item() * batch_size)
@@ -220,7 +226,7 @@ def self_KD_teacher_train_epoch(train_loader, student, teacher, optimizer, devic
     running_total_kd_loss /= num_total
     return running_loss, running_total_label_loss, running_total_kd_loss, running_total_feature_loss, running_total_hidden_rep_loss, running_sup_contrastive_loss
 
-def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, config, exp_lr_scheduler=None,  use_amp: bool = True):
+def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, config, student_forward_hook_manager, teacher_forward_hook_manager,  exp_lr_scheduler=None,  use_amp: bool = True):
     logger.info('Training KD')
     running_loss = 0
     
@@ -368,7 +374,7 @@ def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, co
     
     return running_loss
 
-def kd_val_epoch(dev_loader, model, device):
+def kd_val_epoch(dev_loader, model, device, config):
     logger.info('Validation ----')
     val_loss = 0
     model.eval()    

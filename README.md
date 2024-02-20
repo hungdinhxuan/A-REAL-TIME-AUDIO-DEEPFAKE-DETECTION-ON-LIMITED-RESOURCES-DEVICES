@@ -64,6 +64,11 @@ CUDA_VISIBLE_DEVICES=1 python main.py --student_ckpt="/datab/hungdx/KDW2V-AASIST
 CUDA_VISIBLE_DEVICES=1 OMP_NUM_THREADS=1 PYTHONPATH=$PYTHONPATH:/nfs/datab/hungdx/KDW2V-AASISTL/fairseq python torchdistill_main.py --database_path='/datab/Dataset/cnsl_real_fake_audio/supcon_cnsl_jan22' --protocols_path='protocol.txt' --batch_size=64 --yaml ''
 ```
 
+### FT teacher
+```
+
+```
+
 ### Eval
 ```
 CUDA_VISIBLE_DEVICES=2 OMP_NUM_THREADS=1 PYTHONPATH=$PYTHONPATH:/nfs/datab/hungdx/KDW2V-AASISTL/fairseq python eval.py --student_model_path "/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_3_v10/best_checkpoint_63.pth" --eval_output="./W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_3_v10_best63_full_df21.txt" --batch_size_eval=300 --num_eval_samples=-1
@@ -97,7 +102,7 @@ CUDA_VISIBLE_DEVICES=2 OMP_NUM_THREADS=1 PYTHONPATH=$PYTHONPATH:/nfs/datab/hungd
 
 #### DKD Loss
 ```
-CUDA_VISIBLE_DEVICES=3 OMP_NUM_THREADS=1 PYTHONPATH=$PYTHONPATH:/nfs/datab/hungdx/KDW2V-AASISTL/fairseq python eval.py --student_model_path "/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_3_v15/best_checkpoint_25.pth" --eval_output="./W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_3_v15_best25.txt" --batch_size_eval=300 --wrapper_ssl --dataset='cnsl' --database_path='/datab/Dataset/cnsl_real_fake_audio/supcon_cnsl_jan22' --protocols_path='protocol.txt'
+CUDA_VISIBLE_DEVICES=2 OMP_NUM_THREADS=1 PYTHONPATH=$PYTHONPATH:/nfs/datab/hungdx/KDW2V-AASISTL/fairseq python eval.py --student_model_path "/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_3_v17/best_checkpoint_89.pth" --eval_output="./W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_3_v17_best89.txt" --batch_size_eval=300 --wrapper_ssl --dataset='cnsl' --database_path='/datab/Dataset/cnsl_real_fake_audio/supcon_cnsl_jan22' --protocols_path='protocol.txt'
 ```
 
 #### Self KD
@@ -105,8 +110,10 @@ CUDA_VISIBLE_DEVICES=3 OMP_NUM_THREADS=1 PYTHONPATH=$PYTHONPATH:/nfs/datab/hungd
 CUDA_VISIBLE_DEVICES=3 OMP_NUM_THREADS=1 PYTHONPATH=$PYTHONPATH:/nfs/datab/hungdx/KDW2V-AASISTL/fairseq python eval.py --student_model_path "/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_3_v14/best_checkpoint_100.pth" --eval_output="./W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_3_v14_best100.txt" --batch_size_eval=300 --wrapper_ssl --dataset='cnsl' --database_path='/datab/Dataset/cnsl_real_fake_audio/supcon_cnsl_jan22' --protocols_path='protocol.txt' --student_model_type='self_KD'
 ```
 
+
+
 ### Eval VoxCeleb2
-```
+
 ### VoxCeleb2 dataset
 ```
 CUDA_VISIBLE_DEVICES=3 OMP_NUM_THREADS=1 PYTHONPATH=$PYTHONPATH:/nfs/datab/hungdx/KDW2V-AASISTL/fairseq python eval.py --student_model_path "/nfs/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_3_v10/best_checkpoint_63.pth" --database_path='/nfs/datab/hungdx/KDW2V-AASISTL/data' --protocols_path='/nfs/datab/hungdx/KDW2V-AASISTL/data/protocol_file.txt' --student_model_type='self_KD' --batch_size_eval=100 --eval_output="./W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_3_v10_best63_voxcleb2.txt"
@@ -114,7 +121,11 @@ CUDA_VISIBLE_DEVICES=3 OMP_NUM_THREADS=1 PYTHONPATH=$PYTHONPATH:/nfs/datab/hungd
 
 ## Calculate EER
 ```
-python score_file_to_eer.py /datab/hungdx/KDW2V-AASISTL/W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_3_v15_best25.txt   '/datab/Dataset/cnsl_real_fake_audio/supcon_cnsl_jan22/protocol_deduped.txt' 'eval'
+python score_file_to_eer.py ./W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_3_v17_best89.txt   '/datab/Dataset/cnsl_real_fake_audio/supcon_cnsl_jan22/protocol_deduped.txt' 'eval'
+```
+
+```
+python score_file_to_eer.py ./W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_3_v10_best63_voxcleb2.txt '/nfs/datab/hungdx/KDW2V-AASISTL/data/protocol_file.txt' 'eval'
 ```
 
 ```
@@ -131,9 +142,11 @@ PYTHONPATH=$PYTHONPATH:<your absolute path to fairseq submodule> python <your co
 ```
 PYTHONPATH=$PYTHONPATH:/nfs/datab/hungdx/KDW2V-AASISTL/fairseq
 
-CUDA_VISIBLE_DEVICES=2 OMP_NUM_THREADS=1 PYTHONPATH=$PYTHONPATH:/nfs/datab/hungdx/KDW2V-AASISTL/fairseq python torchdistill_main.py  --yaml '/datab/hungdx/KDW2V-AASISTL/distill-config/trial53.yaml' --database_path='/datab/Dataset/cnsl_real_fake_audio/supcon_cnsl_jan22' --protocols_path='protocol.txt'
+CUDA_VISIBLE_DEVICES=2 OMP_NUM_THREADS=1 PYTHONPATH=$PYTHONPATH:/nfs/datab/hungdx/KDW2V-AASISTL/fairseq python torchdistill_main.py  --yaml '/datab/hungdx/KDW2V-AASISTL/distill-config/trial56.yaml' --database_path='/datab/Dataset/cnsl_real_fake_audio/supcon_cnsl_jan22' --protocols_path='protocol.txt'
 
 CUDA_VISIBLE_DEVICES=1 OMP_NUM_THREADS=1 PYTHONPATH=$PYTHONPATH:/nfs/datab/hungdx/KDW2V-AASISTL/fairseq python selfdistill_main.py  --yaml '/datab/hungdx/KDW2V-AASISTL/self-kd-config/trial5.yaml' --database_path='/datab/Dataset/cnsl_real_fake_audio/supcon_cnsl_jan22' --protocols_path='protocol.txt'
+
+CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=1 PYTHONPATH=$PYTHONPATH:/nfs/datab/hungdx/KDW2V-AASISTL/fairseq python torchdistill_main.py  --yaml '/datab/hungdx/KDW2V-AASISTL/distill-config/trial57.yaml' --database_path='/nfs/datab/hungdx/KDW2V-AASISTL/data' --protocols_path='protocol_file.txt'
 
 # Optimize mobile
 ```

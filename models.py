@@ -187,11 +187,16 @@ class SSLModel(nn.Module):
         self.model = model[0]
         self.model = self.model.to(device)
         self.out_dim = out_dim
+        self.freeze = False
 
     def extract_feat(self, input_data):
         input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data 
         emb = self.model(input_tmp, mask=False, features_only=True)['x']
         return emb
+    
+    def forward(self, input_data):
+        return self.extract_feat(input_data)
+    
     def frozen(self):
         logging.info("Freezing the model")
         for param in self.model.parameters():
