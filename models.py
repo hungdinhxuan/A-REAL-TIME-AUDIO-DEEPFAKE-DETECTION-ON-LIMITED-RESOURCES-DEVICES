@@ -8,12 +8,13 @@ from torch import Tensor
 import fairseq
 import logging
 from fairseq.models.distilXLSR import DistilXLSR, DistilXLSRConfig
-from transformers import  Wav2Vec2ForCTC, Wav2Vec2Config
+from transformers import Wav2Vec2ForCTC, Wav2Vec2Config
 from transformers import AutoProcessor, AutoModelForPreTraining, Wav2Vec2Processor, Wav2Vec2Model, Wav2Vec2PreTrainedModel, AutoConfig
 from torchaudio.models.wav2vec2.utils.import_huggingface import import_huggingface_model
 from torchaudio.pipelines import WAV2VEC2_ASR_BASE_960H, WAV2VEC2_BASE
 from torchaudio.models.wav2vec2.utils import import_fairseq_model
 from transformers.models.wav2vec2.convert_wav2vec2_original_pytorch_checkpoint_to_pytorch import recursively_load_weights
+from typing import Optional
 
 # class Wav2Vec2Model(nn.Module):
 
@@ -33,19 +34,19 @@ from transformers.models.wav2vec2.convert_wav2vec2_original_pytorch_checkpoint_t
 #             self.pretrained_model_cfg = DistilXLSRConfig(self.pretrained_model_cfg)
 #             self.model = DistilXLSR(self.pretrained_model_cfg)
 #             self.model.load_state_dict(checkpoint["Student"])
-        
+
 #         self.out_dim = 768 if self.model_type == 'base' else 1024
 
 #     def forward(self, input_data):
 #         if self.model_type == 'base' or self.model_type == 'xlsr':
-#             input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data 
+#             input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data
 #             emb = self.model(input_tmp, mask=False, features_only=True)['x']
 #             return emb
 #         else:
-#             input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data        
-            
+#             input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data
+
 #             (final_output, layer_results), padding_mask = self.model(
-#                     source=input_tmp, 
+#                     source=input_tmp,
 #                     ret_layer_results=True
 #                 )
 #             if self.model.encoder.layer_norm_first:
@@ -54,10 +55,9 @@ from transformers.models.wav2vec2.convert_wav2vec2_original_pytorch_checkpoint_t
 #                 layer_hiddens.append(final_output)
 #             else:
 #                 layer_hiddens = [i[0] for i in layer_results]
-                
+
 #             x = layer_hiddens[-1]
 #             return x
-
 
 
 class SSL_WAV2VEC2_ASR_BASE_960H_TA(nn.Module):
@@ -65,37 +65,45 @@ class SSL_WAV2VEC2_ASR_BASE_960H_TA(nn.Module):
         super().__init__()
         self.model = WAV2VEC2_ASR_BASE_960H.get_model().to(device)
         self.out_dim = 768
+
     def forward(self, input_data):
-        input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data 
+        input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data
         features, _ = self.model.extract_features(input_tmp)
         features = features[0]
         return features
-    
+
+
 class SSL_WAV2VEC2_BASE_TA(nn.Module):
     def __init__(self, device):
         super().__init__()
         self.model = WAV2VEC2_BASE.get_model().to(device)
         self.out_dim = 768
+
     def forward(self, input_data):
-        input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data 
+        input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data
         features, _ = self.model.extract_features(input_tmp)
         features = features[0]
         return features
 
+
 class SSL_WAV2VEC2_BASE_FSTA(nn.Module):
     def __init__(self, device):
         super().__init__()
-        cp_path = '/nfs/datab/hungdx/KDW2V-AASISTL/wav2vec_small.pt'   # Change the pre-trained XLSR model path. 
-        model, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([cp_path])
+        # Change the pre-trained XLSR model path.
+        cp_path = '/nfs/datab/hungdx/KDW2V-AASISTL/wav2vec_small.pt'
+        model, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([
+                                                                                 cp_path])
         self.model = model[0]
         self.model = import_fairseq_model(self.model)
         self.model = self.model.to(device)
         self.out_dim = 768
+
     def forward(self, input_data):
-        input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data 
+        input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data
         features, _ = self.model.extract_features(input_tmp)
         features = features[0]
         return features
+
 
 class Distil_SSL_WAV2VEC2_BASE_TAHG(nn.Module):
     def __init__(self, device):
@@ -104,21 +112,22 @@ class Distil_SSL_WAV2VEC2_BASE_TAHG(nn.Module):
         self.model = import_huggingface_model(self.model)
         self.model = self.model.to(device)
         self.out_dim = 768
+
     def forward(self, input_data):
-        input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data 
+        input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data
         features, _ = self.model.extract_features(input_tmp)
         print(features)
         features = features[0]
         return features
 
+
 class SSLHuggingFaceModel(nn.Module):
     def __init__(self, model_name="facebook/wav2vec2-base", out_dim=768, device="cuda"):
         super().__init__()
-        
+
         # fairseq_model, _, _ = fairseq.checkpoint_utils.load_model_ensemble_and_task(["wav2vec_small.pt"])
         # fairseq_model = fairseq_model[0]
 
-        
         config = Wav2Vec2Config.from_pretrained(model_name)
         # self.model = AutoModelForPreTraining.from_pretrained(model_name, config=config)
         self.model = Wav2Vec2Model.from_pretrained(model_name, config=config)
@@ -128,18 +137,21 @@ class SSLHuggingFaceModel(nn.Module):
         # del fairseq_model
         self.model = self.model.to(device)
         self.out_dim = out_dim
-    
+
     def forward(self, input_data) -> Tensor:
-        input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data        
-        emb = self.model(input_tmp, output_hidden_states=True).hidden_states[-1]
+        input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data
+        emb = self.model(
+            input_tmp, output_hidden_states=True).hidden_states[-1]
         return emb
 
 
 class SSLModelBase(nn.Module):
     def __init__(self, device):
         super().__init__()
-        cp_path = '/nfs/datab/hungdx/KDW2V-AASISTL/wav2vec_small.pt'   # Change the pre-trained XLSR model path. 
-        model, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([cp_path])
+        # Change the pre-trained XLSR model path.
+        cp_path = '/nfs/datab/hungdx/KDW2V-AASISTL/wav2vec_small.pt'
+        model, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([
+                                                                                 cp_path])
         self.model = model[0]
         self.model = self.model.to(device)
         self.out_dim = 768
@@ -147,72 +159,79 @@ class SSLModelBase(nn.Module):
         print("Wav2Vec2 Base Fairseq Model init")
 
     def forward(self, input_data):
-        input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data 
+        input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data
         emb = self.model(input_tmp, mask=False, features_only=True)['x']
         return emb
-    
+
     def frozen(self):
         logging.info("Freezing the model")
         for param in self.model.parameters():
             param.requires_grad = False
         self.freeze = True
-    
+
     def unfrozen(self):
         logging.info("Unfreezing the model")
         for param in self.model.parameters():
             param.requires_grad = True
         self.freeze = False
 
+
 class SSLModelFTBase(nn.Module):
     def __init__(self):
         super().__init__()
-        cp_path = '/nfs/datab/hungdx/KDW2V-AASISTL/wav2vec_small_960h.pt'   # Change the pre-trained XLSR model path. 
+        # Change the pre-trained XLSR model path.
+        cp_path = '/nfs/datab/hungdx/KDW2V-AASISTL/wav2vec_small_960h.pt'
         model_override_rules = {}
         model_override_rules['task'] = {'_name': 'audio_finetuning'}
-        model, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([cp_path], arg_overrides=model_override_rules)
+        model, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task(
+            [cp_path], arg_overrides=model_override_rules)
         self.model = model[0]
         self.out_dim = 768
-     
+
         print("Wav2Vec2 Model loaded successfully.")
 
     def forward(self, input_data):
-        input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data 
+        input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data
         emb = self.model(input_tmp, mask=False, features_only=True)['x']
         return emb
-    
+
+
 class SSLModel(nn.Module):
     def __init__(self, device, cp_path, out_dim):
         super().__init__()
-        model, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([cp_path])
+        model, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([
+                                                                                 cp_path])
         self.model = model[0]
         self.model = self.model.to(device)
         self.out_dim = out_dim
         self.freeze = False
 
     def extract_feat(self, input_data):
-        input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data 
+        input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data
         emb = self.model(input_tmp, mask=False, features_only=True)['x']
         return emb
-    
+
     def forward(self, input_data):
         return self.extract_feat(input_data)
-    
+
     def frozen(self):
         logging.info("Freezing the model")
         for param in self.model.parameters():
             param.requires_grad = False
         self.freeze = True
-    
+
     def unfrozen(self):
         logging.info("Unfreezing the model")
         for param in self.model.parameters():
             param.requires_grad = True
         self.freeze = False
 
+
 class DistilSSLModel(nn.Module):
     def __init__(self, device):
         super().__init__()
-        cp_path = '/nfs/datab/hungdx/KDW2V-AASISTL/distilXLSR_xlsr128.pt'   # Change the pre-trained XLSR model path. 
+        # Change the pre-trained XLSR model path.
+        cp_path = '/nfs/datab/hungdx/KDW2V-AASISTL/distilXLSR_xlsr128.pt'
         checkpoint = torch.load(cp_path, map_location=device)
         self.pretrained_model_cfg = checkpoint["Config"]["model"]
         self.pretrained_model_cfg = DistilXLSRConfig(self.pretrained_model_cfg)
@@ -223,19 +242,19 @@ class DistilSSLModel(nn.Module):
     def forward(self, input_data):
 
         torch.autograd.set_detect_anomaly(True)
-        input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data        
-        
+        input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data
+
         (final_output, layer_results), padding_mask = self.model(
-                source=input_tmp, 
-                ret_layer_results=True
-            )
+            source=input_tmp,
+            ret_layer_results=True
+        )
         if self.model.encoder.layer_norm_first:
             layer_hiddens = [i[2] for i in layer_results]
             layer_hiddens.pop(0)
             layer_hiddens.append(final_output)
         else:
             layer_hiddens = [i[0] for i in layer_results]
-            
+
         x = layer_hiddens[-1]
         return x
 
@@ -262,6 +281,7 @@ class QuantizedModel(nn.Module):
         # to floating point in the quantized model
         x = self.dequant(x)
         return x
+
 
 ''' Jee-weon Jung, Hee-Soo Heo, Hemlata Tak, Hye-jin Shim, Joon Son Chung, Bong-Jin Lee, Ha-Jin Yu and Nicholas Evans. 
     AASIST: Audio Anti-Spoofing Using Integrated Spectro-Temporal Graph Attention Networks. 
@@ -363,6 +383,7 @@ class GraphAttentionLayer(nn.Module):
         nn.init.xavier_normal_(out)
         return out
 
+
 class HtrgGraphAttentionLayer(nn.Module):
     def __init__(self, in_dim, out_dim, **kwargs):
         super().__init__()
@@ -400,27 +421,27 @@ class HtrgGraphAttentionLayer(nn.Module):
         if "temperature" in kwargs:
             self.temp = kwargs["temperature"]
 
-    def forward(self, x1, x2, master=None):
+    def forward(self, x1, x2, master: Optional[torch.Tensor] = None):
         '''
         x1  :(#bs, #node, #dim)
         x2  :(#bs, #node, #dim)
         '''
-        #print('x1',x1.shape)
-        #print('x2',x2.shape)
+        # print('x1',x1.shape)
+        # print('x2',x2.shape)
         num_type1 = x1.size(1)
         num_type2 = x2.size(1)
-        #print('num_type1',num_type1)
-        #print('num_type2',num_type2)
+        # print('num_type1',num_type1)
+        # print('num_type2',num_type2)
         x1 = self.proj_type1(x1)
-        #print('proj_type1',x1.shape)
+        # print('proj_type1',x1.shape)
         x2 = self.proj_type2(x2)
-        #print('proj_type2',x2.shape)
+        # print('proj_type2',x2.shape)
         x = torch.cat([x1, x2], dim=1)
-        #print('Concat x1 and x2',x.shape)
-        
+        # print('Concat x1 and x2',x.shape)
+
         if master is None:
             master = torch.mean(x, dim=1, keepdim=True)
-            #print('master',master.shape)
+            # print('master',master.shape)
         # apply input dropout
         x = self.input_drop(x)
 
@@ -428,28 +449,28 @@ class HtrgGraphAttentionLayer(nn.Module):
         # Convert num_type1 to a tensor if it's not already
         if not isinstance(num_type1, torch.Tensor):
             num_type1 = torch.tensor(num_type1)
-        
+
         # Convert num_type2 to a tensor if it's not already
         if not isinstance(num_type2, torch.Tensor):
             num_type2 = torch.tensor(num_type2)
 
         # derive attention map
         att_map = self._derive_att_map(x, num_type1, num_type2)
-        #print('master',master.shape)
+        # print('master',master.shape)
         # directional edge for master node
         master = self._update_master(x, master)
-        #print('master',master.shape)
+        # print('master',master.shape)
         # projection
         x = self._project(x, att_map)
-        #print('proj x',x.shape)
+        # print('proj x',x.shape)
         # apply batch norm
         x = self._apply_BN(x)
         x = self.act(x)
 
         x1 = x.narrow(1, 0, num_type1)
-        #print('x1',x1.shape)
+        # print('x1',x1.shape)
         x2 = x.narrow(1, num_type1, num_type2)
-        #print('x2',x2.shape)
+        # print('x2',x2.shape)
         return x1, x2, master
 
     def _update_master(self, x, master):
@@ -513,8 +534,6 @@ class HtrgGraphAttentionLayer(nn.Module):
 
         att_map = att_board
 
-        
-
         # apply temperature
         att_map = att_map / self.temp
 
@@ -549,6 +568,7 @@ class HtrgGraphAttentionLayer(nn.Module):
         nn.init.xavier_normal_(out)
         return out
 
+
 class GraphPool(nn.Module):
     def __init__(self, k: float, in_dim: int, p: Union[float, int]):
         super().__init__()
@@ -564,7 +584,7 @@ class GraphPool(nn.Module):
         weights = self.proj(Z)
         scores = self.sigmoid(weights)
         # Convert self.k to a tensor if it's not already
-        
+
         new_h = self.top_k_graph(scores, h, self.k)
 
         return new_h
@@ -583,7 +603,8 @@ class GraphPool(nn.Module):
         _, n_nodes, n_feat = h.size()
         # n_nodes = max(int(n_nodes * k), 1)
         # n_nodes = torch.max(torch.tensor([int(n_nodes * k), 1]))
-        n_nodes = torch.max((torch.tensor(n_nodes) * k).long(), torch.tensor(1))
+        n_nodes = torch.max(
+            (torch.as_tensor(n_nodes) * k).long(), torch.as_tensor(1))
         _, idx = torch.topk(scores, n_nodes, dim=1)
         idx = idx.expand(-1, -1, n_feat)
 
@@ -591,6 +612,7 @@ class GraphPool(nn.Module):
         h = torch.gather(h, 1, idx)
 
         return h
+
 
 class Residual_block(nn.Module):
     def __init__(self, nb_filts, first=False):
@@ -625,7 +647,6 @@ class Residual_block(nn.Module):
 
         else:
             self.downsample = False
-        
 
     def forward(self, x):
         identity = x
@@ -635,19 +656,19 @@ class Residual_block(nn.Module):
         else:
             out = x
 
-        #print('out',out.shape)
+        # print('out',out.shape)
         out = self.conv1(x)
 
-        #print('aft conv1 out',out.shape)
+        # print('aft conv1 out',out.shape)
         out = self.bn2(out)
         out = self.selu(out)
         # print('out',out.shape)
         out = self.conv2(out)
-        #print('conv2 out',out.shape)
-        
+        # print('conv2 out',out.shape)
+
         if self.downsample and self.conv_downsample is not None:
             identity = self.conv_downsample(identity)
 
         out += identity
-        #out = self.mp(out)
+        # out = self.mp(out)
         return out

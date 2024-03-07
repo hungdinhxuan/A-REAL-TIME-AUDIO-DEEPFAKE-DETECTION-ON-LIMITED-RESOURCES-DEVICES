@@ -30,3 +30,6 @@ data
 code
 test_samples
 *.zip
+*.txt
+*.wav
+*.flac

@@ -1,4 +1,4 @@
-name: 'FT_W2V2_AASIST_voxcelb2'
+name: 'W2V2_AASIST_padding2s'
 
 model:
   teacher:
@@ -9,7 +9,7 @@ model:
     teacher_module_ios:
       - 'False:True'
       - 'False:True'
-    pretrained_path: '' # FT from this model
+    pretrained_path: '/nfs/datab/hungdx/KDW2V-AASISTL/epoch_3_from2.65_EER2.30.pth' # FT from this model
     is_parallel: False
 
   student:
@@ -21,7 +21,7 @@ model:
       - 'False:True'
       - 'False:True'
 
-is_learning_rate_scheduler: True
+is_learning_rate_scheduler: False
 
 learning_rate_scheduler:
   name: 'StepLR'
@@ -32,19 +32,19 @@ learning_rate_scheduler:
 
 train:
 
-  learning_rate: 0.000005
+  learning_rate: 0.000001
   weight_decay: 0.00001
-  batch_size: 8
+  batch_size: 16
   num_epochs: 500
   num_workers: 4
-  amp: True
+  amp: False
   teacher: True
   patience: 30
   seed: 42
   freeze_ssl_num_epoch: 0 # 0 for no freeze
-  dataset: 'voxceleb2'
+  dataset: 'supcon_jan22'
   train_teacher: True
-  ssl_teacher_path: '/nfs/datab/hungdx/KDW2V-AASISTL/wav2vec_ft2_vox_vocoded.pt'
+  ssl_teacher_path: '/nfs/datab/hungdx/KDW2V-AASISTL/xlsr2_300m.pt'
   augment_mode: 'rawboost' # 'rawboost' for rawboost, 'audiomentations' for audiomentations
   algo: 3
   student_resume: '/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_2/best_checkpoint_49.pth'

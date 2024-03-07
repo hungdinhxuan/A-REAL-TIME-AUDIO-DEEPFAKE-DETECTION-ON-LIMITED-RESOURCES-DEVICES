@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from models import *
 from torch.quantization import QuantStub, DeQuantStub
 from torchdistill.models.registry import register_model
-
+from wav2vec2_linear_nll_multi import BackEnd
 @register_model(key='W2V2BASE_HF_AASISTL')
 class W2V2BASE_HF_AASISTL(nn.Module):
     def __init__(self, device):
@@ -2970,7 +2970,9 @@ class SelfDistil_W2V2BASE_AASISTL(nn.Module):
         output = self.out_layer(last_hidden)
         
         return output, spectral_output, temporal_output, graph_output_S, graph_output_T, hs_gal_output_S, hs_gal_output_T, middle_feature1, middle_feature2, final_feature1, final_feature2, x_ssl_feat
-    
+
+
+
 @register_model(key='Distil_W2V2BASE_AASISTL')
 class Distil_W2V2BASE_AASISTL(nn.Module):
     def __init__(self, device, ssl_cpkt_path):
@@ -3133,4 +3135,24 @@ class Distil_W2V2BASE_AASISTL(nn.Module):
         last_hidden = self.drop(last_hidden)
         output = self.out_layer(last_hidden)
         
+        return output
+    
+
+@register_model(key='Distil_W2V2BASE_Linear')
+class Distil_W2V2BASE_Linear(nn.Module):
+    def __init__(self, device, ssl_cpkt_path):
+        super().__init__()
+        ####
+        # create network wav2vec 2.0
+        ####
+        self.ssl_model = SSLModel(device, ssl_cpkt_path, 768).to(device)
+        self.LL = nn.Linear(self.ssl_model.out_dim, 128)
+        self.backend = BackEnd(128, 128, 2, 0.5, False)
+
+    def forward(self, x):
+        # -------pre-trained Wav2vec model fine tunning ------------------------##
+        x_ssl_feat = self.ssl_model(x.squeeze(-1))
+        x = self.LL(x_ssl_feat)  # (bs,frame_number,feat_out_dim)
+        x = nn.ReLU()(x)
+        output = self.backend(x)
         return output

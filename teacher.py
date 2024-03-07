@@ -4,16 +4,17 @@ from models import SSLModel, GraphAttentionLayer, GraphPool, HtrgGraphAttentionL
 import torch.nn.functional as F
 from torchdistill.models.registry import register_model
 
+
 @register_model(key="W2V2_AASIST")
 class W2V2_AASIST(nn.Module):
     def __init__(self, device, ssl_cpkt_path):
         super().__init__()
-    
+
         # AASIST parameters
         filts = [128, [1, 32], [32, 32], [32, 64], [64, 64]]
         gat_dims = [64, 32]
         pool_ratios = [0.5, 0.5, 0.5, 0.5]
-        temperatures =  [2.0, 2.0, 100.0, 100.0]
+        temperatures = [2.0, 2.0, 100.0, 100.0]
 
         ####
         # create network wav2vec 2.0
@@ -38,18 +39,18 @@ class W2V2_AASIST(nn.Module):
             nn.Sequential(Residual_block(nb_filts=filts[4])))
 
         self.attention = nn.Sequential(
-            nn.Conv2d(64, 128, kernel_size=(1,1)),
+            nn.Conv2d(64, 128, kernel_size=(1, 1)),
             nn.SELU(inplace=True),
             nn.BatchNorm2d(128),
-            nn.Conv2d(128, 64, kernel_size=(1,1)),
-            
+            nn.Conv2d(128, 64, kernel_size=(1, 1)),
+
         )
         # position encoding
         self.pos_S = nn.Parameter(torch.randn(1, 42, filts[-1][-1]))
-        
+
         self.master1 = nn.Parameter(torch.randn(1, 1, gat_dims[0]))
         self.master2 = nn.Parameter(torch.randn(1, 1, gat_dims[0]))
-        
+
         # Graph module
         self.GAT_layer_S = GraphAttentionLayer(filts[-1][-1],
                                                gat_dims[0],
@@ -57,7 +58,7 @@ class W2V2_AASIST(nn.Module):
         self.GAT_layer_T = GraphAttentionLayer(filts[-1][-1],
                                                gat_dims[0],
                                                temperature=temperatures[1])
-        # HS-GAL layer 
+        # HS-GAL layer
         self.HtrgGAT_layer_ST11 = HtrgGraphAttentionLayer(
             gat_dims[0], gat_dims[1], temperature=temperatures[2])
         self.HtrgGAT_layer_ST12 = HtrgGraphAttentionLayer(
@@ -75,18 +76,17 @@ class W2V2_AASIST(nn.Module):
 
         self.pool_hS2 = GraphPool(pool_ratios[2], gat_dims[1], 0.3)
         self.pool_hT2 = GraphPool(pool_ratios[2], gat_dims[1], 0.3)
-        
+
         self.out_layer = nn.Linear(5 * gat_dims[1], 2)
-        
 
     def forward(self, x):
-        #-------pre-trained Wav2vec model fine tunning ------------------------##
+        # -------pre-trained Wav2vec model fine tunning ------------------------##
         x_ssl_feat = self.ssl_model.extract_feat(x.squeeze(-1))
-        x = self.LL(x_ssl_feat) #(bs,frame_number,feat_out_dim)
-        
+        x = self.LL(x_ssl_feat)  # (bs,frame_number,feat_out_dim)
+
         # post-processing on front-end features
-        x = x.transpose(1, 2)   #(bs,feat_out_dim,frame_number)
-        x = x.unsqueeze(dim=1) # add channel 
+        x = x.transpose(1, 2)  # (bs,feat_out_dim,frame_number)
+        x = x.unsqueeze(dim=1)  # add channel
         x = F.max_pool2d(x, (3, 3))
         x = self.first_bn(x)
         x = self.selu(x)
@@ -95,28 +95,28 @@ class W2V2_AASIST(nn.Module):
         x = self.encoder(x)
         x = self.first_bn1(x)
         x = self.selu(x)
-        
+
         w = self.attention(x)
-        
-        #------------SA for spectral feature-------------#
-        w1 = F.softmax(w,dim=-1)
+
+        # ------------SA for spectral feature-------------#
+        w1 = F.softmax(w, dim=-1)
         m = torch.sum(x * w1, dim=-1)
-        e_S = m.transpose(1, 2) + self.pos_S 
-        
+        e_S = m.transpose(1, 2) + self.pos_S
+
         # graph module layer
         gat_S = self.GAT_layer_S(e_S)
         out_S = self.pool_S(gat_S)  # (#bs, #node, #dim)
-        
-        #------------SA for temporal feature-------------#
-        w2 = F.softmax(w,dim=-2)
+
+        # ------------SA for temporal feature-------------#
+        w2 = F.softmax(w, dim=-2)
         m1 = torch.sum(x * w2, dim=-2)
-     
+
         e_T = m1.transpose(1, 2)
-       
+
         # graph module layer
         gat_T = self.GAT_layer_T(e_T)
         out_T = self.pool_T(gat_T)
-        
+
         # learnable master node
         master1 = self.master1.expand(x.size(0), -1, -1)
         master2 = self.master2.expand(x.size(0), -1, -1)
@@ -163,11 +163,11 @@ class W2V2_AASIST(nn.Module):
 
         S_max, _ = torch.max(torch.abs(out_S), dim=1)
         S_avg = torch.mean(out_S, dim=1)
-        
+
         last_hidden = torch.cat(
             [T_max, T_avg, S_max, S_avg, master.squeeze(1)], dim=1)
-        
-        last_hidden = self.drop(last_hidden)    
+
+        last_hidden = self.drop(last_hidden)
         output = self.out_layer(last_hidden)
 
         return output
@@ -176,12 +176,12 @@ class W2V2_AASIST(nn.Module):
 class W2V2_AASIST_Cosine(nn.Module):
     def __init__(self, device):
         super().__init__()
-    
+
         # AASIST parameters
         filts = [128, [1, 32], [32, 32], [32, 64], [64, 64]]
         gat_dims = [64, 32]
         pool_ratios = [0.5, 0.5, 0.5, 0.5]
-        temperatures =  [2.0, 2.0, 100.0, 100.0]
+        temperatures = [2.0, 2.0, 100.0, 100.0]
 
         ####
         # create network wav2vec 2.0
@@ -206,18 +206,18 @@ class W2V2_AASIST_Cosine(nn.Module):
             nn.Sequential(Residual_block(nb_filts=filts[4])))
 
         self.attention = nn.Sequential(
-            nn.Conv2d(64, 128, kernel_size=(1,1)),
+            nn.Conv2d(64, 128, kernel_size=(1, 1)),
             nn.SELU(inplace=True),
             nn.BatchNorm2d(128),
-            nn.Conv2d(128, 64, kernel_size=(1,1)),
-            
+            nn.Conv2d(128, 64, kernel_size=(1, 1)),
+
         )
         # position encoding
         self.pos_S = nn.Parameter(torch.randn(1, 42, filts[-1][-1]))
-        
+
         self.master1 = nn.Parameter(torch.randn(1, 1, gat_dims[0]))
         self.master2 = nn.Parameter(torch.randn(1, 1, gat_dims[0]))
-        
+
         # Graph module
         self.GAT_layer_S = GraphAttentionLayer(filts[-1][-1],
                                                gat_dims[0],
@@ -225,7 +225,7 @@ class W2V2_AASIST_Cosine(nn.Module):
         self.GAT_layer_T = GraphAttentionLayer(filts[-1][-1],
                                                gat_dims[0],
                                                temperature=temperatures[1])
-        # HS-GAL layer 
+        # HS-GAL layer
         self.HtrgGAT_layer_ST11 = HtrgGraphAttentionLayer(
             gat_dims[0], gat_dims[1], temperature=temperatures[2])
         self.HtrgGAT_layer_ST12 = HtrgGraphAttentionLayer(
@@ -243,21 +243,20 @@ class W2V2_AASIST_Cosine(nn.Module):
 
         self.pool_hS2 = GraphPool(pool_ratios[2], gat_dims[1], 0.3)
         self.pool_hT2 = GraphPool(pool_ratios[2], gat_dims[1], 0.3)
-        
+
         self.out_layer = nn.Linear(5 * gat_dims[1], 2)
-        
 
     def forward(self, x):
-        #-------pre-trained Wav2vec model fine tunning ------------------------##
+        # -------pre-trained Wav2vec model fine tunning ------------------------##
         x_ssl_feat = self.ssl_model.extract_feat(x.squeeze(-1))
-        x = self.LL(x_ssl_feat) #(bs,frame_number,feat_out_dim)
+        x = self.LL(x_ssl_feat)  # (bs,frame_number,feat_out_dim)
 
         # flatten the input
         flattened_conv_output = x
-        
+
         # post-processing on front-end features
-        x = x.transpose(1, 2)   #(bs,feat_out_dim,frame_number)
-        x = x.unsqueeze(dim=1) # add channel 
+        x = x.transpose(1, 2)  # (bs,feat_out_dim,frame_number)
+        x = x.unsqueeze(dim=1)  # add channel
         x = F.max_pool2d(x, (3, 3))
         x = self.first_bn(x)
         x = self.selu(x)
@@ -266,28 +265,28 @@ class W2V2_AASIST_Cosine(nn.Module):
         x = self.encoder(x)
         x = self.first_bn1(x)
         x = self.selu(x)
-        
+
         w = self.attention(x)
-        
-        #------------SA for spectral feature-------------#
-        w1 = F.softmax(w,dim=-1)
+
+        # ------------SA for spectral feature-------------#
+        w1 = F.softmax(w, dim=-1)
         m = torch.sum(x * w1, dim=-1)
-        e_S = m.transpose(1, 2) + self.pos_S 
-        
+        e_S = m.transpose(1, 2) + self.pos_S
+
         # graph module layer
         gat_S = self.GAT_layer_S(e_S)
         out_S = self.pool_S(gat_S)  # (#bs, #node, #dim)
-        
-        #------------SA for temporal feature-------------#
-        w2 = F.softmax(w,dim=-2)
+
+        # ------------SA for temporal feature-------------#
+        w2 = F.softmax(w, dim=-2)
         m1 = torch.sum(x * w2, dim=-2)
-     
+
         e_T = m1.transpose(1, 2)
-       
+
         # graph module layer
         gat_T = self.GAT_layer_T(e_T)
         out_T = self.pool_T(gat_T)
-        
+
         # learnable master node
         master1 = self.master1.expand(x.size(0), -1, -1)
         master2 = self.master2.expand(x.size(0), -1, -1)
@@ -334,24 +333,25 @@ class W2V2_AASIST_Cosine(nn.Module):
 
         S_max, _ = torch.max(torch.abs(out_S), dim=1)
         S_avg = torch.mean(out_S, dim=1)
-        
+
         last_hidden = torch.cat(
             [T_max, T_avg, S_max, S_avg, master.squeeze(1)], dim=1)
-        
-        last_hidden = self.drop(last_hidden)    
+
+        last_hidden = self.drop(last_hidden)
         output = self.out_layer(last_hidden)
 
         return output, flattened_conv_output
 
+
 class W2V2_AASIST_Regressor(nn.Module):
     def __init__(self, device):
         super().__init__()
-    
+
         # AASIST parameters
         filts = [128, [1, 32], [32, 32], [32, 64], [64, 64]]
         gat_dims = [64, 32]
         pool_ratios = [0.5, 0.5, 0.5, 0.5]
-        temperatures =  [2.0, 2.0, 100.0, 100.0]
+        temperatures = [2.0, 2.0, 100.0, 100.0]
 
         ####
         # create network wav2vec 2.0
@@ -376,18 +376,18 @@ class W2V2_AASIST_Regressor(nn.Module):
             nn.Sequential(Residual_block(nb_filts=filts[4])))
 
         self.attention = nn.Sequential(
-            nn.Conv2d(64, 128, kernel_size=(1,1)),
+            nn.Conv2d(64, 128, kernel_size=(1, 1)),
             nn.SELU(inplace=True),
             nn.BatchNorm2d(128),
-            nn.Conv2d(128, 64, kernel_size=(1,1)),
-            
+            nn.Conv2d(128, 64, kernel_size=(1, 1)),
+
         )
         # position encoding
         self.pos_S = nn.Parameter(torch.randn(1, 42, filts[-1][-1]))
-        
+
         self.master1 = nn.Parameter(torch.randn(1, 1, gat_dims[0]))
         self.master2 = nn.Parameter(torch.randn(1, 1, gat_dims[0]))
-        
+
         # Graph module
         self.GAT_layer_S = GraphAttentionLayer(filts[-1][-1],
                                                gat_dims[0],
@@ -395,7 +395,7 @@ class W2V2_AASIST_Regressor(nn.Module):
         self.GAT_layer_T = GraphAttentionLayer(filts[-1][-1],
                                                gat_dims[0],
                                                temperature=temperatures[1])
-        # HS-GAL layer 
+        # HS-GAL layer
         self.HtrgGAT_layer_ST11 = HtrgGraphAttentionLayer(
             gat_dims[0], gat_dims[1], temperature=temperatures[2])
         self.HtrgGAT_layer_ST12 = HtrgGraphAttentionLayer(
@@ -413,19 +413,18 @@ class W2V2_AASIST_Regressor(nn.Module):
 
         self.pool_hS2 = GraphPool(pool_ratios[2], gat_dims[1], 0.3)
         self.pool_hT2 = GraphPool(pool_ratios[2], gat_dims[1], 0.3)
-        
+
         self.out_layer = nn.Linear(5 * gat_dims[1], 2)
-        
 
     def forward(self, x):
-        #-------pre-trained Wav2vec model fine tunning ------------------------##
+        # -------pre-trained Wav2vec model fine tunning ------------------------##
         x_ssl_feat = self.ssl_model.extract_feat(x.squeeze(-1))
-        x = self.LL(x_ssl_feat) #(bs,frame_number,feat_out_dim)
+        x = self.LL(x_ssl_feat)  # (bs,frame_number,feat_out_dim)
         conv_feature_map = x
 
         # post-processing on front-end features
-        x = x.transpose(1, 2)   #(bs,feat_out_dim,frame_number)
-        x = x.unsqueeze(dim=1) # add channel 
+        x = x.transpose(1, 2)  # (bs,feat_out_dim,frame_number)
+        x = x.unsqueeze(dim=1)  # add channel
         x = F.max_pool2d(x, (3, 3))
         x = self.first_bn(x)
         x = self.selu(x)
@@ -434,28 +433,28 @@ class W2V2_AASIST_Regressor(nn.Module):
         x = self.encoder(x)
         x = self.first_bn1(x)
         x = self.selu(x)
-        
+
         w = self.attention(x)
-        
-        #------------SA for spectral feature-------------#
-        w1 = F.softmax(w,dim=-1)
+
+        # ------------SA for spectral feature-------------#
+        w1 = F.softmax(w, dim=-1)
         m = torch.sum(x * w1, dim=-1)
-        e_S = m.transpose(1, 2) + self.pos_S 
-        
+        e_S = m.transpose(1, 2) + self.pos_S
+
         # graph module layer
         gat_S = self.GAT_layer_S(e_S)
         out_S = self.pool_S(gat_S)  # (#bs, #node, #dim)
-        
-        #------------SA for temporal feature-------------#
-        w2 = F.softmax(w,dim=-2)
+
+        # ------------SA for temporal feature-------------#
+        w2 = F.softmax(w, dim=-2)
         m1 = torch.sum(x * w2, dim=-2)
-     
+
         e_T = m1.transpose(1, 2)
-       
+
         # graph module layer
         gat_T = self.GAT_layer_T(e_T)
         out_T = self.pool_T(gat_T)
-        
+
         # learnable master node
         master1 = self.master1.expand(x.size(0), -1, -1)
         master2 = self.master2.expand(x.size(0), -1, -1)
@@ -502,25 +501,27 @@ class W2V2_AASIST_Regressor(nn.Module):
 
         S_max, _ = torch.max(torch.abs(out_S), dim=1)
         S_avg = torch.mean(out_S, dim=1)
-        
+
         last_hidden = torch.cat(
             [T_max, T_avg, S_max, S_avg, master.squeeze(1)], dim=1)
-        
-        last_hidden = self.drop(last_hidden)    
+
+        last_hidden = self.drop(last_hidden)
         output = self.out_layer(last_hidden)
 
         return output, conv_feature_map
 
-## Self - Knowledge Distillation
+# Self - Knowledge Distillation
+
+
 class W2V2_AASIST_Self_KD(nn.Module):
     def __init__(self, device):
         super().__init__()
-    
+
         # AASIST parameters
         filts = [128, [1, 32], [32, 32], [32, 64], [64, 64]]
         gat_dims = [64, 32]
         pool_ratios = [0.5, 0.5, 0.5, 0.5]
-        temperatures =  [2.0, 2.0, 100.0, 100.0]
+        temperatures = [2.0, 2.0, 100.0, 100.0]
 
         ####
         # create network wav2vec 2.0
@@ -543,39 +544,39 @@ class W2V2_AASIST_Self_KD(nn.Module):
             nn.Sequential(Residual_block(nb_filts=filts[4])),
             nn.Sequential(Residual_block(nb_filts=filts[4])),
             nn.Sequential(Residual_block(nb_filts=filts[4])))
-        
-        # Middle FC 1 
-        self.middle_fc1  = nn.Linear(21 * 128, 2)
+
+        # Middle FC 1
+        self.middle_fc1 = nn.Linear(21 * 128, 2)
 
         self.attention = nn.Sequential(
-            nn.Conv2d(64, 128, kernel_size=(1,1)),
+            nn.Conv2d(64, 128, kernel_size=(1, 1)),
             nn.SELU(inplace=True),
             nn.BatchNorm2d(128),
-            nn.Conv2d(128, 64, kernel_size=(1,1)),
-            
+            nn.Conv2d(128, 64, kernel_size=(1, 1)),
+
         )
 
         # Middle FC 2
-        self.middle_fc2  = nn.Linear(1024, 2)
-        
+        self.middle_fc2 = nn.Linear(1024, 2)
+
         # position encoding
         self.pos_S = nn.Parameter(torch.randn(1, 42, filts[-1][-1]))
-        
+
         self.master1 = nn.Parameter(torch.randn(1, 1, gat_dims[0]))
         self.master2 = nn.Parameter(torch.randn(1, 1, gat_dims[0]))
-        
+
         # Graph module
         self.GAT_layer_S = GraphAttentionLayer(filts[-1][-1],
                                                gat_dims[0],
                                                temperature=temperatures[0])
         # Middle FC 3
-        self.middle_fc3  = nn.Linear(10 * 32, 2)
+        self.middle_fc3 = nn.Linear(10 * 32, 2)
 
         self.GAT_layer_T = GraphAttentionLayer(filts[-1][-1],
                                                gat_dims[0],
                                                temperature=temperatures[1])
-        
-        # HS-GAL layer 
+
+        # HS-GAL layer
         self.HtrgGAT_layer_ST11 = HtrgGraphAttentionLayer(
             gat_dims[0], gat_dims[1], temperature=temperatures[2])
         self.HtrgGAT_layer_ST12 = HtrgGraphAttentionLayer(
@@ -586,9 +587,9 @@ class W2V2_AASIST_Self_KD(nn.Module):
             gat_dims[1], gat_dims[1], temperature=temperatures[2])
 
         # Middle FC 4
-        self.middle_fc4  = nn.Linear(4 * 32, 2)
-        self.middle_fc5  = nn.Linear(10 * 32, 2)
-        self.middle_fc6  = nn.Linear(4 * 32, 2)
+        self.middle_fc4 = nn.Linear(4 * 32, 2)
+        self.middle_fc5 = nn.Linear(10 * 32, 2)
+        self.middle_fc6 = nn.Linear(4 * 32, 2)
 
         # Graph pooling layers
         self.pool_S = GraphPool(pool_ratios[0], gat_dims[0], 0.3)
@@ -598,18 +599,17 @@ class W2V2_AASIST_Self_KD(nn.Module):
 
         self.pool_hS2 = GraphPool(pool_ratios[2], gat_dims[1], 0.3)
         self.pool_hT2 = GraphPool(pool_ratios[2], gat_dims[1], 0.3)
-        
+
         self.out_layer = nn.Linear(5 * gat_dims[1], 2)
-        
 
     def forward(self, x):
-        #-------pre-trained Wav2vec model fine tunning ------------------------##
+        # -------pre-trained Wav2vec model fine tunning ------------------------##
         x_ssl_feat = self.ssl_model.extract_feat(x.squeeze(-1))
-        x = self.LL(x_ssl_feat) #(bs,frame_number,feat_out_dim)
-        
+        x = self.LL(x_ssl_feat)  # (bs,frame_number,feat_out_dim)
+
         # post-processing on front-end features
-        x = x.transpose(1, 2)   #(bs,feat_out_dim,frame_number)
-        x = x.unsqueeze(dim=1) # add channel 
+        x = x.transpose(1, 2)  # (bs,feat_out_dim,frame_number)
+        x = x.unsqueeze(dim=1)  # add channel
         x = F.max_pool2d(x, (3, 3))
         x = self.first_bn(x)
         x = self.selu(x)
@@ -618,36 +618,37 @@ class W2V2_AASIST_Self_KD(nn.Module):
         x = self.encoder(x)
         x = self.first_bn1(x)
         x = self.selu(x)
-        
+
         w = self.attention(x)
 
-        
-        #------------SA for spectral feature-------------#
-        w1 = F.softmax(w,dim=-1)
+        # ------------SA for spectral feature-------------#
+        w1 = F.softmax(w, dim=-1)
         m = torch.sum(x * w1, dim=-1)
-        e_S = m.transpose(1, 2) + self.pos_S 
+        e_S = m.transpose(1, 2) + self.pos_S
 
         # Extract spectral feature for middle FC 1
-        
-        spectral_output = self.middle_fc1(e_S.reshape(e_S.size(0), -1))  # Flatten and apply Linear
-        
+
+        spectral_output = self.middle_fc1(e_S.reshape(
+            e_S.size(0), -1))  # Flatten and apply Linear
+
         # graph module layer
         gat_S = self.GAT_layer_S(e_S)
         out_S = self.pool_S(gat_S)  # (#bs, #node, #dim)
-        
-        #------------SA for temporal feature-------------#
-        w2 = F.softmax(w,dim=-2)
+
+        # ------------SA for temporal feature-------------#
+        w2 = F.softmax(w, dim=-2)
         m1 = torch.sum(x * w2, dim=-2)
-     
+
         e_T = m1.transpose(1, 2)
         # Extract temporal feature
-      
-        temporal_output = self.middle_fc2(e_T.reshape(e_T.size(0), -1))  # Flatten and apply Linear
-       
+
+        temporal_output = self.middle_fc2(e_T.reshape(
+            e_T.size(0), -1))  # Flatten and apply Linear
+
         # graph module layer
         gat_T = self.GAT_layer_T(e_T)
         out_T = self.pool_T(gat_T)
-        
+
         # learnable master node
         master1 = self.master1.expand(x.size(0), -1, -1)
         master2 = self.master2.expand(x.size(0), -1, -1)
@@ -660,13 +661,14 @@ class W2V2_AASIST_Self_KD(nn.Module):
         out_T1 = self.pool_hT1(out_T1)
 
         # Extract output from Graph modules
-    
 
         # e_S_flattened = e_S.view(e_S.size(0), -1)  # Reshapes to [1, 42*64]
         # e_T_flattened = e_T.view(e_T.size(0), -1)  # Reshapes to [1, 16*64]
 
-        graph_output_S = self.middle_fc3(out_S1.reshape(out_S1.size(0), -1))  # Flatten and apply Linear
-        graph_output_T = self.middle_fc4(out_T1.reshape(out_T1.size(0), -1))  # Flatten and apply Linear
+        graph_output_S = self.middle_fc3(out_S1.reshape(
+            out_S1.size(0), -1))  # Flatten and apply Linear
+        graph_output_T = self.middle_fc4(out_T1.reshape(
+            out_T1.size(0), -1))  # Flatten and apply Linear
 
         out_T_aug, out_S_aug, master_aug = self.HtrgGAT_layer_ST12(
             out_T1, out_S1, master=master1)
@@ -680,8 +682,6 @@ class W2V2_AASIST_Self_KD(nn.Module):
         out_S2 = self.pool_hS2(out_S2)
         out_T2 = self.pool_hT2(out_T2)
 
-
-
         out_T_aug, out_S_aug, master_aug = self.HtrgGAT_layer_ST22(
             out_T2, out_S2, master=master2)
         out_T2 = out_T2 + out_T_aug
@@ -693,9 +693,10 @@ class W2V2_AASIST_Self_KD(nn.Module):
         out_S1 = self.drop_way(out_S1)
         out_S2 = self.drop_way(out_S2)
 
-
-        hs_gal_output_S = self.middle_fc5(out_S2.reshape(out_S2.size(0), -1))  # Flatten and apply Linear
-        hs_gal_output_T = self.middle_fc6(out_T2.reshape(out_T2.size(0), -1))  # Flatten and apply Linear
+        hs_gal_output_S = self.middle_fc5(out_S2.reshape(
+            out_S2.size(0), -1))  # Flatten and apply Linear
+        hs_gal_output_T = self.middle_fc6(out_T2.reshape(
+            out_T2.size(0), -1))  # Flatten and apply Linear
 
         master1 = self.drop_way(master1)
         master2 = self.drop_way(master2)
@@ -710,11 +711,14 @@ class W2V2_AASIST_Self_KD(nn.Module):
 
         S_max, _ = torch.max(torch.abs(out_S), dim=1)
         S_avg = torch.mean(out_S, dim=1)
-        
+
         last_hidden = torch.cat(
             [T_max, T_avg, S_max, S_avg, master.squeeze(1)], dim=1)
-        
-        last_hidden = self.drop(last_hidden)    
+
+        last_hidden = self.drop(last_hidden)
         output = self.out_layer(last_hidden)
 
         return output, spectral_output, temporal_output, graph_output_S, graph_output_T, hs_gal_output_S, hs_gal_output_T
+
+
+# ---------------------------------------

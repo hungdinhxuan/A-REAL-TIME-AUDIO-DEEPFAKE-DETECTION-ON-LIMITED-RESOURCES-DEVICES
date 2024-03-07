@@ -43,13 +43,13 @@ train:
   patience: 30
   seed: 2242
   freeze_ssl_num_epoch: 0 # 0 for no freeze
-  dataset: 'supcon_jan22'
+  dataset: 'voxceleb2'
   augment_mode: 'audiomentations' # 'rawboost' for rawboost, 'audiomentations' for audiomentations
   # alpha: 0.9
   # beta: 0.5
   # T: 2
   cross_entropy_loss_weight: [0.21, 0.79]
-  student_resume: '/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations/best_checkpoint_78.pth'
+  student_resume: '/nfs/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_3_v18/best_checkpoint_71.pth'
   raytune: False
 
   # sup_contrastive: True
