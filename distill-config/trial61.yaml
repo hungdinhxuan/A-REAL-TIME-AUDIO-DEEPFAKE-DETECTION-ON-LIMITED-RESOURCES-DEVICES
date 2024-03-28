@@ -6,7 +6,7 @@ model:
       - 'out_layer'
     teacher_module_ios:
       - 'True:True'
-    pretrained_path: '/nfs/datab/hungdx/KDW2V-AASISTL/epoch_3_from2.65_EER2.30.pth'
+    pretrained_path: '/datab/hungdx/KDW2V-AASISTL/epoch_3_from2.65_EER2.30.pth'
     is_parallel: False
 
   student:
@@ -49,7 +49,7 @@ train:
   # beta: 0.5
   # T: 2
   cross_entropy_loss_weight: [0.21, 0.79]
-  student_resume: '/nfs/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_3_v18/best_checkpoint_71.pth'
+  student_resume: '/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_3_v18/best_checkpoint_71.pth'
   raytune: False
 
   # sup_contrastive: True

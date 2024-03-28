@@ -152,9 +152,9 @@ if len(teacher_dict) > 0:
 
 train_teacher = config["train"].get("train_teacher", False)
 ssl_teacher_path = config["train"].get(
-    "ssl_teacher_path", "/nfs/datab/hungdx/KDW2V-AASISTL/xlsr2_300m.pt")
+    "ssl_teacher_path", "/datab/hungdx/KDW2V-AASISTL/xlsr2_300m.pt")
 ssl_student_path = config["train"].get(
-    "ssl_student_path", "/nfs/datab/hungdx/KDW2V-AASISTL/wav2vec_small.pt")
+    "ssl_student_path", "/datab/hungdx/KDW2V-AASISTL/wav2vec_small.pt")
 
 if augment_mode == "rawboost":
     # DEFAULT rawboost 3
@@ -322,11 +322,12 @@ else:
 
 exp_lr_scheduler = None
 if 'is_learning_rate_scheduler' in config and config['is_learning_rate_scheduler']:
-    logger.info(
-        f'Use learning rate scheduler {config["learning_rate_scheduler"]["name"]}')
+
     # Initialize learning rate scheduler by using its name and its parameters
     exp_lr_scheduler = getattr(torch.optim.lr_scheduler, config['learning_rate_scheduler']['name'])(
         optimizer, **config['learning_rate_scheduler']['params'])
+    logger.info(
+        f'Use learning rate scheduler {config["learning_rate_scheduler"]["name"]}, {exp_lr_scheduler}')
 else:
     logger.info('No learning rate scheduler')
 
@@ -470,12 +471,16 @@ for epoch in tqdm(range(start_epoch, num_epochs), colour='green'):
 
     if "self_kd_config" not in config:
 
-        train_loss = kd_train_epoch(train_loader, student_model, teacher_model, optimizer, device, scaler,
-                                    config, student_forward_hook_manager, teacher_forward_hook_manager, exp_lr_scheduler, use_amp=use_amp)
+        train_loss, train_acc = kd_train_epoch(train_loader, student_model, teacher_model, optimizer, device, scaler,
+                                               config, student_forward_hook_manager, teacher_forward_hook_manager, epoch, exp_lr_scheduler=exp_lr_scheduler, use_amp=use_amp)
         eval_loss, accuracy = kd_val_epoch(
             dev_loader, student_model, device, config)
         logger.info(
             'Epoch: {} - train_loss: {} - eval_loss: {}'.format(epoch, train_loss, eval_loss))
+        writer.add_scalar('Accuracy/train', train_acc, epoch)
+        # wandb.log({
+        #     "Accuracy_train": train_acc
+        # })
     else:
         train_loss, train_total_label_loss, train_total_kd_loss, train_total_feature_loss, running_total_hidden_rep_loss, running_sup_contrastive_loss = self_KD_teacher_train_epoch(
             train_loader, student_model, teacher_model, optimizer, device, scaler, config, student_forward_hook_manager, teacher_forward_hook_manager, exp_lr_scheduler, temperature=temperature, alpha=alpha, beta=beta, use_amp=use_amp)
@@ -507,13 +512,15 @@ for epoch in tqdm(range(start_epoch, num_epochs), colour='green'):
 
     if exp_lr_scheduler is not None and config['learning_rate_scheduler']['name'] != 'ReduceLROnPlateau':
         writer.add_scalar('Lr/epoch', exp_lr_scheduler.get_last_lr()[0], epoch)
-        wandb.log({"train_loss": train_loss, "eval_loss": eval_loss, "Accuracy": accuracy,
+        wandb.log({"train_loss": train_loss, "eval_loss": eval_loss, "Eval Accuracy": accuracy,
                   "learning_rate": exp_lr_scheduler.get_last_lr()[0]})
     else:
         writer.add_scalar('Lr/epoch', optimizer.param_groups[0]['lr'], epoch)
         wandb.log({"train_loss": train_loss, "eval_loss": eval_loss,
-                   "Accuracy": accuracy,
-                  "learning_rate": optimizer.param_groups[0]['lr']})
+                   "Eval Accuracy": accuracy,
+                  "learning_rate": optimizer.param_groups[0]['lr'],
+                   "Accuracy_train": train_acc
+                   })
 
     if train_loss < 0.001 and eval_loss < 0.001:
         wandb.alert(

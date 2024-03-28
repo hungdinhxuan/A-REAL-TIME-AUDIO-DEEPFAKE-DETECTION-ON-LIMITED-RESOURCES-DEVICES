@@ -8,7 +8,7 @@ model:
     teacher_module_ios:
       - 'False:True'
       - 'False:True'
-    pretrained_path: '/nfs/datab/hungdx/KDW2V-AASISTL/supcon_jan22_longR3_epoch_43.pth'
+    pretrained_path: '/datab/hungdx/KDW2V-AASISTL/supcon_jan22_longR3_epoch_43.pth'
     is_parallel: False
 
   student:
@@ -43,7 +43,7 @@ train:
   freeze_ssl_num_epoch: 0 # 0 for no freeze
   dataset: 'supcon_jan22'
   augment_mode: 'audiomentations' # 'rawboost' for rawboost, 'audiomentations' for audiomentations
-  student_resume: '/nfs/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_KDLoss_cnsl/best_checkpoint_51.pth'
+  student_resume: '/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_KDLoss_cnsl/best_checkpoint_51.pth'
   cross_entropy_loss_weight: [0.21, 0.79]
   
 

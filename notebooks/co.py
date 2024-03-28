@@ -35,7 +35,7 @@ class SSLModel(nn.Module):  # W2V
     def __init__(self, device):
         super(SSLModel, self).__init__()
         # Change the pre-trained XLSR model path.
-        cp_path = '/nfs/datab/hungdx/KDW2V-AASISTL/xlsr2_300m.pt'
+        cp_path = '/datab/hungdx/KDW2V-AASISTL/xlsr2_300m.pt'
         model, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([
                                                                                  cp_path])
         self.model = model[0]

@@ -1,47 +1,17 @@
-# import torch
-# import os
-# import librosa
-
-# model_scripted_ckpt = "/nfs/datab/hungdx/KDW2V-AASISTL/W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_3_v10_mobile.pt"
-# test_dir = "/nfs/datab/hungdx/KDW2V-AASISTL/test_samples/MobileSamples/EnvironmentalSound_mic&screenrecording_trial_5"
-# score = "/nfs/datab/hungdx/KDW2V-AASISTL/test_samples/MobileSamples/EnvironmentalSound_mic&screenrecording_trial_5/W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_3_v10_mobile_trim.txt"
-# jit_model = torch.jit.load(model_scripted_ckpt)
-
-# total = 0
-# correct = 0
-# with open(score, "a+") as out:
-#     for file in os.listdir(test_dir):
-#         if file.endswith(".wav"):
-#             total += 1
-#             correct += 1
-#             print(f"Processing {file}")
-#             file = os.path.join(test_dir, file)
-#             input, _ = librosa.load(file, sr=16000)
-
-#             with torch.no_grad():
-#                 intesnor_input = torch.tensor(input).float()
-#                 jit_out = jit_model(intesnor_input)
-#                 if jit_out > 0.5:  # Greater is fake
-#                     correct -= 1
-#                 print(f"{file} - {jit_out}")
-#                 out.write(f"{file} - {jit_out}\n")
-#     out.write(
-#         f"Total: {total}, Correct: {correct}, Accuracy: {correct/total}\n")
-# print(f"Total: {total}, Correct: {correct}, Accuracy: {correct/total}")
 import torch
 import os
 import librosa
 import numpy as np
 
 # Load the model
-model_scripted_ckpt = "/nfs/datab/hungdx/KDW2V-AASISTL/exports/W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_5_best_checkpoint_11_scaledmobile.pt"
+model_scripted_ckpt = "/datab/hungdx/KDW2V-AASISTL/exports/W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_5_best_checkpoint_11_scaledmobile.pt"
 # Get last name from the path
 model_name = os.path.basename(model_scripted_ckpt)
 
 jit_model = torch.jit.load(model_scripted_ckpt)
 
 # Define the root directory where subfolders are located
-root_dir = "/nfs/datab/hungdx/KDW2V-AASISTL/test_samples/test"
+root_dir = "/datab/hungdx/KDW2V-AASISTL/test_samples/test"
 
 # Function to process each subfolder and calculate accuracy
 
@@ -51,7 +21,7 @@ def process_subfolder(subfolder_path, score_file_path):
     total = 0
     correct = 0
     # Check if the folder is labeled as fake or real
-    is_fake = 'fake' in subfolder_path
+    label = 1 if 'fake' in subfolder_path else 0
 
     with open(score_file_path, "a+") as out:
         for file in os.listdir(subfolder_path):
@@ -67,8 +37,8 @@ def process_subfolder(subfolder_path, score_file_path):
                 with torch.no_grad():
                     tensor_input = torch.tensor(input).float()
                     jit_out = jit_model(tensor_input)
-                    # Determine correctness based on the label and model's output
-                    if (is_fake and jit_out > 0.5) or (not is_fake and jit_out <= 0.5):
+                    prediciton = 1 if jit_out > 0.5 else 0
+                    if prediciton == label:
                         correct += 1
                     print(f"{file_path} - {jit_out}")
                     out.write(f"{file_path} - {jit_out}\n")

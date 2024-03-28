@@ -541,5 +541,5 @@ if __name__ == "__main__":
     # model = Frontend_SE().to("cuda:0")
     # summary(model, (2, 16000*4))
     model = Frontend_SE_W2V(
-        "cuda:2", "/nfs/datab/hungdx/KDW2V-AASISTL/xlsr2_300m.pt", 1024).to("cuda:2")
+        "cuda:2", "/datab/hungdx/KDW2V-AASISTL/xlsr2_300m.pt", 1024).to("cuda:2")
     summary(model, (2, 16000*4))

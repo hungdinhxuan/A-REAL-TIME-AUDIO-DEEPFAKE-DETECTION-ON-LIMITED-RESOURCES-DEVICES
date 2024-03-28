@@ -9,7 +9,7 @@ model:
     teacher_module_ios:
       - 'False:True'
       - 'False:True'
-    pretrained_path: '/nfs/datab/hungdx/KDW2V-AASISTL/epoch_3_from2.65_EER2.30.pth' # FT from this model
+    pretrained_path: '/datab/hungdx/KDW2V-AASISTL/epoch_3_from2.65_EER2.30.pth' # FT from this model
     is_parallel: False
 
   student:
@@ -44,7 +44,7 @@ train:
   freeze_ssl_num_epoch: 0 # 0 for no freeze
   dataset: 'supcon_jan22'
   train_teacher: True
-  ssl_teacher_path: '/nfs/datab/hungdx/KDW2V-AASISTL/xlsr2_300m.pt'
+  ssl_teacher_path: '/datab/hungdx/KDW2V-AASISTL/xlsr2_300m.pt'
   augment_mode: 'rawboost' # 'rawboost' for rawboost, 'audiomentations' for audiomentations
   algo: 3
   student_resume: '/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_2/best_checkpoint_49.pth'

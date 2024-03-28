@@ -493,7 +493,7 @@ def train_knowledge_distillation_mse_loss(teacher, student, train_loader,dev_loa
 
 
 def train_knowledge_distillation_config(cfg):
-    args = Namespace(database_path='/datab/Dataset/cnsl_real_fake_audio/supcon_cnsl_jan22', protocols_path='protocol.txt', batch_size=25, num_epochs=100, lr=1e-06, weight_decay=0.0001, loss='weighted_CCE', seed=1234, model_path='/nfs/datab/hungdx/KDW2V-AASISTL/W2V2-AASIST-teacher.pth', cudnn_deterministic_toggle=True, cudnn_benchmark_toggle=False, student_restore=False, KD_logits=False, KD_cosine=False, KD_mse=False, self_KD=False, self_KD_teacher=True, algo=3, nBands=5, minF=20, maxF=8000, minBW=100, maxBW=1000, minCoeff=10, maxCoeff=100, minG=0, maxG=0, minBiasLinNonLin=5, maxBiasLinNonLin=20, N_f=5, P=10, g_sd=2, SNRmin=10, SNRmax=40, workers=8)
+    args = Namespace(database_path='/datab/Dataset/cnsl_real_fake_audio/supcon_cnsl_jan22', protocols_path='protocol.txt', batch_size=25, num_epochs=100, lr=1e-06, weight_decay=0.0001, loss='weighted_CCE', seed=1234, model_path='/datab/hungdx/KDW2V-AASISTL/W2V2-AASIST-teacher.pth', cudnn_deterministic_toggle=True, cudnn_benchmark_toggle=False, student_restore=False, KD_logits=False, KD_cosine=False, KD_mse=False, self_KD=False, self_KD_teacher=True, algo=3, nBands=5, minF=20, maxF=8000, minBW=100, maxBW=1000, minCoeff=10, maxCoeff=100, minG=0, maxG=0, minBiasLinNonLin=5, maxBiasLinNonLin=20, N_f=5, P=10, g_sd=2, SNRmin=10, SNRmax=40, workers=8)
     
 
     if cfg['augment_mode'].startswith('raw'):
@@ -798,7 +798,7 @@ def kd_val_epoch(dev_loader, model, device, criterion_cls):
 
 
 def train_self_knowledge_distillation_config(cfg):
-    args = Namespace(database_path='/datab/Dataset/cnsl_real_fake_audio/supcon_cnsl_jan22', protocols_path='protocol.txt', batch_size=25, num_epochs=100, lr=1e-06, weight_decay=0.0001, loss='weighted_CCE', seed=1234, model_path='/nfs/datab/hungdx/KDW2V-AASISTL/W2V2-AASIST-teacher.pth', cudnn_deterministic_toggle=True, cudnn_benchmark_toggle=False, student_restore=False, KD_logits=False, KD_cosine=False, KD_mse=False, self_KD=False, self_KD_teacher=True, algo=3, nBands=5, minF=20, maxF=8000, minBW=100, maxBW=1000, minCoeff=10, maxCoeff=100, minG=0, maxG=0, minBiasLinNonLin=5, maxBiasLinNonLin=20, N_f=5, P=10, g_sd=2, SNRmin=10, SNRmax=40, workers=8)
+    args = Namespace(database_path='/datab/Dataset/cnsl_real_fake_audio/supcon_cnsl_jan22', protocols_path='protocol.txt', batch_size=25, num_epochs=100, lr=1e-06, weight_decay=0.0001, loss='weighted_CCE', seed=1234, model_path='/datab/hungdx/KDW2V-AASISTL/W2V2-AASIST-teacher.pth', cudnn_deterministic_toggle=True, cudnn_benchmark_toggle=False, student_restore=False, KD_logits=False, KD_cosine=False, KD_mse=False, self_KD=False, self_KD_teacher=True, algo=3, nBands=5, minF=20, maxF=8000, minBW=100, maxBW=1000, minCoeff=10, maxCoeff=100, minG=0, maxG=0, minBiasLinNonLin=5, maxBiasLinNonLin=20, N_f=5, P=10, g_sd=2, SNRmin=10, SNRmax=40, workers=8)
     
 
     if cfg['augment_mode'].startswith('raw'):
@@ -874,7 +874,7 @@ def train_self_knowledge_distillation_config(cfg):
 
 def test_best_model(best_result, model_type="KD_base_cosine"):
     
-    args = Namespace(database_path='/nfs/datab/hungdx/KDW2V-AASISTL/databases/', protocols_path='/nfs/datab/hungdx/KDW2V-AASISTL/protocols/', batch_size=64, num_epochs=100, lr=1e-06, weight_decay=0.0001, loss='weighted_CCE', seed=1234, model_path='/nfs/datab/hungdx/KDW2V-AASISTL/W2V2-AASIST-teacher.pth', cudnn_deterministic_toggle=True, cudnn_benchmark_toggle=False, student_restore=False, KD_logits=False, KD_cosine=False, KD_mse=True, algo=3, nBands=5, minF=20, maxF=8000, minBW=100, maxBW=1000, minCoeff=10, maxCoeff=100, minG=0, maxG=0, minBiasLinNonLin=5, maxBiasLinNonLin=20, N_f=5, P=10, g_sd=2, SNRmin=10, SNRmax=40)
+    args = Namespace(database_path='/datab/hungdx/KDW2V-AASISTL/databases/', protocols_path='/datab/hungdx/KDW2V-AASISTL/protocols/', batch_size=64, num_epochs=100, lr=1e-06, weight_decay=0.0001, loss='weighted_CCE', seed=1234, model_path='/datab/hungdx/KDW2V-AASISTL/W2V2-AASIST-teacher.pth', cudnn_deterministic_toggle=True, cudnn_benchmark_toggle=False, student_restore=False, KD_logits=False, KD_cosine=False, KD_mse=True, algo=3, nBands=5, minF=20, maxF=8000, minBW=100, maxBW=1000, minCoeff=10, maxCoeff=100, minG=0, maxG=0, minBiasLinNonLin=5, maxBiasLinNonLin=20, N_f=5, P=10, g_sd=2, SNRmin=10, SNRmax=40)
     track = 'DF'
     prefix_2021 = 'ASVspoof2021.{}'.format(track)
 

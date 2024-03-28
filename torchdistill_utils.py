@@ -275,7 +275,7 @@ def self_KD_teacher_train_epoch(train_loader, student, teacher, optimizer, devic
     return running_loss, running_total_label_loss, running_total_kd_loss, running_total_feature_loss, running_total_hidden_rep_loss, running_sup_contrastive_loss
 
 
-def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, config, student_forward_hook_manager, teacher_forward_hook_manager,  exp_lr_scheduler=None,  use_amp: bool = True):
+def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, config, student_forward_hook_manager, teacher_forward_hook_manager,  epoch, exp_lr_scheduler=None,  use_amp: bool = True):
     logger.info('Training KD')
     running_loss = 0
 
@@ -285,18 +285,11 @@ def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, co
     num_correct = 0.0
 
     mixup = config["train"].get("mixup", False)
-
-    if "alpha" not in config['train']:
-        forward_target = True
-    else:
-        forward_target = False
-        alpha = float(config['train']['alpha'])
-
-        if 'beta' in config['train']:
-            beta = float(config['train']['beta'])
-        else:
-            beta = 0.5
-
+    is_kl_loss = config["train"].get("is_kl_loss", False)
+    is_l1_loss = config["train"].get("is_l1_loss", False)
+    forward_target = "alpha" not in config['train']
+    alpha = float(config['train'].get('alpha', 0))
+    beta = float(config['train'].get('beta', 0.5))
     weight = torch.FloatTensor(config['train'].get(
         'cross_entropy_loss_weight', [0.1, 0.9])).to(device)
     criterion = nn.CrossEntropyLoss(weight=weight)
@@ -307,10 +300,12 @@ def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, co
     if not config['train']['teacher']:
         logger.info('No teacher')
         del teacher
-
+    # print("exp_lr_scheduler", exp_lr_scheduler)
+    # import sys
+    # sys.exit(1)
     if exp_lr_scheduler is not None and config['learning_rate_scheduler']['name'] != 'ReduceLROnPlateau':
-        logger.info("Current learning rate: {}".format(
-            exp_lr_scheduler.get_last_lr()[0]))
+        logger.info("Current learning rate of scheduler {}: {}".format(config['learning_rate_scheduler']['name'],
+                                                                       exp_lr_scheduler.get_last_lr()[0]))
     else:
         logger.info("Current learning rate: {}".format(
             optimizer.param_groups[0]['lr']))
@@ -326,6 +321,7 @@ def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, co
             total_loss = torch.tensor(0.).to(device)
             kd_loss = torch.tensor(0.).to(device)
             ce_loss = torch.tensor(0.).to(device)
+            kl_loss = torch.tensor(0.).to(device)
             batch_size = batch_x.size(0)
             batch_x = batch_x.to(device)
             if len(batch_x.shape) == 3:
@@ -360,6 +356,12 @@ def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, co
                     t_logits = teacher(batch_x)
                     teacher_io_dict = teacher_forward_hook_manager.pop_io_dict()
 
+                # KL loss (default T = 2)
+                if is_kl_loss:
+                    kl_loss = DistillKL(T=config["train"].get("T", 2)
+                                        )(batch_out, t_logits)
+                    total_loss += kl_loss
+
             # Check if key exists
 
             if 'criterions' in config and 'criterion_weights' in config:
@@ -370,79 +372,74 @@ def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, co
 
                 for loss, weight in zip(config['criterions'], config['criterion_weights']):
                     weight = float(weight)
-                    # print("Current loss: ", loss)
-                    # if loss['key'] == 'OCKDLoss':
-                    #     student.module.ssl_model.model.eval()
-                    # else:
-                    #     student.module.ssl_model.model.train()
 
                     loss_i = get_mid_level_loss(
                         mid_level_criterion_config=loss)
 
                     if forward_target:
-                        total_loss += (loss_i.forward(student_io_dict,
-                                       teacher_io_dict, batch_y) * weight)
                         kd_loss += (loss_i.forward(student_io_dict,
                                     teacher_io_dict, batch_y) * weight)
+                        total_loss += kd_loss
                     else:
-                        total_loss += (loss_i.forward(student_io_dict,
-                                       teacher_io_dict) * weight)
+
                         kd_loss += (loss_i.forward(student_io_dict,
                                     teacher_io_dict) * weight)
+                        total_loss += kd_loss
 
-            if not forward_target or dot:
-                alpha = 1
-                # CE loss
-                batch_loss = criterion(batch_out, batch_y)
-                total_loss += (alpha * batch_loss)
-                ce_loss += (alpha * batch_loss)
+            # Current loss function
+            # Loss = alpha * CE + beta * KL + gamma * KDs
+            # Default: alpha = 1, beta = 1, gamma = 1
+            ce_loss += criterion(batch_out, batch_y)  # CE loss
+            total_loss += ce_loss
 
-                # ## Total loss + KL divergence loss
-                # kl_loss = DistillKL(T=config["train"].get("T", 2))
-                # total_loss += (beta * kl_loss(batch_out, t_logits))
-                if mixup:
-                    batch_loss_b = criterion(batch_out, batch_y_b)
-                    total_loss += (lam * total_loss + (1-lam) * batch_loss_b)
-                    ce_loss += (lam * ce_loss + (1-lam) * batch_loss_b)
+            if is_l1_loss:
+                l1_loss = nn.L1Loss()
+                total_loss += l1_loss(batch_out,
+                                      batch_y)
 
-            if "sup_contrastive" in config["train"] and config["train"]["sup_contrastive"]:
-                sup_weights = config["train"].get(
-                    "sup_contrastive_loss_weight", [0.1, 0.07])
-                sup_loss = SupConLoss(
-                    temperature=sup_weights[0], base_temperature=sup_weights[1])
-                sup_mode = config["train"].get(
-                    "sup_contrastive_mode", "supcon")
+            # if not forward_target or dot:
+            #     alpha = 1
+            #     # CE loss
+            #     batch_loss = criterion(batch_out, batch_y)
+            #     total_loss += (alpha * batch_loss)
+            #     ce_loss += (alpha * batch_loss)
 
-                if sup_mode == "supcon":
-                    def sim_metric_seq(mat1, mat2): return torch.bmm(
-                        mat1.permute(1, 0, 2), mat2.permute(1, 2, 0)).mean(0)
+            #     # ## Total loss + KL divergence loss
+            #     # kl_loss = DistillKL(T=config["train"].get("T", 2))
+            #     # total_loss += (beta * kl_loss(batch_out, t_logits))
+            #     if mixup:
+            #         batch_loss_b = criterion(batch_out, batch_y_b)
+            #         total_loss += (lam * total_loss + (1-lam) * batch_loss_b)
+            #         ce_loss += (lam * ce_loss + (1-lam) * batch_loss_b)
 
-                    # Get embedding student (hard-code here)
-                    emb = student_io_dict['LL']['output']
-                    # reshape the emb to match the supcon loss format
-                    # emb = emb.unsqueeze(1)
-                    # emb = emb.unsqueeze(-1)
+            # if "sup_contrastive" in config["train"] and config["train"]["sup_contrastive"]:
+            #     sup_weights = config["train"].get(
+            #         "sup_contrastive_loss_weight", [0.1, 0.07])
+            #     sup_loss = SupConLoss(
+            #         temperature=sup_weights[0], base_temperature=sup_weights[1])
+            #     sup_mode = config["train"].get(
+            #         "sup_contrastive_mode", "supcon")
 
-                    # feats = feats.unsqueeze(1)
+            #     if sup_mode == "supcon":
+            #         def sim_metric_seq(mat1, mat2): return torch.bmm(
+            #             mat1.permute(1, 0, 2), mat2.permute(1, 2, 0)).mean(0)
 
-                    # sup_loss = supcon_loss(emb,
-                    #                        batch_y)
+            #         emb = student_io_dict['LL']['output']
 
-                    sup_loss = sup_loss.forward(
-                        emb, batch_y)
-                else:
-                    sup_loss = sup_loss.forward(student_hidden_representation)
-                total_loss += sup_loss
+            #         sup_loss = sup_loss.forward(
+            #             emb, batch_y)
+            #     else:
+            #         sup_loss = sup_loss.forward(student_hidden_representation)
+            #     total_loss += sup_loss
 
         # Scaler
         if not dot:
-            optimizer.zero_grad()
+            optimizer.zero_grad(set_to_none=True)
             scaler.scale(total_loss).backward()
             scaler.step(optimizer)
             scaler.update()
-        else:
+        else:  # Dot Optimizer
             optimizer.zero_grad(set_to_none=True)
-
             kd_loss.backward(retain_graph=True)
             optimizer.step_kd()
             optimizer.zero_grad(set_to_none=True)
@@ -451,24 +448,34 @@ def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, co
         # Update LR
         if exp_lr_scheduler is not None:
             if config['learning_rate_scheduler']['name'] == 'CosineAnnealingWarmRestarts':
+                # logger.info("Updating learning rate in training")
                 exp_lr_scheduler.step(epoch + i / iters)
-            elif config['learning_rate_scheduler']['name'] == 'ReduceLROnPlateau' or config['learning_rate_scheduler']['name'] == 'MultiStepLR' or config['learning_rate_scheduler']['name'] == 'StepLR':
+            elif config['learning_rate_scheduler']['name'] in ['ReduceLROnPlateau', 'MultiStepLR', 'StepLR', 'CyclicLR']:
                 # Update learning rate scheduler in validation so do nothing here
                 pass
             else:
                 exp_lr_scheduler.step()
         if not dot:
             running_loss += (total_loss.item() * batch_size)
+            # if is_kl_loss:
+            #     logger.info(
+            #         "KD loss: {} - CE loss: {} - KL loss {}".format(kd_loss.item(), ce_loss.item(), kl_loss.item()))
+            # else:
+            #     logger.info("KD loss: {} - CE loss: {}".format(
+            #         kd_loss.item(), ce_loss.item()))
         else:
             # logger.info("KD loss: {} - CE loss: {}".format(kd_loss.item(), ce_loss.item()))
             running_loss += (ce_loss.item() + kd_loss.item()) * batch_size
+
+        # Calculate accuracy
         _, batch_pred = batch_out.max(dim=1)
         # batch_y = batch_y.view(-1)
         num_correct += (batch_pred == batch_y).sum(dim=0).item()
 
     running_loss /= num_total
-    logger.info("Accuracy: {}".format((num_correct / num_total) * 100))
-    return running_loss
+    train_acc = (num_correct / num_total) * 100
+    logger.info("Accuracy: {}".format(train_acc))
+    return running_loss, train_acc
 
 
 def kd_val_epoch(dev_loader, model, device, config):

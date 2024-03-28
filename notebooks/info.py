@@ -15,8 +15,8 @@ def show_info():
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    ssl_cpkt_student_path = "/nfs/datab/hungdx/KDW2V-AASISTL/wav2vec_small.pt"
-    ssl_cpkt_path = "/nfs/datab/hungdx/KDW2V-AASISTL/xlsr2_300m.pt"
+    ssl_cpkt_student_path = "/datab/hungdx/KDW2V-AASISTL/wav2vec_small.pt"
+    ssl_cpkt_path = "/datab/hungdx/KDW2V-AASISTL/xlsr2_300m.pt"
     student = Distil_W2V2BASE_AASISTL(device, ssl_cpkt_student_path)
 
     summary(student, input_size=(1, 64600), device=device)
@@ -32,8 +32,8 @@ def flops():
     from main import W2V2_TA
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    ssl_cpkt_student_path = "/nfs/datab/hungdx/KDW2V-AASISTL/wav2vec_small.pt"
-    ssl_cpkt_path = "/nfs/datab/hungdx/KDW2V-AASISTL/xlsr2_300m.pt"
+    ssl_cpkt_student_path = "/datab/hungdx/KDW2V-AASISTL/wav2vec_small.pt"
+    ssl_cpkt_path = "/datab/hungdx/KDW2V-AASISTL/xlsr2_300m.pt"
     student = Distil_W2V2BASE_AASISTL(device, ssl_cpkt_student_path)
     student.ssl_model = W2V2_TA(import_fairseq_model(
         student.ssl_model.model

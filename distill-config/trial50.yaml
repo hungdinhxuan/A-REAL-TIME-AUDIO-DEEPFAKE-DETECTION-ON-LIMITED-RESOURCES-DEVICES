@@ -9,7 +9,7 @@ model:
     teacher_module_ios:
       - 'False:True'
       - 'False:True'
-    pretrained_path: '/nfs/datab/hungdx/KDW2V-AASISTL/epoch_3_from2.65_EER2.30.pth'
+    pretrained_path: '/datab/hungdx/KDW2V-AASISTL/epoch_3_from2.65_EER2.30.pth'
     is_parallel: False
 
   student:

@@ -8,7 +8,7 @@ model:
     teacher_module_ios:
       - 'False:True'
       - 'False:True'
-    pretrained_path: '/nfs/datab/hungdx/KDW2V-AASISTL/conf-5-linear-feb07-29-36-epoch46.pth'
+    pretrained_path: '/datab/hungdx/KDW2V-AASISTL/conf-5-linear-feb07-29-36-epoch46.pth'
 
     is_parallel: False
 
@@ -29,29 +29,29 @@ learning_rate_scheduler:
   name: 'MultiStepLR'
   params:
     milestones: [10, 30, 60, 100]
-    gamma: 0.25
+    gamma: 0.5
     verbose: True
 
 train:
 
-  learning_rate: 0.00005
+  learning_rate: 0.000005
   weight_decay: 0.00001
-  batch_size: 32
+  batch_size: 16
   num_epochs: 300
   num_workers: 4
   amp: True
   teacher: True
-  patience: 200
-  seed: 422
+  patience: 30
+  seed: 4822
   freeze_ssl_num_epoch: 0 # 0 for no freeze
   dataset: 'supcon_feb07'
-  augment_mode: 'audiomentations' # 'rawboost' for rawboost, 'audiomentations' for audiomentations
+  augment_mode: 'rawboost' # 'rawboost' for rawboost, 'audiomentations' for audiomentations
   algo: -1 # No augmentation
   student_resume: '' # Stateless training
   cross_entropy_loss_weight: [0.21, 0.79]
   
 
-criterion_weights: [1, 1, 1]
+criterion_weights: [1]
 
 criterions:
 
@@ -65,16 +65,16 @@ criterions:
       beta: 8
       T: 4
 
-  - key: 'CosineLoss'
-    kwargs:
-      student_module_path: 'LL'
-      student_module_io: 'output'
-      teacher_module_path: 'LL'
-      teacher_module_io: 'output'
+  # - key: 'CosineLoss'
+  #   kwargs:
+  #     student_module_path: 'LL'
+  #     student_module_io: 'output'
+  #     teacher_module_path: 'LL'
+  #     teacher_module_io: 'output'
 
-  - key: 'MSELoss'
-    kwargs:
-      student_module_path: 'LL'
-      student_module_io: 'output'
-      teacher_module_path: 'LL'
-      teacher_module_io: 'output'
+  # - key: 'MSELoss'
+  #   kwargs:
+  #     student_module_path: 'LL'
+  #     student_module_io: 'output'
+  #     teacher_module_path: 'LL'
+  #     teacher_module_io: 'output'

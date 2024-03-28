@@ -283,7 +283,7 @@ patience = config['train'].get('patience', 10)
 use_amp = config['train'].get('amp', False)
 learning_rate_scheduler_name = config['learning_rate_scheduler'].get('name', None)
 student_model_name = config['model']['student'].get('name', 'Distil_W2V2BASE_AASISTL')
-ssl_student_path = config["train"].get("ssl_student_path", "/nfs/datab/hungdx/KDW2V-AASISTL/wav2vec_small.pt")
+ssl_student_path = config["train"].get("ssl_student_path", "/datab/hungdx/KDW2V-AASISTL/wav2vec_small.pt")
 ## Wandb
 wandb.init(project="selfdistill", config={
     **config,

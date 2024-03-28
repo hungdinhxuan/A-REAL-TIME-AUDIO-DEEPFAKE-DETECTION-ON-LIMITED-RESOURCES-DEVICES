@@ -11,7 +11,7 @@ from RawBoost import ISD_additive_noise, LnL_convolutive_noise, SSI_additive_noi
 from torch.utils.data import DataLoader, WeightedRandomSampler
 import audiomentations as aa
 import logging
-
+import random
 import core_scripts.data_io.wav_tools as nii_wav_tools
 from core_scripts.data_io import wav_augmentation as nii_wav_aug
 
@@ -20,85 +20,6 @@ __email__ = "tak@eurecom.fr"
 
 SAMPLE_RATE = 16000
 PADDING_SIZE = 64600  # 4 seconds of audio
-
-""" backup
-def genSpoof_list(dir_meta, is_train=False, is_eval=False, tts_only=True):
-    
-    d_meta = {}
-    file_list = []
-    with open(dir_meta, 'r') as f:
-        l_meta = f.readlines()
-
-    if (is_train):
-        for line in l_meta:
-            _, key, _, att, label = line.strip().split(' ')
-            if (tts_only):
-                if((att=="A05") or (att=="A06")):
-                    continue
-            file_list.append(key)
-            d_meta[key] = 1 if label == 'bonafide' else 0
-        return d_meta, file_list
-
-    elif(is_eval):
-        for line in l_meta:
-            key = line.strip()
-            file_list.append(key)
-        return file_list
-    else:
-        for line in l_meta:
-            _, key, _, att, label = line.strip().split(' ')
-            if (tts_only):
-                if((att=="A05") or (att=="A06")):
-                    continue
-            file_list.append(key)
-            d_meta[key] = 1 if label == 'bonafide' else 0
-        return d_meta, file_list
-"""
-
-
-class bio_emb(nn.Module):
-    def __init__(self, device):
-        super(bio_emb, self).__init__()
-        self.device = device
-
-    def get_output(self, out_file):
-        # load teacher score
-        emb = torch.load(out_file)
-        # emb is an array (list). we need to convert it to tensor
-        emb = torch.tensor(emb, dtype=torch.float32, device=self.device)
-        return emb
-
-# def genSpoof_list(dir_meta, is_train=False, is_eval=False, tts_only=False):
-
-#     d_meta = {}
-#     file_list = []
-#     with open(dir_meta, 'r') as f:
-#         l_meta = f.readlines()
-
-#     if (is_train):
-#         for line in l_meta:
-#             _, key, _, att, label = line.strip().split(' ')
-#             if (tts_only):
-#                 if((att=="A05") or (att=="A06")):
-#                     continue
-#             file_list.append(key)
-#             d_meta[key] = 1 if label == 'bonafide' else 0
-#         return d_meta, file_list
-
-#     elif(is_eval):
-#         for line in l_meta:
-#             key = line.strip()
-#             file_list.append(key)
-#         return file_list
-#     else:
-#         for line in l_meta:
-#             _, key, _, att, label = line.strip().split(' ')
-#             if (tts_only):
-#                 if((att=="A05") or (att=="A06")):
-#                     continue
-#             file_list.append(key)
-#             d_meta[key] = 1 if label == 'bonafide' else 0
-#         return d_meta, file_list
 
 
 def genSpoof_list(dir_meta, is_train=False, is_eval=False, num_eval_samples=60000):
@@ -411,10 +332,30 @@ class Dataset_cnsl(Dataset):
         self.base_dir = base_dir
         self.algo = algo
         self.args = args
-        self.cut = PADDING_SIZE  # take ~4 sec audio (PADDING_SIZE samples)
+        # take ~4 sec audio (PADDING_SIZE samples)
+        self.duration = PADDING_SIZE
 
     def __len__(self):
         return len(self.list_IDs)
+
+    def adjustDuration(self, x):
+        if len(x.shape) == 2:
+            x = x.squeeze()
+
+        x_len = len(x)
+        if x_len < self.duration:
+            tmp = [x for i in range(0, (self.duration // x_len))]
+
+            residue = self.duration % x_len
+            if residue > 0:
+                tmp.append(x[0:residue])
+
+            x = torch.cat(tmp, dim=0)
+
+        x_len = len(x)
+        start_seg = random.randint(0, x_len - self.duration)
+
+        return x[start_seg: start_seg + self.duration]
 
     def __getitem__(self, index):
 
@@ -422,8 +363,11 @@ class Dataset_cnsl(Dataset):
         X, fs = librosa.load(self.base_dir + "/" + utt_id, sr=16000)
         Y = process_Rawboost_feature(X, fs, self.args, self.algo)
         # Y=process_audiomentations(X,fs)
-        X_pad = pad_v2(Y, utt_id, self.cut)
-        x_inp = Tensor(X_pad)
+
+        # X_pad = pad_v2(Y, utt_id, self.cut)
+        # x_inp = Tensor(X_pad)
+        x_inp = self.adjustDuration(Tensor(Y))
+
         target = self.labels[utt_id]
 
         return x_inp, target
@@ -438,18 +382,41 @@ class Dataset_cnsl_augment(Dataset):
         self.labels = labels
         self.base_dir = base_dir
         self.args = args
-        self.cut = PADDING_SIZE  # take ~4 sec audio (PADDING_SIZE samples)
+        # take ~4 sec audio (PADDING_SIZE samples)
+        self.duration = PADDING_SIZE
 
     def __len__(self):
         return len(self.list_IDs)
+
+    def adjustDuration(self, x):
+        if len(x.shape) == 2:
+            x = x.squeeze()
+
+        x_len = len(x)
+        if x_len < self.duration:
+            tmp = [x for i in range(0, (self.duration // x_len))]
+
+            residue = self.duration % x_len
+            if residue > 0:
+                tmp.append(x[0:residue])
+
+            x = torch.cat(tmp, dim=0)
+
+        x_len = len(x)
+        # Randomly select a segment of duration 4 sec
+        start_seg = random.randint(0, x_len - self.duration)
+
+        return x[start_seg: start_seg + self.duration]
 
     def __getitem__(self, index):
 
         utt_id = self.list_IDs[index]
         X, fs = librosa.load(self.base_dir + "/" + utt_id, sr=16000)
         Y = process_audiomentations(X, fs)
-        X_pad = pad_v2(Y, utt_id, self.cut)
-        x_inp = Tensor(X_pad)
+        # X_pad = pad_v2(Y, utt_id, self.cut)
+
+        # x_inp = Tensor(X_pad)
+        x_inp = self.adjustDuration(Tensor(Y))
         target = self.labels[utt_id]
 
         return x_inp, target
@@ -464,18 +431,39 @@ class Dataset_cnsl_augment_v2(Dataset):
         self.labels = labels
         self.base_dir = base_dir
         self.args = args
-        self.cut = PADDING_SIZE  # take ~4 sec audio (PADDING_SIZE samples)
+        # take ~4 sec audio (PADDING_SIZE samples)
+        self.duration = PADDING_SIZE
 
     def __len__(self):
         return len(self.list_IDs)
+
+    def adjustDuration(self, x):
+        if len(x.shape) == 2:
+            x = x.squeeze()
+
+        x_len = len(x)
+        if x_len < self.duration:
+            tmp = [x for i in range(0, (self.duration // x_len))]
+
+            residue = self.duration % x_len
+            if residue > 0:
+                tmp.append(x[0:residue])
+
+            x = torch.cat(tmp, dim=0)
+
+        x_len = len(x)
+        start_seg = random.randint(0, x_len - self.duration)
+
+        return x[start_seg: start_seg + self.duration]
 
     def __getitem__(self, index):
 
         utt_id = self.list_IDs[index]
         X, fs = librosa.load(self.base_dir + "/" + utt_id, sr=16000)
         Y = process_audiomentations_v2(X, fs)
-        X_pad = pad_v2(Y, utt_id, self.cut)
-        x_inp = Tensor(X_pad.copy())
+        # X_pad = pad_v2(Y, utt_id, self.cut)
+        # x_inp = Tensor(X_pad.copy)
+        x_inp = self.adjustDuration(Tensor(Y))
         target = self.labels[utt_id]
 
         return x_inp, target
@@ -488,18 +476,39 @@ class Dataset_cnsl_eval(Dataset):
 
         self.list_IDs = list_IDs
         self.base_dir = base_dir
-        self.cut = PADDING_SIZE  # take ~4 sec audio (PADDING_SIZE samples)
+        # take ~4 sec audio (PADDING_SIZE samples)
+        self.duration = PADDING_SIZE
 
     def __len__(self):
         return len(self.list_IDs)
+
+    def adjustDuration(self, x):
+        if len(x.shape) == 2:
+            x = x.squeeze()
+
+        x_len = len(x)
+        if x_len < self.duration:
+            tmp = [x for i in range(0, (self.duration // x_len))]
+
+            residue = self.duration % x_len
+            if residue > 0:
+                tmp.append(x[0:residue])
+
+            x = torch.cat(tmp, dim=0)
+
+        x_len = len(x)
+        start_seg = random.randint(0, x_len - self.duration)
+
+        return x[start_seg: start_seg + self.duration]
 
     def __getitem__(self, index):
 
         utt_id = self.list_IDs[index]
         X, fs = librosa.load(self.base_dir + "/" + utt_id, sr=16000)
-        X_pad = pad_v2(X, utt_id, self.cut)
+        # X_pad = pad_v2(X, utt_id, self.cut)
 
-        x_inp = Tensor(X_pad)
+        # x_inp = Tensor(X_pad)
+        x_inp = self.adjustDuration(Tensor(X))
         return x_inp, utt_id
 
 
@@ -573,7 +582,7 @@ def process_audiomentations(feature, sr):
 
     augment = aa.Compose([
         aa.AddBackgroundNoise(
-            sounds_path="/nfs/datab/longnv/musan/mix", p=0.75),
+            sounds_path="/datab/longnv/musan/mix", p=0.75),
         aa.AdjustDuration(duration_seconds=4, p=1.0, padding_mode="wrap"),
         aa.TimeStretch(min_rate=0.8, max_rate=1.2,
                        leave_length_unchanged=True, p=0.75),
@@ -583,6 +592,26 @@ def process_audiomentations(feature, sr):
         aa.Mp3Compression(min_bitrate=96, max_bitrate=320, p=0.3)
     ])
     return augment(samples=feature, sample_rate=sr)
+
+
+# def adjustDuration(self, x):
+#     if len(x.shape) == 2:
+#         x = x.squeeze()
+
+#     x_len = len(x)
+#     if x_len < self.duration:
+#         tmp = [x for i in range(0, (self.duration // x_len))]
+
+#         residue = self.duration % x_len
+#         if residue > 0:
+#             tmp.append(x[0:residue])
+
+#         x = torch.cat(tmp, dim=0)
+
+#     x_len = len(x)
+#     start_seg = random.randint(0, x_len - self.duration)
+
+#     return x[start_seg: start_seg + self.duration]
 
 
 def process_audiomentations_v2(feature, sr):

@@ -1,0 +1,556 @@
+Utterence name (file name),Speaker name,Model,Language,Gender,Age,Noise Type,Source link,label,utt,path
+TTS_Kim_joo_ha_1.wav,Anchor Kimjooha,,Korean,Female,Adult,Music,https://www.youtube.com/watch?v=nKESsnHxnp8,spoof,TTS_Kim_joo_ha_1,./2024_FakeSample/TTS_Sample/TTS_Kim_joo_ha_1.wav
+TTS_Kim_joo_ha_2.wav,Anchor Kimjooha,,Korean,Female,Adult,Music,https://www.youtube.com/watch?v=nKESsnHxnp8,spoof,TTS_Kim_joo_ha_2,./2024_FakeSample/TTS_Sample/TTS_Kim_joo_ha_2.wav
+TTS_Kim_joo_ha_3.wav,Anchor Kimjooha,,Korean,Female,Adult,Music,https://www.youtube.com/watch?v=nKESsnHxnp8,spoof,TTS_Kim_joo_ha_3,./2024_FakeSample/TTS_Sample/TTS_Kim_joo_ha_3.wav
+TTS_Kim_joo_ha_4.wav,Anchor Kimjooha,,Korean,Female,Adult,Music,https://www.youtube.com/watch?v=nKESsnHxnp8,spoof,TTS_Kim_joo_ha_4,./2024_FakeSample/TTS_Sample/TTS_Kim_joo_ha_4.wav
+TTS_Kim_joo_ha_5.wav,Anchor Kimjooha,,Korean,Female,Adult,Music,https://www.youtube.com/watch?v=nKESsnHxnp8,spoof,TTS_Kim_joo_ha_5,./2024_FakeSample/TTS_Sample/TTS_Kim_joo_ha_5.wav
+TTS_Kim_joo_ha_6.wav,Anchor Kimjooha,,Korean,Female,Adult,Music,https://www.youtube.com/watch?v=nKESsnHxnp8,spoof,TTS_Kim_joo_ha_6,./2024_FakeSample/TTS_Sample/TTS_Kim_joo_ha_6.wav
+TTS_Dave_1.wav,Dave,,English,Male,Adult,,https://elevenlabs.io/text-to-speech,spoof,TTS_Dave_1,./2024_FakeSample/TTS_Sample/TTS_Dave_1.wav
+TTS_Dave_2.wav,Dave,,English,Male,Adult,,https://elevenlabs.io/text-to-speech,spoof,TTS_Dave_2,./2024_FakeSample/TTS_Sample/TTS_Dave_2.wav
+TTS_Dave_3.wav,Dave,,English,Male,Adult,,https://elevenlabs.io/text-to-speech,spoof,TTS_Dave_3,./2024_FakeSample/TTS_Sample/TTS_Dave_3.wav
+TTS_Dave_4.wav,Dave,,English,Male,Adult,,https://elevenlabs.io/text-to-speech,spoof,TTS_Dave_4,./2024_FakeSample/TTS_Sample/TTS_Dave_4.wav
+TTS_Dave_5.wav,Dave,,English,Male,Adult,,https://elevenlabs.io/text-to-speech,spoof,TTS_Dave_5,./2024_FakeSample/TTS_Sample/TTS_Dave_5.wav
+TTS_Gigi_1.wav,Gigi,,Japanese,Male,Child,,https://elevenlabs.io/,spoof,TTS_Gigi_1,./2024_FakeSample/TTS_Sample/TTS_Gigi_1.wav
+TTS_Gigi_2.wav,Gigi,,Japanese,Male,Child,,https://elevenlabs.io/,spoof,TTS_Gigi_2,./2024_FakeSample/TTS_Sample/TTS_Gigi_2.wav
+TTS_Gigi_3.wav,Gigi,,Japanese,Male,Child,,https://elevenlabs.io/,spoof,TTS_Gigi_3,./2024_FakeSample/TTS_Sample/TTS_Gigi_3.wav
+TTS_Gigi_4.wav,Gigi,,Japanese,Male,Child,,https://elevenlabs.io/,spoof,TTS_Gigi_4,./2024_FakeSample/TTS_Sample/TTS_Gigi_4.wav
+TTS_Gigi_5.wav,Gigi,,Japanese,Male,Child,,https://elevenlabs.io/,spoof,TTS_Gigi_5,./2024_FakeSample/TTS_Sample/TTS_Gigi_5.wav
+TTS_Gigi_6.wav,Gigi,,Japanese,Male,Child,,https://elevenlabs.io/,spoof,TTS_Gigi_6,./2024_FakeSample/TTS_Sample/TTS_Gigi_6.wav
+TTS_youtuber_nochamchi_1.wav,youtuber_nochamchi,,Korean,Male,Child,,https://www.youtube.com/shorts/hv86ZRvzeMw,spoof,TTS_youtuber_nochamchi_1,./2024_FakeSample/TTS_Sample/TTS_youtuber_nochamchi_1.wav
+TTS_youtuber_nochamchi_2.wav,youtuber_nochamchi,,Korean,Male,Child,,https://www.youtube.com/shorts/hv86ZRvzeMw,spoof,TTS_youtuber_nochamchi_2,./2024_FakeSample/TTS_Sample/TTS_youtuber_nochamchi_2.wav
+TTS_youtuber_nochamchi_3.wav,youtuber_nochamchi,,Korean,Male,Child,,https://www.youtube.com/shorts/hv86ZRvzeMw,spoof,TTS_youtuber_nochamchi_3,./2024_FakeSample/TTS_Sample/TTS_youtuber_nochamchi_3.wav
+TTS_youtuber_nochamchi_4.wav,youtuber_nochamchi,,Korean,Male,Child,,https://www.youtube.com/shorts/hv86ZRvzeMw,spoof,TTS_youtuber_nochamchi_4,./2024_FakeSample/TTS_Sample/TTS_youtuber_nochamchi_4.wav
+TTS_youtuber_nochamchi_5.wav,youtuber_nochamchi,,Korean,Male,Child,,https://www.youtube.com/shorts/hv86ZRvzeMw,spoof,TTS_youtuber_nochamchi_5,./2024_FakeSample/TTS_Sample/TTS_youtuber_nochamchi_5.wav
+TTS_program_1.wav,TTS_program,,Italian,Female,Adult,,https://studio.neiro.ai/text?voice=17,spoof,TTS_program_1,./2024_FakeSample/TTS_Sample/TTS_program_1.wav
+TTS_program_2.wav,TTS_program,,Italian,Female,Adult,,https://studio.neiro.ai/text?voice=17,spoof,TTS_program_2,./2024_FakeSample/TTS_Sample/TTS_program_2.wav
+TTS_program_3.wav,TTS_program,,Italian,Female,Adult,,https://studio.neiro.ai/text?voice=17,spoof,TTS_program_3,./2024_FakeSample/TTS_Sample/TTS_program_3.wav
+TTS_program_4.wav,TTS_program,,Italian,Female,Adult,,https://studio.neiro.ai/text?voice=17,spoof,TTS_program_4,./2024_FakeSample/TTS_Sample/TTS_program_4.wav
+TTS_program_5.wav,TTS_program,,Italian,Female,Adult,,https://studio.neiro.ai/text?voice=17,spoof,TTS_program_5,./2024_FakeSample/TTS_Sample/TTS_program_5.wav
+TTS_program_6.wav,TTS_program,,Italian,Female,Adult,,https://studio.neiro.ai/text?voice=17,spoof,TTS_program_6,./2024_FakeSample/TTS_Sample/TTS_program_6.wav
+TTS_program_7.wav,TTS_program,,Italian,Female,Adult,,https://studio.neiro.ai/text?voice=17,spoof,TTS_program_7,./2024_FakeSample/TTS_Sample/TTS_program_7.wav
+TTS_footballmagazine_1.wav,TTS_footballmagazine,,Korean,Male,Adult,,https://www.youtube.com/watch?v=How5d80IAiE,spoof,TTS_footballmagazine_1,./2024_FakeSample/TTS_Sample/TTS_footballmagazine_1.wav
+TTS_footballmagazine_2.wav,TTS_footballmagazine,,Korean,Male,Adult,,https://www.youtube.com/watch?v=How5d80IAiE,spoof,TTS_footballmagazine_2,./2024_FakeSample/TTS_Sample/TTS_footballmagazine_2.wav
+TTS_footballmagazine_3.wav,TTS_footballmagazine,,Korean,Male,Adult,,https://www.youtube.com/watch?v=How5d80IAiE,spoof,TTS_footballmagazine_3,./2024_FakeSample/TTS_Sample/TTS_footballmagazine_3.wav
+TTS_footballmagazine_4.wav,TTS_footballmagazine,,Korean,Male,Adult,,https://www.youtube.com/watch?v=How5d80IAiE,spoof,TTS_footballmagazine_4,./2024_FakeSample/TTS_Sample/TTS_footballmagazine_4.wav
+TTS_footballmagazine_5.wav,TTS_footballmagazine,,Korean,Male,Adult,,https://www.youtube.com/watch?v=How5d80IAiE,spoof,TTS_footballmagazine_5,./2024_FakeSample/TTS_Sample/TTS_footballmagazine_5.wav
+TTS_footballmagazine_6.wav,TTS_footballmagazine,,Korean,Male,Adult,,https://www.youtube.com/watch?v=How5d80IAiE,spoof,TTS_footballmagazine_6,./2024_FakeSample/TTS_Sample/TTS_footballmagazine_6.wav
+TTS_footballmagazine_7.wav,TTS_footballmagazine,,Korean,Male,Adult,,https://www.youtube.com/watch?v=How5d80IAiE,spoof,TTS_footballmagazine_7,./2024_FakeSample/TTS_Sample/TTS_footballmagazine_7.wav
+TTS_footballmagazine_8.wav,TTS_footballmagazine,,Korean,Male,Adult,,https://www.youtube.com/watch?v=How5d80IAiE,spoof,TTS_footballmagazine_8,./2024_FakeSample/TTS_Sample/TTS_footballmagazine_8.wav
+TTS_penelope_1.wav,TTS_peleope,,English,Female,Adult,,https://www.facebook.com/100078124676648/videos/364291338955992/,spoof,TTS_penelope_1,./2024_FakeSample/TTS_Sample/TTS_penelope_1.wav
+TTS_penelope_2.wav,TTS_peleope,,English,Female,Adult,,https://www.facebook.com/100078124676648/videos/364291338955992/,spoof,TTS_penelope_2,./2024_FakeSample/TTS_Sample/TTS_penelope_2.wav
+TTS_penelope_3.wav,TTS_peleope,,English,Female,Adult,,https://www.facebook.com/100078124676648/videos/364291338955992/,spoof,TTS_penelope_3,./2024_FakeSample/TTS_Sample/TTS_penelope_3.wav
+TTS_penelope_4.wav,TTS_peleope,,English,Female,Adult,,https://www.facebook.com/100078124676648/videos/364291338955992/,spoof,TTS_penelope_4,./2024_FakeSample/TTS_Sample/TTS_penelope_4.wav
+TTS_penelope_5.wav,TTS_peleope,,English,Female,Adult,,https://www.facebook.com/100078124676648/videos/364291338955992/,spoof,TTS_penelope_5,./2024_FakeSample/TTS_Sample/TTS_penelope_5.wav
+TTS_jessie_1.wav,TTS_jessie,,English,Female,Teenager,,https://www.facebook.com/100078124676648/videos/364291338955992/,spoof,TTS_jessie_1,./2024_FakeSample/TTS_Sample/TTS_jessie_1.wav
+TTS_jessie_2.wav,TTS_jessie,,English,Female,Teenager,,https://www.facebook.com/100078124676648/videos/364291338955992/,spoof,TTS_jessie_2,./2024_FakeSample/TTS_Sample/TTS_jessie_2.wav
+TTS_jessie_3.wav,TTS_jessie,,English,Female,Teenager,,https://www.facebook.com/100078124676648/videos/364291338955992/,spoof,TTS_jessie_3,./2024_FakeSample/TTS_Sample/TTS_jessie_3.wav
+TTS_jessie_4.wav,TTS_jessie,,English,Female,Teenager,,https://www.facebook.com/100078124676648/videos/364291338955992/,spoof,TTS_jessie_4,./2024_FakeSample/TTS_Sample/TTS_jessie_4.wav
+TTS_jessie_5.wav,TTS_jessie,,English,Female,Teenager,,https://www.facebook.com/100078124676648/videos/364291338955992/,spoof,TTS_jessie_5,./2024_FakeSample/TTS_Sample/TTS_jessie_5.wav
+TTS_jessie_6.wav,TTS_jessie,,English,Female,Teenager,,https://www.facebook.com/100078124676648/videos/364291338955992/,spoof,TTS_jessie_6,./2024_FakeSample/TTS_Sample/TTS_jessie_6.wav
+TTS_program_france_1.wav,TTS_primrose,,French,Female,Adult,,https://app.resemble.ai/projects/1329a204-default/clips/69e74c3c-demo-clip/edit,spoof,TTS_program_france_1,./2024_FakeSample/TTS_Sample/TTS_program_france_1.wav
+TTS_program_france_2.wav,TTS_primrose,,French,Female,Adult,,https://app.resemble.ai/projects/1329a204-default/clips/69e74c3c-demo-clip/edit,spoof,TTS_program_france_2,./2024_FakeSample/TTS_Sample/TTS_program_france_2.wav
+TTS_program_france_3.wav,TTS_primrose,,French,Female,Adult,,https://app.resemble.ai/projects/1329a204-default/clips/69e74c3c-demo-clip/edit,spoof,TTS_program_france_3,./2024_FakeSample/TTS_Sample/TTS_program_france_3.wav
+TTS_program_france_4.wav,TTS_primrose,,French,Female,Adult,,https://app.resemble.ai/projects/1329a204-default/clips/69e74c3c-demo-clip/edit,spoof,TTS_program_france_4,./2024_FakeSample/TTS_Sample/TTS_program_france_4.wav
+TTS_program_france_5.wav,TTS_primrose,,French,Female,Adult,,https://app.resemble.ai/projects/1329a204-default/clips/69e74c3c-demo-clip/edit,spoof,TTS_program_france_5,./2024_FakeSample/TTS_Sample/TTS_program_france_5.wav
+TTS_program_france_6.wav,TTS_primrose,,French,Female,Adult,,https://app.resemble.ai/projects/1329a204-default/clips/69e74c3c-demo-clip/edit,spoof,TTS_program_france_6,./2024_FakeSample/TTS_Sample/TTS_program_france_6.wav
+TTS_program_france_7.wav,TTS_primrose,,French,Female,Adult,,https://app.resemble.ai/projects/1329a204-default/clips/69e74c3c-demo-clip/edit,spoof,TTS_program_france_7,./2024_FakeSample/TTS_Sample/TTS_program_france_7.wav
+TTS_program_Spanish_1.wav,TTS_Charles,,spanish,Male,Adult,,https://app.resemble.ai/projects/1329a204-default/clips/69e74c3c-demo-clip/edit,spoof,TTS_program_Spanish_1,./2024_FakeSample/TTS_Sample/TTS_program_Spanish_1.wav
+TTS_program_Spanish_2.wav,TTS_Charles,,spanish,Male,Adult,,https://app.resemble.ai/projects/1329a204-default/clips/69e74c3c-demo-clip/edit,spoof,TTS_program_Spanish_2,./2024_FakeSample/TTS_Sample/TTS_program_Spanish_2.wav
+TTS_program_Spanish_3.wav,TTS_Charles,,spanish,Male,Adult,,https://app.resemble.ai/projects/1329a204-default/clips/69e74c3c-demo-clip/edit,spoof,TTS_program_Spanish_3,./2024_FakeSample/TTS_Sample/TTS_program_Spanish_3.wav
+TTS_program_Spanish_4.wav,TTS_Charles,,spanish,Male,Adult,,https://app.resemble.ai/projects/1329a204-default/clips/69e74c3c-demo-clip/edit,spoof,TTS_program_Spanish_4,./2024_FakeSample/TTS_Sample/TTS_program_Spanish_4.wav
+TTS_program_Spanish_5.wav,TTS_Charles,,spanish,Male,Adult,,https://app.resemble.ai/projects/1329a204-default/clips/69e74c3c-demo-clip/edit,spoof,TTS_program_Spanish_5,./2024_FakeSample/TTS_Sample/TTS_program_Spanish_5.wav
+TTS_program_Spanish_6.wav,TTS_Charles,,spanish,Male,Adult,,https://app.resemble.ai/projects/1329a204-default/clips/69e74c3c-demo-clip/edit,spoof,TTS_program_Spanish_6,./2024_FakeSample/TTS_Sample/TTS_program_Spanish_6.wav
+TTS_program_Spanish_7.wav,TTS_Charles,,spanish,Male,Adult,,https://app.resemble.ai/projects/1329a204-default/clips/69e74c3c-demo-clip/edit,spoof,TTS_program_Spanish_7,./2024_FakeSample/TTS_Sample/TTS_program_Spanish_7.wav
+TTS_program_Spanish_8.wav,TTS_Charles,,spanish,Male,Adult,,https://app.resemble.ai/projects/1329a204-default/clips/69e74c3c-demo-clip/edit,spoof,TTS_program_Spanish_8,./2024_FakeSample/TTS_Sample/TTS_program_Spanish_8.wav
+TTS_chinese_1.wav,TTS_Wei,,Chinese,Female,Teenager,,https://webapp.dubverse.ai/home?page=1,spoof,TTS_chinese_1,./2024_FakeSample/TTS_Sample/TTS_chinese_1.wav
+TTS_chinese_2.wav,TTS_Wei,,Chinese,Female,Teenager,,https://webapp.dubverse.ai/home?page=1,spoof,TTS_chinese_2,./2024_FakeSample/TTS_Sample/TTS_chinese_2.wav
+TTS_chinese_3.wav,TTS_Wei,,Chinese,Female,Teenager,,https://webapp.dubverse.ai/home?page=1,spoof,TTS_chinese_3,./2024_FakeSample/TTS_Sample/TTS_chinese_3.wav
+TTS_chinese_4.wav,TTS_Wei,,Chinese,Female,Teenager,,https://webapp.dubverse.ai/home?page=1,spoof,TTS_chinese_4,./2024_FakeSample/TTS_Sample/TTS_chinese_4.wav
+TTS_chinese_5.wav,TTS_Wei,,Chinese,Female,Teenager,,https://webapp.dubverse.ai/home?page=1,spoof,TTS_chinese_5,./2024_FakeSample/TTS_Sample/TTS_chinese_5.wav
+TTS_chinese_6.wav,TTS_Wei,,Chinese,Female,Teenager,,https://webapp.dubverse.ai/home?page=1,spoof,TTS_chinese_6,./2024_FakeSample/TTS_Sample/TTS_chinese_6.wav
+TTS_vietnam_1.wav,TTS_Huan,,Vietnamese,Male,Adult,,https://webapp.dubverse.ai/project/954783b3-5288-48ee-a218-d30d7db21944,spoof,TTS_vietnam_1,./2024_FakeSample/TTS_Sample/TTS_vietnam_1.wav
+TTS_vietnam_2.wav,TTS_Huan,,Vietnamese,Male,Adult,,https://webapp.dubverse.ai/project/954783b3-5288-48ee-a218-d30d7db21944,spoof,TTS_vietnam_2,./2024_FakeSample/TTS_Sample/TTS_vietnam_2.wav
+TTS_vietnam_3.wav,TTS_Huan,,Vietnamese,Male,Adult,,https://webapp.dubverse.ai/project/954783b3-5288-48ee-a218-d30d7db21944,spoof,TTS_vietnam_3,./2024_FakeSample/TTS_Sample/TTS_vietnam_3.wav
+TTS_vietnam_4.wav,TTS_Huan,,Vietnamese,Male,Adult,,https://webapp.dubverse.ai/project/954783b3-5288-48ee-a218-d30d7db21944,spoof,TTS_vietnam_4,./2024_FakeSample/TTS_Sample/TTS_vietnam_4.wav
+TTS_vietnam_5.wav,TTS_Huan,,Vietnamese,Male,Adult,,https://webapp.dubverse.ai/project/954783b3-5288-48ee-a218-d30d7db21944,spoof,TTS_vietnam_5,./2024_FakeSample/TTS_Sample/TTS_vietnam_5.wav
+TTS_vietnam_6.wav,TTS_Huan,,Vietnamese,Male,Adult,,https://webapp.dubverse.ai/project/954783b3-5288-48ee-a218-d30d7db21944,spoof,TTS_vietnam_6,./2024_FakeSample/TTS_Sample/TTS_vietnam_6.wav
+TTS_onedo_1.wav,TTS_onedo,,Korean,Female,Adult,Music,https://youtube.com/watch?v=KAzQldaCNYM,spoof,TTS_onedo_1,./2024_FakeSample/TTS_Sample/TTS_onedo_1.wav
+TTS_onedo_2.wav,TTS_onedo,,Korean,Female,Adult,Music,https://youtube.com/watch?v=KAzQldaCNYM,spoof,TTS_onedo_2,./2024_FakeSample/TTS_Sample/TTS_onedo_2.wav
+TTS_onedo_3.wav,TTS_onedo,,Korean,Female,Adult,Music,https://youtube.com/watch?v=KAzQldaCNYM,spoof,TTS_onedo_3,./2024_FakeSample/TTS_Sample/TTS_onedo_3.wav
+TTS_onedo_4.wav,TTS_onedo,,Korean,Female,Adult,Music,https://youtube.com/watch?v=KAzQldaCNYM,spoof,TTS_onedo_4,./2024_FakeSample/TTS_Sample/TTS_onedo_4.wav
+TTS_onedo_5.wav,TTS_onedo,,Korean,Female,Adult,Music,https://youtube.com/watch?v=KAzQldaCNYM,spoof,TTS_onedo_5,./2024_FakeSample/TTS_Sample/TTS_onedo_5.wav
+TTS_Diffusion_model_1.wav,TTS voice,Diffusion,English,Female,Adult,,https://grad-tts.github.io/,spoof,TTS_Diffusion_model_1,./2024_FakeSample/TTS_Sample/TTS_Diffusion_model_1.wav
+TTS_Diffusion_model_2.wav,TTS voice,Diffusion,English,Female,Adult,,https://grad-tts.github.io/,spoof,TTS_Diffusion_model_2,./2024_FakeSample/TTS_Sample/TTS_Diffusion_model_2.wav
+TTS_Diffusion_model_3.wav,TTS voice,Diffusion,English,Female,Adult,,https://grad-tts.github.io/,spoof,TTS_Diffusion_model_3,./2024_FakeSample/TTS_Sample/TTS_Diffusion_model_3.wav
+TTS_Diffusion_model_4.wav,TTS voice,Diffusion,English,Female,Adult,,https://grad-tts.github.io/,spoof,TTS_Diffusion_model_4,./2024_FakeSample/TTS_Sample/TTS_Diffusion_model_4.wav
+TTS_Diffusion_model_5.wav,TTS voice,Diffusion,English,Female,Adult,,https://grad-tts.github.io/,spoof,TTS_Diffusion_model_5,./2024_FakeSample/TTS_Sample/TTS_Diffusion_model_5.wav
+TTS_GAN_model_japanese_1.wav,TTS japanese,GAN,Japanese,Male,Adult,,https://nbviewer.org/gist/r9y9/185a56417cee27d9f785b8caf1c9f5ec,spoof,TTS_GAN_model_japanese_1,./2024_FakeSample/TTS_Sample/TTS_GAN_model_japanese_1.wav
+TTS_GAN_model_japanese_2.wav,TTS japanese,GAN,Japanese,Male,Adult,,https://nbviewer.org/gist/r9y9/185a56417cee27d9f785b8caf1c9f5ec,spoof,TTS_GAN_model_japanese_2,./2024_FakeSample/TTS_Sample/TTS_GAN_model_japanese_2.wav
+TTS_GAN_model_japanese_3.wav,TTS japanese,GAN,Japanese,Male,Adult,,https://nbviewer.org/gist/r9y9/185a56417cee27d9f785b8caf1c9f5ec,spoof,TTS_GAN_model_japanese_3,./2024_FakeSample/TTS_Sample/TTS_GAN_model_japanese_3.wav
+TTS_GAN_model_japanese_4.wav,TTS japanese,GAN,Japanese,Male,Adult,,https://nbviewer.org/gist/r9y9/185a56417cee27d9f785b8caf1c9f5ec,spoof,TTS_GAN_model_japanese_4,./2024_FakeSample/TTS_Sample/TTS_GAN_model_japanese_4.wav
+TTS_GAN_model_japanese_5.wav,TTS japanese,GAN,Japanese,Male,Adult,,https://nbviewer.org/gist/r9y9/185a56417cee27d9f785b8caf1c9f5ec,spoof,TTS_GAN_model_japanese_5,./2024_FakeSample/TTS_Sample/TTS_GAN_model_japanese_5.wav
+TTS_styletts2_model_1.wav,TTS voice,Diffusion-GAN,English,Female,Adult,,https://styletts2.github.io/,spoof,TTS_styletts2_model_1,./2024_FakeSample/TTS_Sample/TTS_styletts2_model_1.wav
+TTS_styletts2_model_2.wav,TTS voice,Diffusion-GAN,English,Female,Adult,,https://styletts2.github.io/,spoof,TTS_styletts2_model_2,./2024_FakeSample/TTS_Sample/TTS_styletts2_model_2.wav
+TTS_styletts2_model_3.wav,TTS voice,Diffusion-GAN,English,Female,Adult,,https://styletts2.github.io/,spoof,TTS_styletts2_model_3,./2024_FakeSample/TTS_Sample/TTS_styletts2_model_3.wav
+TTS_styletts2_model_4.wav,TTS voice,Diffusion-GAN,English,Female,Adult,,https://styletts2.github.io/,spoof,TTS_styletts2_model_4,./2024_FakeSample/TTS_Sample/TTS_styletts2_model_4.wav
+TTS_styletts2_model_5.wav,TTS voice,Diffusion-GAN,English,Female,Adult,,https://styletts2.github.io/,spoof,TTS_styletts2_model_5,./2024_FakeSample/TTS_Sample/TTS_styletts2_model_5.wav
+TTS_styletts2_model_6.wav,TTS voice,Diffusion-GAN,English,Female,Adult,,https://styletts2.github.io/,spoof,TTS_styletts2_model_6,./2024_FakeSample/TTS_Sample/TTS_styletts2_model_6.wav
+TTS_styletts2_model_7.wav,TTS voice,Diffusion-GAN,English,Female,Adult,,https://styletts2.github.io/,spoof,TTS_styletts2_model_7,./2024_FakeSample/TTS_Sample/TTS_styletts2_model_7.wav
+TTS_HIFIGAN_1.wav,TTS voice,GAN,English,Female,Adult,,https://jik876.github.io/hifi-gan-demo/#ss,spoof,TTS_HIFIGAN_1,./2024_FakeSample/TTS_Sample/TTS_HIFIGAN_1.wav
+TTS_HIFIGAN_2.wav,TTS voice,GAN,English,Female,Adult,,https://jik876.github.io/hifi-gan-demo/#ss,spoof,TTS_HIFIGAN_2,./2024_FakeSample/TTS_Sample/TTS_HIFIGAN_2.wav
+TTS_HIFIGAN_3.wav,TTS voice,GAN,English,Female,Adult,,https://jik876.github.io/hifi-gan-demo/#ss,spoof,TTS_HIFIGAN_3,./2024_FakeSample/TTS_Sample/TTS_HIFIGAN_3.wav
+TTS_HIFIGAN_4.wav,TTS voice,GAN,English,Female,Adult,,https://jik876.github.io/hifi-gan-demo/#ss,spoof,TTS_HIFIGAN_4,./2024_FakeSample/TTS_Sample/TTS_HIFIGAN_4.wav
+TTS_HIFIGAN_5.wav,TTS voice,GAN,English,Female,Adult,,https://jik876.github.io/hifi-gan-demo/#ss,spoof,TTS_HIFIGAN_5,./2024_FakeSample/TTS_Sample/TTS_HIFIGAN_5.wav
+TTS_HIFIGAN2_1.wav,TTS voice,GAN,English,Female,Adult,,https://jik876.github.io/hifi-gan-demo/#ss,spoof,TTS_HIFIGAN2_1,./2024_FakeSample/TTS_Sample/TTS_HIFIGAN2_1.wav
+TTS_HIFIGAN2_2.wav,TTS voice,GAN,English,Female,Adult,,https://jik876.github.io/hifi-gan-demo/#ss,spoof,TTS_HIFIGAN2_2,./2024_FakeSample/TTS_Sample/TTS_HIFIGAN2_2.wav
+TTS_HIFIGAN2_3.wav,TTS voice,GAN,English,Female,Adult,,https://jik876.github.io/hifi-gan-demo/#ss,spoof,TTS_HIFIGAN2_3,./2024_FakeSample/TTS_Sample/TTS_HIFIGAN2_3.wav
+TTS_HIFIGAN2_4.wav,TTS voice,GAN,English,Female,Adult,,https://jik876.github.io/hifi-gan-demo/#ss,spoof,TTS_HIFIGAN2_4,./2024_FakeSample/TTS_Sample/TTS_HIFIGAN2_4.wav
+TTS_HIFIGAN2_5.wav,TTS voice,GAN,English,Female,Adult,,https://jik876.github.io/hifi-gan-demo/#ss,spoof,TTS_HIFIGAN2_5,./2024_FakeSample/TTS_Sample/TTS_HIFIGAN2_5.wav
+TTS_sytletts2_1.wav,TTS voice,Diffusion-GAN,English,Male,Adult,,https://huggingface.co/spaces/styletts2/styletts2,spoof,TTS_sytletts2_1,./2024_FakeSample/TTS_Sample/TTS_sytletts2_1.wav
+TTS_sytletts2_2.wav,TTS voice,Diffusion-GAN,English,Male,Adult,,https://huggingface.co/spaces/styletts2/styletts2,spoof,TTS_sytletts2_2,./2024_FakeSample/TTS_Sample/TTS_sytletts2_2.wav
+TTS_sytletts2_3.wav,TTS voice,Diffusion-GAN,English,Male,Adult,,https://huggingface.co/spaces/styletts2/styletts2,spoof,TTS_sytletts2_3,./2024_FakeSample/TTS_Sample/TTS_sytletts2_3.wav
+TTS_sytletts2_4.wav,TTS voice,Diffusion-GAN,English,Male,Adult,,https://huggingface.co/spaces/styletts2/styletts2,spoof,TTS_sytletts2_4,./2024_FakeSample/TTS_Sample/TTS_sytletts2_4.wav
+TTS_sytletts2_5.wav,TTS voice,Diffusion-GAN,English,Male,Adult,,https://huggingface.co/spaces/styletts2/styletts2,spoof,TTS_sytletts2_5,./2024_FakeSample/TTS_Sample/TTS_sytletts2_5.wav
+TTS_sytletts2_6.wav,TTS voice,Diffusion-GAN,English,Male,Adult,,https://huggingface.co/spaces/styletts2/styletts2,spoof,TTS_sytletts2_6,./2024_FakeSample/TTS_Sample/TTS_sytletts2_6.wav
+TTS_sytletts2_7.wav,TTS voice,Diffusion-GAN,English,Male,Adult,,https://huggingface.co/spaces/styletts2/styletts2,spoof,TTS_sytletts2_7,./2024_FakeSample/TTS_Sample/TTS_sytletts2_7.wav
+TTS_japanese_1.wav,TTS voice,,Japanese,Female,Adult,,https://elevenlabs.io/speech-synthesis,spoof,TTS_japanese_1,./2024_FakeSample/TTS_Sample/TTS_japanese_1.wav
+TTS_japanese_2.wav,TTS voice,,Japanese,Female,Adult,,https://elevenlabs.io/speech-synthesis,spoof,TTS_japanese_2,./2024_FakeSample/TTS_Sample/TTS_japanese_2.wav
+TTS_japanese_3.wav,TTS voice,,Japanese,Female,Adult,,https://elevenlabs.io/speech-synthesis,spoof,TTS_japanese_3,./2024_FakeSample/TTS_Sample/TTS_japanese_3.wav
+TTS_japanese_4.wav,TTS voice,,Japanese,Female,Adult,,https://elevenlabs.io/speech-synthesis,spoof,TTS_japanese_4,./2024_FakeSample/TTS_Sample/TTS_japanese_4.wav
+TTS_japanese_5.wav,TTS voice,,Japanese,Female,Adult,,https://elevenlabs.io/speech-synthesis,spoof,TTS_japanese_5,./2024_FakeSample/TTS_Sample/TTS_japanese_5.wav
+TTS_japanese_6.wav,TTS voice,,Japanese,Female,Adult,,https://elevenlabs.io/speech-synthesis,spoof,TTS_japanese_6,./2024_FakeSample/TTS_Sample/TTS_japanese_6.wav
+TTS_japanese_7.wav,TTS voice,,Japanese,Female,Adult,,https://elevenlabs.io/speech-synthesis,spoof,TTS_japanese_7,./2024_FakeSample/TTS_Sample/TTS_japanese_7.wav
+TTS_japanese_8.wav,TTS voice,,Japanese,Female,Adult,,https://elevenlabs.io/speech-synthesis,spoof,TTS_japanese_8,./2024_FakeSample/TTS_Sample/TTS_japanese_8.wav
+TTS_styletts2_1.wav,TTS voice,Diffusion-GAN,English,Female,Adult,,https://huggingface.co/spaces/styletts2/styletts2,spoof,TTS_styletts2_1,./2024_FakeSample/TTS_Sample/TTS_styletts2_1.wav
+TTS_styletts2_2.wav,TTS voice,Diffusion-GAN,English,Female,Adult,,https://huggingface.co/spaces/styletts2/styletts2,spoof,TTS_styletts2_2,./2024_FakeSample/TTS_Sample/TTS_styletts2_2.wav
+TTS_styletts2_3.wav,TTS voice,Diffusion-GAN,English,Female,Adult,,https://huggingface.co/spaces/styletts2/styletts2,spoof,TTS_styletts2_3,./2024_FakeSample/TTS_Sample/TTS_styletts2_3.wav
+TTS_styletts2_4.wav,TTS voice,Diffusion-GAN,English,Female,Adult,,https://huggingface.co/spaces/styletts2/styletts2,spoof,TTS_styletts2_4,./2024_FakeSample/TTS_Sample/TTS_styletts2_4.wav
+TTS_styletts2_5.wav,TTS voice,Diffusion-GAN,English,Female,Adult,,https://huggingface.co/spaces/styletts2/styletts2,spoof,TTS_styletts2_5,./2024_FakeSample/TTS_Sample/TTS_styletts2_5.wav
+TTS_styletts2_6.wav,TTS voice,Diffusion-GAN,English,Female,Adult,,https://huggingface.co/spaces/styletts2/styletts2,spoof,TTS_styletts2_6,./2024_FakeSample/TTS_Sample/TTS_styletts2_6.wav
+TTS_styletts2_7.wav,TTS voice,Diffusion-GAN,English,Female,Adult,,https://huggingface.co/spaces/styletts2/styletts2,spoof,TTS_styletts2_7,./2024_FakeSample/TTS_Sample/TTS_styletts2_7.wav
+TTS_taewon_1.wav,taewon,Diffusion-GAN,English,Male,Adult,,https://huggingface.co/spaces/styletts2/styletts2,spoof,TTS_taewon_1,./2024_FakeSample/TTS_Sample/TTS_taewon_1.wav
+TTS_taewon_2.wav,taewon,Diffusion-GAN,English,Male,Adult,,https://huggingface.co/spaces/styletts2/styletts2,spoof,TTS_taewon_2,./2024_FakeSample/TTS_Sample/TTS_taewon_2.wav
+TTS_taewon_3.wav,taewon,Diffusion-GAN,English,Male,Adult,,https://huggingface.co/spaces/styletts2/styletts2,spoof,TTS_taewon_3,./2024_FakeSample/TTS_Sample/TTS_taewon_3.wav
+TTS_taewon_4.wav,taewon,Diffusion-GAN,English,Male,Adult,,https://huggingface.co/spaces/styletts2/styletts2,spoof,TTS_taewon_4,./2024_FakeSample/TTS_Sample/TTS_taewon_4.wav
+TTS_taewon_5.wav,taewon,Diffusion-GAN,English,Male,Adult,,https://huggingface.co/spaces/styletts2/styletts2,spoof,TTS_taewon_5,./2024_FakeSample/TTS_Sample/TTS_taewon_5.wav
+TTS_taewon_6.wav,taewon,Diffusion-GAN,English,Male,Adult,,https://huggingface.co/spaces/styletts2/styletts2,spoof,TTS_taewon_6,./2024_FakeSample/TTS_Sample/TTS_taewon_6.wav
+TTS_MorganFreeman_1.wav,MorganFreeman,Diffusion-GAN,English,Male,Elder,,https://huggingface.co/spaces/styletts2/styletts2,spoof,TTS_MorganFreeman_1,./2024_FakeSample/TTS_Sample/TTS_MorganFreeman_1.wav
+TTS_MorganFreeman_2.wav,MorganFreeman,Diffusion-GAN,English,Male,Elder,,https://huggingface.co/spaces/styletts2/styletts2,spoof,TTS_MorganFreeman_2,./2024_FakeSample/TTS_Sample/TTS_MorganFreeman_2.wav
+TTS_MorganFreeman_3.wav,MorganFreeman,Diffusion-GAN,English,Male,Elder,,https://huggingface.co/spaces/styletts2/styletts2,spoof,TTS_MorganFreeman_3,./2024_FakeSample/TTS_Sample/TTS_MorganFreeman_3.wav
+TTS_MorganFreeman_4.wav,MorganFreeman,Diffusion-GAN,English,Male,Elder,,https://huggingface.co/spaces/styletts2/styletts2,spoof,TTS_MorganFreeman_4,./2024_FakeSample/TTS_Sample/TTS_MorganFreeman_4.wav
+TTS_MorganFreeman_5.wav,MorganFreeman,Diffusion-GAN,English,Male,Elder,,https://huggingface.co/spaces/styletts2/styletts2,spoof,TTS_MorganFreeman_5,./2024_FakeSample/TTS_Sample/TTS_MorganFreeman_5.wav
+TTS_MorganFreeman_6.wav,MorganFreeman,Diffusion-GAN,English,Male,Elder,,https://huggingface.co/spaces/styletts2/styletts2,spoof,TTS_MorganFreeman_6,./2024_FakeSample/TTS_Sample/TTS_MorganFreeman_6.wav
+TTS_MorganFreeman_7.wav,MorganFreeman,Diffusion-GAN,English,Male,Elder,,https://huggingface.co/spaces/styletts2/styletts2,spoof,TTS_MorganFreeman_7,./2024_FakeSample/TTS_Sample/TTS_MorganFreeman_7.wav
+TTS_MorganFreeman_8.wav,MorganFreeman,Diffusion-GAN,English,Male,Elder,,https://huggingface.co/spaces/styletts2/styletts2,spoof,TTS_MorganFreeman_8,./2024_FakeSample/TTS_Sample/TTS_MorganFreeman_8.wav
+TTS_Judith_Dench_1.wav,Judith Dench,Diffusion-GAN,English,Female,Elder,,https://huggingface.co/spaces/styletts2/styletts2,spoof,TTS_Judith_Dench_1,./2024_FakeSample/TTS_Sample/TTS_Judith_Dench_1.wav
+TTS_Judith_Dench_2.wav,Judith Dench,Diffusion-GAN,English,Female,Elder,,https://huggingface.co/spaces/styletts2/styletts2,spoof,TTS_Judith_Dench_2,./2024_FakeSample/TTS_Sample/TTS_Judith_Dench_2.wav
+TTS_Judith_Dench_3.wav,Judith Dench,Diffusion-GAN,English,Female,Elder,,https://huggingface.co/spaces/styletts2/styletts2,spoof,TTS_Judith_Dench_3,./2024_FakeSample/TTS_Sample/TTS_Judith_Dench_3.wav
+TTS_Judith_Dench_4.wav,Judith Dench,Diffusion-GAN,English,Female,Elder,,https://huggingface.co/spaces/styletts2/styletts2,spoof,TTS_Judith_Dench_4,./2024_FakeSample/TTS_Sample/TTS_Judith_Dench_4.wav
+TTS_Judith_Dench_5.wav,Judith Dench,Diffusion-GAN,English,Female,Elder,,https://huggingface.co/spaces/styletts2/styletts2,spoof,TTS_Judith_Dench_5,./2024_FakeSample/TTS_Sample/TTS_Judith_Dench_5.wav
+TTS_Judith_Dench_6.wav,Judith Dench,Diffusion-GAN,English,Female,Elder,,https://huggingface.co/spaces/styletts2/styletts2,spoof,TTS_Judith_Dench_6,./2024_FakeSample/TTS_Sample/TTS_Judith_Dench_6.wav
+TTS_Judith_Dench_7.wav,Judith Dench,Diffusion-GAN,English,Female,Elder,,https://huggingface.co/spaces/styletts2/styletts2,spoof,TTS_Judith_Dench_7,./2024_FakeSample/TTS_Sample/TTS_Judith_Dench_7.wav
+TTS_sua_1.wav,sua,VITS,Korean,Female,Teenager,,https://huggingface.co/spaces/skytnt/moe-tts,spoof,TTS_sua_1,./2024_FakeSample/TTS_Sample/TTS_sua_1.wav
+TTS_sua_2.wav,sua,VITS,Korean,Female,Teenager,,https://huggingface.co/spaces/skytnt/moe-tts,spoof,TTS_sua_2,./2024_FakeSample/TTS_Sample/TTS_sua_2.wav
+TTS_sua_3.wav,sua,VITS,Korean,Female,Teenager,,https://huggingface.co/spaces/skytnt/moe-tts,spoof,TTS_sua_3,./2024_FakeSample/TTS_Sample/TTS_sua_3.wav
+TTS_sua_4.wav,sua,VITS,Korean,Female,Teenager,,https://huggingface.co/spaces/skytnt/moe-tts,spoof,TTS_sua_4,./2024_FakeSample/TTS_Sample/TTS_sua_4.wav
+TTS_sua_5.wav,sua,VITS,Korean,Female,Teenager,,https://huggingface.co/spaces/skytnt/moe-tts,spoof,TTS_sua_5,./2024_FakeSample/TTS_Sample/TTS_sua_5.wav
+TTS_sua_6.wav,sua,VITS,Korean,Female,Teenager,,https://huggingface.co/spaces/skytnt/moe-tts,spoof,TTS_sua_6,./2024_FakeSample/TTS_Sample/TTS_sua_6.wav
+TTS_sua_7.wav,sua,VITS,Korean,Female,Teenager,,https://huggingface.co/spaces/skytnt/moe-tts,spoof,TTS_sua_7,./2024_FakeSample/TTS_Sample/TTS_sua_7.wav
+TTS_chinesewomen_1.wav,,VITS,Chinese,Female,Adult,,https://huggingface.co/spaces/Ailyth/Multi-voice-TTS,spoof,TTS_chinesewomen_1,./2024_FakeSample/TTS_Sample/TTS_chinesewomen_1.wav
+TTS_chinesewomen_2.wav,,VITS,Chinese,Female,Adult,,https://huggingface.co/spaces/Ailyth/Multi-voice-TTS,spoof,TTS_chinesewomen_2,./2024_FakeSample/TTS_Sample/TTS_chinesewomen_2.wav
+TTS_chinesewomen_3.wav,,VITS,Chinese,Female,Adult,,https://huggingface.co/spaces/Ailyth/Multi-voice-TTS,spoof,TTS_chinesewomen_3,./2024_FakeSample/TTS_Sample/TTS_chinesewomen_3.wav
+TTS_chinesewomen_4.wav,,VITS,Chinese,Female,Adult,,https://huggingface.co/spaces/Ailyth/Multi-voice-TTS,spoof,TTS_chinesewomen_4,./2024_FakeSample/TTS_Sample/TTS_chinesewomen_4.wav
+TTS_chinesewomen_5.wav,,VITS,Chinese,Female,Adult,,https://huggingface.co/spaces/Ailyth/Multi-voice-TTS,spoof,TTS_chinesewomen_5,./2024_FakeSample/TTS_Sample/TTS_chinesewomen_5.wav
+TTS_chinesewomen_6.wav,,VITS,Chinese,Female,Adult,,https://huggingface.co/spaces/Ailyth/Multi-voice-TTS,spoof,TTS_chinesewomen_6,./2024_FakeSample/TTS_Sample/TTS_chinesewomen_6.wav
+TTS_chinesewomen_7.wav,,VITS,Chinese,Female,Adult,,https://huggingface.co/spaces/Ailyth/Multi-voice-TTS,spoof,TTS_chinesewomen_7,./2024_FakeSample/TTS_Sample/TTS_chinesewomen_7.wav
+TTS_miko_1.wav,miko,VITS,Japanese,Female,Adult,,https://huggingface.co/spaces/Plachta/VITS-Umamusume-voice-synthesizer,spoof,TTS_miko_1,./2024_FakeSample/TTS_Sample/TTS_miko_1.wav
+TTS_miko_2.wav,miko,VITS,Japanese,Female,Adult,,https://huggingface.co/spaces/Plachta/VITS-Umamusume-voice-synthesizer,spoof,TTS_miko_2,./2024_FakeSample/TTS_Sample/TTS_miko_2.wav
+TTS_miko_3.wav,miko,VITS,Japanese,Female,Adult,,https://huggingface.co/spaces/Plachta/VITS-Umamusume-voice-synthesizer,spoof,TTS_miko_3,./2024_FakeSample/TTS_Sample/TTS_miko_3.wav
+TTS_miko_4.wav,miko,VITS,Japanese,Female,Adult,,https://huggingface.co/spaces/Plachta/VITS-Umamusume-voice-synthesizer,spoof,TTS_miko_4,./2024_FakeSample/TTS_Sample/TTS_miko_4.wav
+TTS_miko_5.wav,miko,VITS,Japanese,Female,Adult,,https://huggingface.co/spaces/Plachta/VITS-Umamusume-voice-synthesizer,spoof,TTS_miko_5,./2024_FakeSample/TTS_Sample/TTS_miko_5.wav
+TTS_miko_6.wav,miko,VITS,Japanese,Female,Adult,,https://huggingface.co/spaces/Plachta/VITS-Umamusume-voice-synthesizer,spoof,TTS_miko_6,./2024_FakeSample/TTS_Sample/TTS_miko_6.wav
+TTS_miko_7.wav,miko,VITS,Japanese,Female,Adult,,https://huggingface.co/spaces/Plachta/VITS-Umamusume-voice-synthesizer,spoof,TTS_miko_7,./2024_FakeSample/TTS_Sample/TTS_miko_7.wav
+TTS_russian_1.wav,TTS_russian,VITS,Russian,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_russian_1,./2024_FakeSample/TTS_Sample/TTS_russian_1.wav
+TTS_russian_2.wav,TTS_russian,VITS,Russian,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_russian_2,./2024_FakeSample/TTS_Sample/TTS_russian_2.wav
+TTS_russian_3.wav,TTS_russian,VITS,Russian,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_russian_3,./2024_FakeSample/TTS_Sample/TTS_russian_3.wav
+TTS_russian_4.wav,TTS_russian,VITS,Russian,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_russian_4,./2024_FakeSample/TTS_Sample/TTS_russian_4.wav
+TTS_russian_5.wav,TTS_russian,VITS,Russian,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_russian_5,./2024_FakeSample/TTS_Sample/TTS_russian_5.wav
+TTS_russian_6.wav,TTS_russian,VITS,Russian,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_russian_6,./2024_FakeSample/TTS_Sample/TTS_russian_6.wav
+TTS_russian_7.wav,TTS_russian,VITS,Russian,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_russian_7,./2024_FakeSample/TTS_Sample/TTS_russian_7.wav
+TTS_russian_8.wav,TTS_russian,VITS,Russian,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_russian_8,./2024_FakeSample/TTS_Sample/TTS_russian_8.wav
+TTS_russian_9.wav,TTS_russian,VITS,Russian,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_russian_9,./2024_FakeSample/TTS_Sample/TTS_russian_9.wav
+TTS_eng_1.wav,TTS_english,VITS,English,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_eng_1,./2024_FakeSample/TTS_Sample/TTS_eng_1.wav
+TTS_eng_2.wav,TTS_english,VITS,English,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_eng_2,./2024_FakeSample/TTS_Sample/TTS_eng_2.wav
+TTS_eng_3.wav,TTS_english,VITS,English,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_eng_3,./2024_FakeSample/TTS_Sample/TTS_eng_3.wav
+TTS_eng_4.wav,TTS_english,VITS,English,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_eng_4,./2024_FakeSample/TTS_Sample/TTS_eng_4.wav
+TTS_eng_5.wav,TTS_english,VITS,English,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_eng_5,./2024_FakeSample/TTS_Sample/TTS_eng_5.wav
+TTS_eng_6.wav,TTS_english,VITS,English,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_eng_6,./2024_FakeSample/TTS_Sample/TTS_eng_6.wav
+TTS_eng_7.wav,TTS_english,VITS,English,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_eng_7,./2024_FakeSample/TTS_Sample/TTS_eng_7.wav
+TTS_eng_8.wav,TTS_english,VITS,English,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_eng_8,./2024_FakeSample/TTS_Sample/TTS_eng_8.wav
+TTS_eng_9.wav,TTS_english,VITS,English,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_eng_9,./2024_FakeSample/TTS_Sample/TTS_eng_9.wav
+TTS_arab_1.wav,TTS_arab,VITS,Arab,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_arab_1,./2024_FakeSample/TTS_Sample/TTS_arab_1.wav
+TTS_arab_2.wav,TTS_arab,VITS,Arab,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_arab_2,./2024_FakeSample/TTS_Sample/TTS_arab_2.wav
+TTS_arab_3.wav,TTS_arab,VITS,Arab,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_arab_3,./2024_FakeSample/TTS_Sample/TTS_arab_3.wav
+TTS_arab_4.wav,TTS_arab,VITS,Arab,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_arab_4,./2024_FakeSample/TTS_Sample/TTS_arab_4.wav
+TTS_arab_5.wav,TTS_arab,VITS,Arab,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_arab_5,./2024_FakeSample/TTS_Sample/TTS_arab_5.wav
+TTS_arab_6.wav,TTS_arab,VITS,Arab,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_arab_6,./2024_FakeSample/TTS_Sample/TTS_arab_6.wav
+TTS_arab_7.wav,TTS_arab,VITS,Arab,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_arab_7,./2024_FakeSample/TTS_Sample/TTS_arab_7.wav
+TTS_arab_8.wav,TTS_arab,VITS,Arab,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_arab_8,./2024_FakeSample/TTS_Sample/TTS_arab_8.wav
+TTS_arab_9.wav,TTS_arab,VITS,Arab,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_arab_9,./2024_FakeSample/TTS_Sample/TTS_arab_9.wav
+TTS_Hindi_1.wav,TTS_Hindi,VITS,Hindi,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_Hindi_1,./2024_FakeSample/TTS_Sample/TTS_Hindi_1.wav
+TTS_Hindi_2.wav,TTS_Hindi,VITS,Hindi,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_Hindi_2,./2024_FakeSample/TTS_Sample/TTS_Hindi_2.wav
+TTS_Hindi_3.wav,TTS_Hindi,VITS,Hindi,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_Hindi_3,./2024_FakeSample/TTS_Sample/TTS_Hindi_3.wav
+TTS_Hindi_4.wav,TTS_Hindi,VITS,Hindi,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_Hindi_4,./2024_FakeSample/TTS_Sample/TTS_Hindi_4.wav
+TTS_Hindi_5.wav,TTS_Hindi,VITS,Hindi,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_Hindi_5,./2024_FakeSample/TTS_Sample/TTS_Hindi_5.wav
+TTS_Hindi_6.wav,TTS_Hindi,VITS,Hindi,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_Hindi_6,./2024_FakeSample/TTS_Sample/TTS_Hindi_6.wav
+TTS_Hindi_7.wav,TTS_Hindi,VITS,Hindi,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_Hindi_7,./2024_FakeSample/TTS_Sample/TTS_Hindi_7.wav
+TTS_Hindi_8.wav,TTS_Hindi,VITS,Hindi,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_Hindi_8,./2024_FakeSample/TTS_Sample/TTS_Hindi_8.wav
+TTS_Hindi_9.wav,TTS_Hindi,VITS,Hindi,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_Hindi_9,./2024_FakeSample/TTS_Sample/TTS_Hindi_9.wav
+TTS_vietnamese_m1_1.wav,TTS_Viet,VITS,Vietnamese,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_vietnamese_m1_1,./2024_FakeSample/TTS_Sample/TTS_vietnamese_m1_1.wav
+TTS_vietnamese_m1_2.wav,TTS_Viet,VITS,Vietnamese,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_vietnamese_m1_2,./2024_FakeSample/TTS_Sample/TTS_vietnamese_m1_2.wav
+TTS_vietnamese_m1_3.wav,TTS_Viet,VITS,Vietnamese,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_vietnamese_m1_3,./2024_FakeSample/TTS_Sample/TTS_vietnamese_m1_3.wav
+TTS_vietnamese_m1_4.wav,TTS_Viet,VITS,Vietnamese,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_vietnamese_m1_4,./2024_FakeSample/TTS_Sample/TTS_vietnamese_m1_4.wav
+TTS_vietnamese_m1_5.wav,TTS_Viet,VITS,Vietnamese,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_vietnamese_m1_5,./2024_FakeSample/TTS_Sample/TTS_vietnamese_m1_5.wav
+TTS_vietnamese_m1_6.wav,TTS_Viet,VITS,Vietnamese,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_vietnamese_m1_6,./2024_FakeSample/TTS_Sample/TTS_vietnamese_m1_6.wav
+TTS_vietnamese_m1_7.wav,TTS_Viet,VITS,Vietnamese,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_vietnamese_m1_7,./2024_FakeSample/TTS_Sample/TTS_vietnamese_m1_7.wav
+TTS_vietnamese_m1_8.wav,TTS_Viet,VITS,Vietnamese,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_vietnamese_m1_8,./2024_FakeSample/TTS_Sample/TTS_vietnamese_m1_8.wav
+TTS_vietnamese_m1_9.wav,TTS_Viet,VITS,Vietnamese,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_vietnamese_m1_9,./2024_FakeSample/TTS_Sample/TTS_vietnamese_m1_9.wav
+TTS_nod_1.wav,TTS_nod,VITS,Thai,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_nod_1,./2024_FakeSample/TTS_Sample/TTS_nod_1.wav
+TTS_nod_2.wav,TTS_nod,VITS,Thai,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_nod_2,./2024_FakeSample/TTS_Sample/TTS_nod_2.wav
+TTS_nod_3.wav,TTS_nod,VITS,Thai,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_nod_3,./2024_FakeSample/TTS_Sample/TTS_nod_3.wav
+TTS_nod_4.wav,TTS_nod,VITS,Thai,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_nod_4,./2024_FakeSample/TTS_Sample/TTS_nod_4.wav
+TTS_nod_5.wav,TTS_nod,VITS,Thai,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_nod_5,./2024_FakeSample/TTS_Sample/TTS_nod_5.wav
+TTS_nod_6.wav,TTS_nod,VITS,Thai,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_nod_6,./2024_FakeSample/TTS_Sample/TTS_nod_6.wav
+TTS_nod_7.wav,TTS_nod,VITS,Thai,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_nod_7,./2024_FakeSample/TTS_Sample/TTS_nod_7.wav
+TTS_nod_8.wav,TTS_nod,VITS,Thai,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_nod_8,./2024_FakeSample/TTS_Sample/TTS_nod_8.wav
+TTS_nod_9.wav,TTS_nod,VITS,Thai,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_nod_9,./2024_FakeSample/TTS_Sample/TTS_nod_9.wav
+TTS_French_m1_1.wav,TTS_fra,VITS,French,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_French_m1_1,./2024_FakeSample/TTS_Sample/TTS_French_m1_1.wav
+TTS_French_m1_2.wav,TTS_fra,VITS,French,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_French_m1_2,./2024_FakeSample/TTS_Sample/TTS_French_m1_2.wav
+TTS_French_m1_3.wav,TTS_fra,VITS,French,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_French_m1_3,./2024_FakeSample/TTS_Sample/TTS_French_m1_3.wav
+TTS_French_m1_4.wav,TTS_fra,VITS,French,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_French_m1_4,./2024_FakeSample/TTS_Sample/TTS_French_m1_4.wav
+TTS_French_m1_5.wav,TTS_fra,VITS,French,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_French_m1_5,./2024_FakeSample/TTS_Sample/TTS_French_m1_5.wav
+TTS_French_m1_6.wav,TTS_fra,VITS,French,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_French_m1_6,./2024_FakeSample/TTS_Sample/TTS_French_m1_6.wav
+TTS_French_m1_7.wav,TTS_fra,VITS,French,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_French_m1_7,./2024_FakeSample/TTS_Sample/TTS_French_m1_7.wav
+TTS_French_m1_8.wav,TTS_fra,VITS,French,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_French_m1_8,./2024_FakeSample/TTS_Sample/TTS_French_m1_8.wav
+TTS_French_m1_9.wav,TTS_fra,VITS,French,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_French_m1_9,./2024_FakeSample/TTS_Sample/TTS_French_m1_9.wav
+TTS_French_m2_1.wav,TTS_fra,VITS,French,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_French_m2_1,./2024_FakeSample/TTS_Sample/TTS_French_m2_1.wav
+TTS_French_m2_2.wav,TTS_fra,VITS,French,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_French_m2_2,./2024_FakeSample/TTS_Sample/TTS_French_m2_2.wav
+TTS_French_m2_3.wav,TTS_fra,VITS,French,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_French_m2_3,./2024_FakeSample/TTS_Sample/TTS_French_m2_3.wav
+TTS_French_m2_4.wav,TTS_fra,VITS,French,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_French_m2_4,./2024_FakeSample/TTS_Sample/TTS_French_m2_4.wav
+TTS_French_m2_5.wav,TTS_fra,VITS,French,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_French_m2_5,./2024_FakeSample/TTS_Sample/TTS_French_m2_5.wav
+TTS_French_m2_6.wav,TTS_fra,VITS,French,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_French_m2_6,./2024_FakeSample/TTS_Sample/TTS_French_m2_6.wav
+TTS_French_m2_7.wav,TTS_fra,VITS,French,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_French_m2_7,./2024_FakeSample/TTS_Sample/TTS_French_m2_7.wav
+TTS_French_m2_8.wav,TTS_fra,VITS,French,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_French_m2_8,./2024_FakeSample/TTS_Sample/TTS_French_m2_8.wav
+TTS_French_m2_9.wav,TTS_fra,VITS,French,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_French_m2_9,./2024_FakeSample/TTS_Sample/TTS_French_m2_9.wav
+TTS_German_m_1.wav,TTS_German,VITS,German,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_German_m_1,./2024_FakeSample/TTS_Sample/TTS_German_m_1.wav
+TTS_German_m_2.wav,TTS_German,VITS,German,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_German_m_2,./2024_FakeSample/TTS_Sample/TTS_German_m_2.wav
+TTS_German_m_3.wav,TTS_German,VITS,German,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_German_m_3,./2024_FakeSample/TTS_Sample/TTS_German_m_3.wav
+TTS_German_m_4.wav,TTS_German,VITS,German,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_German_m_4,./2024_FakeSample/TTS_Sample/TTS_German_m_4.wav
+TTS_German_m_5.wav,TTS_German,VITS,German,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_German_m_5,./2024_FakeSample/TTS_Sample/TTS_German_m_5.wav
+TTS_German_m_6.wav,TTS_German,VITS,German,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_German_m_6,./2024_FakeSample/TTS_Sample/TTS_German_m_6.wav
+TTS_German_m_7.wav,TTS_German,VITS,German,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_German_m_7,./2024_FakeSample/TTS_Sample/TTS_German_m_7.wav
+TTS_German_m_8.wav,TTS_German,VITS,German,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_German_m_8,./2024_FakeSample/TTS_Sample/TTS_German_m_8.wav
+TTS_German_m_9.wav,TTS_German,VITS,German,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_German_m_9,./2024_FakeSample/TTS_Sample/TTS_German_m_9.wav
+TTS_German_fm_1.wav,TTS_German,VITS,German,Female,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_German_fm_1,./2024_FakeSample/TTS_Sample/TTS_German_fm_1.wav
+TTS_German_fm_2.wav,TTS_German,VITS,German,Female,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_German_fm_2,./2024_FakeSample/TTS_Sample/TTS_German_fm_2.wav
+TTS_German_fm_3.wav,TTS_German,VITS,German,Female,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_German_fm_3,./2024_FakeSample/TTS_Sample/TTS_German_fm_3.wav
+TTS_German_fm_4.wav,TTS_German,VITS,German,Female,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_German_fm_4,./2024_FakeSample/TTS_Sample/TTS_German_fm_4.wav
+TTS_German_fm_5.wav,TTS_German,VITS,German,Female,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_German_fm_5,./2024_FakeSample/TTS_Sample/TTS_German_fm_5.wav
+TTS_German_fm_6.wav,TTS_German,VITS,German,Female,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_German_fm_6,./2024_FakeSample/TTS_Sample/TTS_German_fm_6.wav
+TTS_German_fm_7.wav,TTS_German,VITS,German,Female,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_German_fm_7,./2024_FakeSample/TTS_Sample/TTS_German_fm_7.wav
+TTS_German_fm_8.wav,TTS_German,VITS,German,Female,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_German_fm_8,./2024_FakeSample/TTS_Sample/TTS_German_fm_8.wav
+TTS_German_fm_9.wav,TTS_German,VITS,German,Female,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_German_fm_9,./2024_FakeSample/TTS_Sample/TTS_German_fm_9.wav
+TTS_German_fm_10.wav,TTS_German,VITS,German,Female,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_German_fm_10,./2024_FakeSample/TTS_Sample/TTS_German_fm_10.wav
+TTS_korean_m_1.wav,TTS_korean,VITS,Korean,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_korean_m_1,./2024_FakeSample/TTS_Sample/TTS_korean_m_1.wav
+TTS_korean_m_2.wav,TTS_korean,VITS,Korean,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_korean_m_2,./2024_FakeSample/TTS_Sample/TTS_korean_m_2.wav
+TTS_korean_m_3.wav,TTS_korean,VITS,Korean,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_korean_m_3,./2024_FakeSample/TTS_Sample/TTS_korean_m_3.wav
+TTS_korean_m_4.wav,TTS_korean,VITS,Korean,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_korean_m_4,./2024_FakeSample/TTS_Sample/TTS_korean_m_4.wav
+TTS_korean_m_5.wav,TTS_korean,VITS,Korean,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_korean_m_5,./2024_FakeSample/TTS_Sample/TTS_korean_m_5.wav
+TTS_korean_m_6.wav,TTS_korean,VITS,Korean,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_korean_m_6,./2024_FakeSample/TTS_Sample/TTS_korean_m_6.wav
+TTS_korean_m_7.wav,TTS_korean,VITS,Korean,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_korean_m_7,./2024_FakeSample/TTS_Sample/TTS_korean_m_7.wav
+TTS_korean_m_8.wav,TTS_korean,VITS,Korean,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_korean_m_8,./2024_FakeSample/TTS_Sample/TTS_korean_m_8.wav
+TTS_korean_m_9.wav,TTS_korean,VITS,Korean,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_korean_m_9,./2024_FakeSample/TTS_Sample/TTS_korean_m_9.wav
+TTS_korean_m_10.wav,TTS_korean,VITS,Korean,Male,Adult,,https://github.com/hungdinhxuan/MMS_TTS/blob/main/inference.py,spoof,TTS_korean_m_10,./2024_FakeSample/TTS_Sample/TTS_korean_m_10.wav
+TTS_korean_fm_1.wav,TTS_korean,,Korean,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_korean_fm_1,./2024_FakeSample/TTS_Sample/TTS_korean_fm_1.wav
+TTS_korean_fm_2.wav,TTS_korean,,Korean,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_korean_fm_2,./2024_FakeSample/TTS_Sample/TTS_korean_fm_2.wav
+TTS_korean_fm_3.wav,TTS_korean,,Korean,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_korean_fm_3,./2024_FakeSample/TTS_Sample/TTS_korean_fm_3.wav
+TTS_korean_fm_4.wav,TTS_korean,,Korean,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_korean_fm_4,./2024_FakeSample/TTS_Sample/TTS_korean_fm_4.wav
+TTS_korean_fm_5.wav,TTS_korean,,Korean,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_korean_fm_5,./2024_FakeSample/TTS_Sample/TTS_korean_fm_5.wav
+TTS_korean_fm_6.wav,TTS_korean,,Korean,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_korean_fm_6,./2024_FakeSample/TTS_Sample/TTS_korean_fm_6.wav
+TTS_korean_fm_7.wav,TTS_korean,,Korean,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_korean_fm_7,./2024_FakeSample/TTS_Sample/TTS_korean_fm_7.wav
+TTS_korean_fm_8.wav,TTS_korean,,Korean,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_korean_fm_8,./2024_FakeSample/TTS_Sample/TTS_korean_fm_8.wav
+TTS_German_ym_1.wav,TTS_German,,German,Male,Teenager,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_German_ym_1,./2024_FakeSample/TTS_Sample/TTS_German_ym_1.wav
+TTS_German_ym_2.wav,TTS_German,,German,Male,Teenager,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_German_ym_2,./2024_FakeSample/TTS_Sample/TTS_German_ym_2.wav
+TTS_German_ym_3.wav,TTS_German,,German,Male,Teenager,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_German_ym_3,./2024_FakeSample/TTS_Sample/TTS_German_ym_3.wav
+TTS_German_ym_4.wav,TTS_German,,German,Male,Teenager,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_German_ym_4,./2024_FakeSample/TTS_Sample/TTS_German_ym_4.wav
+TTS_German_ym_5.wav,TTS_German,,German,Male,Teenager,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_German_ym_5,./2024_FakeSample/TTS_Sample/TTS_German_ym_5.wav
+TTS_German_ym_6.wav,TTS_German,,German,Male,Teenager,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_German_ym_6,./2024_FakeSample/TTS_Sample/TTS_German_ym_6.wav
+TTS_German_ym_7.wav,TTS_German,,German,Male,Teenager,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_German_ym_7,./2024_FakeSample/TTS_Sample/TTS_German_ym_7.wav
+TTS_German_ym_8.wav,TTS_German,,German,Male,Teenager,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_German_ym_8,./2024_FakeSample/TTS_Sample/TTS_German_ym_8.wav
+TTS_french_yfm_1.wav,shelby,,French,Female,Teenager,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_french_yfm_1,./2024_FakeSample/TTS_Sample/TTS_french_yfm_1.wav
+TTS_french_yfm_2.wav,shelby,,French,Female,Teenager,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_french_yfm_2,./2024_FakeSample/TTS_Sample/TTS_french_yfm_2.wav
+TTS_french_yfm_3.wav,shelby,,French,Female,Teenager,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_french_yfm_3,./2024_FakeSample/TTS_Sample/TTS_french_yfm_3.wav
+TTS_french_yfm_4.wav,shelby,,French,Female,Teenager,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_french_yfm_4,./2024_FakeSample/TTS_Sample/TTS_french_yfm_4.wav
+TTS_french_yfm_5.wav,shelby,,French,Female,Teenager,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_french_yfm_5,./2024_FakeSample/TTS_Sample/TTS_french_yfm_5.wav
+TTS_french_yfm_6.wav,shelby,,French,Female,Teenager,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_french_yfm_6,./2024_FakeSample/TTS_Sample/TTS_french_yfm_6.wav
+TTS_french_yfm_7.wav,shelby,,French,Female,Teenager,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_french_yfm_7,./2024_FakeSample/TTS_Sample/TTS_french_yfm_7.wav
+TTS_french_yfm_8.wav,shelby,,French,Female,Teenager,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_french_yfm_8,./2024_FakeSample/TTS_Sample/TTS_french_yfm_8.wav
+TTS_french_yfm_9.wav,shelby,,French,Female,Teenager,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_french_yfm_9,./2024_FakeSample/TTS_Sample/TTS_french_yfm_9.wav
+TTS_french_yfm_10.wav,shelby,,French,Female,Teenager,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_french_yfm_10,./2024_FakeSample/TTS_Sample/TTS_french_yfm_10.wav
+TTS_arabic_yfm_1.wav,sasha,,Arab,Female,Teenager,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_arabic_yfm_1,./2024_FakeSample/TTS_Sample/TTS_arabic_yfm_1.wav
+TTS_arabic_yfm_2.wav,sasha,,Arab,Female,Teenager,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_arabic_yfm_2,./2024_FakeSample/TTS_Sample/TTS_arabic_yfm_2.wav
+TTS_arabic_yfm_3.wav,sasha,,Arab,Female,Teenager,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_arabic_yfm_3,./2024_FakeSample/TTS_Sample/TTS_arabic_yfm_3.wav
+TTS_arabic_yfm_4.wav,sasha,,Arab,Female,Teenager,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_arabic_yfm_4,./2024_FakeSample/TTS_Sample/TTS_arabic_yfm_4.wav
+TTS_arabic_yfm_5.wav,sasha,,Arab,Female,Teenager,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_arabic_yfm_5,./2024_FakeSample/TTS_Sample/TTS_arabic_yfm_5.wav
+TTS_arabic_yfm_6.wav,sasha,,Arab,Female,Teenager,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_arabic_yfm_6,./2024_FakeSample/TTS_Sample/TTS_arabic_yfm_6.wav
+TTS_arabic_yfm_7.wav,sasha,,Arab,Female,Teenager,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_arabic_yfm_7,./2024_FakeSample/TTS_Sample/TTS_arabic_yfm_7.wav
+TTS_arabic_yfm_8.wav,sasha,,Arab,Female,Teenager,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_arabic_yfm_8,./2024_FakeSample/TTS_Sample/TTS_arabic_yfm_8.wav
+TTS_arabic_yfm_9.wav,sasha,,Arab,Female,Teenager,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_arabic_yfm_9,./2024_FakeSample/TTS_Sample/TTS_arabic_yfm_9.wav
+TTS_arabic_yfm_10.wav,sasha,,Arab,Female,Teenager,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_arabic_yfm_10,./2024_FakeSample/TTS_Sample/TTS_arabic_yfm_10.wav
+TTS_korean_ofm_1.wav,Nora,,Korean,Female,Elder,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_korean_ofm_1,./2024_FakeSample/TTS_Sample/TTS_korean_ofm_1.wav
+TTS_korean_ofm_2.wav,Nora,,Korean,Female,Elder,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_korean_ofm_2,./2024_FakeSample/TTS_Sample/TTS_korean_ofm_2.wav
+TTS_korean_ofm_3.wav,Nora,,Korean,Female,Elder,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_korean_ofm_3,./2024_FakeSample/TTS_Sample/TTS_korean_ofm_3.wav
+TTS_korean_ofm_4.wav,Nora,,Korean,Female,Elder,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_korean_ofm_4,./2024_FakeSample/TTS_Sample/TTS_korean_ofm_4.wav
+TTS_korean_ofm_5.wav,Nora,,Korean,Female,Elder,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_korean_ofm_5,./2024_FakeSample/TTS_Sample/TTS_korean_ofm_5.wav
+TTS_korean_ofm_6.wav,Nora,,Korean,Female,Elder,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_korean_ofm_6,./2024_FakeSample/TTS_Sample/TTS_korean_ofm_6.wav
+TTS_korean_ofm_7.wav,Nora,,Korean,Female,Elder,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_korean_ofm_7,./2024_FakeSample/TTS_Sample/TTS_korean_ofm_7.wav
+TTS_korean_ofm_8.wav,Nora,,Korean,Female,Elder,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_korean_ofm_8,./2024_FakeSample/TTS_Sample/TTS_korean_ofm_8.wav
+TTS_Korean_om_1.wav,bob,,Korean,Male,Elder,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_Korean_om_1,./2024_FakeSample/TTS_Sample/TTS_Korean_om_1.wav
+TTS_Korean_om_2.wav,bob,,Korean,Male,Elder,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_Korean_om_2,./2024_FakeSample/TTS_Sample/TTS_Korean_om_2.wav
+TTS_Korean_om_3.wav,bob,,Korean,Male,Elder,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_Korean_om_3,./2024_FakeSample/TTS_Sample/TTS_Korean_om_3.wav
+TTS_Korean_om_4.wav,bob,,Korean,Male,Elder,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_Korean_om_4,./2024_FakeSample/TTS_Sample/TTS_Korean_om_4.wav
+TTS_Korean_om_5.wav,bob,,Korean,Male,Elder,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_Korean_om_5,./2024_FakeSample/TTS_Sample/TTS_Korean_om_5.wav
+TTS_Korean_om_6.wav,bob,,Korean,Male,Elder,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_Korean_om_6,./2024_FakeSample/TTS_Sample/TTS_Korean_om_6.wav
+TTS_Korean_om_7.wav,bob,,Korean,Male,Elder,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_Korean_om_7,./2024_FakeSample/TTS_Sample/TTS_Korean_om_7.wav
+TTS_Korean_om_8.wav,bob,,Korean,Male,Elder,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_Korean_om_8,./2024_FakeSample/TTS_Sample/TTS_Korean_om_8.wav
+TTS_Korean_om_9.wav,bob,,Korean,Male,Elder,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_Korean_om_9,./2024_FakeSample/TTS_Sample/TTS_Korean_om_9.wav
+TTS_japanese_m_1.wav,marcus,,Japanese,Male,Adult,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_japanese_m_1,./2024_FakeSample/TTS_Sample/TTS_japanese_m_1.wav
+TTS_japanese_m_2.wav,marcus,,Japanese,Male,Adult,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_japanese_m_2,./2024_FakeSample/TTS_Sample/TTS_japanese_m_2.wav
+TTS_japanese_m_3.wav,marcus,,Japanese,Male,Adult,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_japanese_m_3,./2024_FakeSample/TTS_Sample/TTS_japanese_m_3.wav
+TTS_japanese_m_4.wav,marcus,,Japanese,Male,Adult,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_japanese_m_4,./2024_FakeSample/TTS_Sample/TTS_japanese_m_4.wav
+TTS_japanese_m_5.wav,marcus,,Japanese,Male,Adult,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_japanese_m_5,./2024_FakeSample/TTS_Sample/TTS_japanese_m_5.wav
+TTS_japanese_m_6.wav,marcus,,Japanese,Male,Adult,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_japanese_m_6,./2024_FakeSample/TTS_Sample/TTS_japanese_m_6.wav
+TTS_japanese_m_7.wav,marcus,,Japanese,Male,Adult,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_japanese_m_7,./2024_FakeSample/TTS_Sample/TTS_japanese_m_7.wav
+TTS_japanese_m_8.wav,marcus,,Japanese,Male,Adult,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_japanese_m_8,./2024_FakeSample/TTS_Sample/TTS_japanese_m_8.wav
+TTS_japanese_m_9.wav,marcus,,Japanese,Male,Adult,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_japanese_m_9,./2024_FakeSample/TTS_Sample/TTS_japanese_m_9.wav
+TTS_chnese_ym_1.wav,danny,,Chinese,Male,Teenager,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_chnese_ym_1,./2024_FakeSample/TTS_Sample/TTS_chnese_ym_1.wav
+TTS_chnese_ym_2.wav,danny,,Chinese,Male,Teenager,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_chnese_ym_2,./2024_FakeSample/TTS_Sample/TTS_chnese_ym_2.wav
+TTS_chnese_ym_3.wav,danny,,Chinese,Male,Teenager,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_chnese_ym_3,./2024_FakeSample/TTS_Sample/TTS_chnese_ym_3.wav
+TTS_chnese_ym_4.wav,danny,,Chinese,Male,Teenager,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_chnese_ym_4,./2024_FakeSample/TTS_Sample/TTS_chnese_ym_4.wav
+TTS_chnese_ym_5.wav,danny,,Chinese,Male,Teenager,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_chnese_ym_5,./2024_FakeSample/TTS_Sample/TTS_chnese_ym_5.wav
+TTS_chnese_ym_6.wav,danny,,Chinese,Male,Teenager,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_chnese_ym_6,./2024_FakeSample/TTS_Sample/TTS_chnese_ym_6.wav
+TTS_chnese_ym_7.wav,danny,,Chinese,Male,Teenager,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_chnese_ym_7,./2024_FakeSample/TTS_Sample/TTS_chnese_ym_7.wav
+TTS_chnese_ym_8.wav,danny,,Chinese,Male,Teenager,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_chnese_ym_8,./2024_FakeSample/TTS_Sample/TTS_chnese_ym_8.wav
+TTS_chinese_om_1.wav,valentino,,Chinese,Male,Elder,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_chinese_om_1,./2024_FakeSample/TTS_Sample/TTS_chinese_om_1.wav
+TTS_chinese_om_2.wav,valentino,,Chinese,Male,Elder,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_chinese_om_2,./2024_FakeSample/TTS_Sample/TTS_chinese_om_2.wav
+TTS_chinese_om_3.wav,valentino,,Chinese,Male,Elder,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_chinese_om_3,./2024_FakeSample/TTS_Sample/TTS_chinese_om_3.wav
+TTS_chinese_om_4.wav,valentino,,Chinese,Male,Elder,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_chinese_om_4,./2024_FakeSample/TTS_Sample/TTS_chinese_om_4.wav
+TTS_chinese_om_5.wav,valentino,,Chinese,Male,Elder,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_chinese_om_5,./2024_FakeSample/TTS_Sample/TTS_chinese_om_5.wav
+TTS_chinese_om_6.wav,valentino,,Chinese,Male,Elder,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_chinese_om_6,./2024_FakeSample/TTS_Sample/TTS_chinese_om_6.wav
+TTS_chinese_om_7.wav,valentino,,Chinese,Male,Elder,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_chinese_om_7,./2024_FakeSample/TTS_Sample/TTS_chinese_om_7.wav
+TTS_chinese_om_8.wav,valentino,,Chinese,Male,Elder,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_chinese_om_8,./2024_FakeSample/TTS_Sample/TTS_chinese_om_8.wav
+TTS_chinese_om_9.wav,valentino,,Chinese,Male,Elder,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_chinese_om_9,./2024_FakeSample/TTS_Sample/TTS_chinese_om_9.wav
+TTS_German_fm_11.wav,Gabriella,,German,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_German_fm_11,./2024_FakeSample/TTS_Sample/TTS_German_fm_11.wav
+TTS_German_fm_12.wav,Gabriella,,German,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_German_fm_12,./2024_FakeSample/TTS_Sample/TTS_German_fm_12.wav
+TTS_German_fm_13.wav,Gabriella,,German,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_German_fm_13,./2024_FakeSample/TTS_Sample/TTS_German_fm_13.wav
+TTS_German_fm_14.wav,Gabriella,,German,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_German_fm_14,./2024_FakeSample/TTS_Sample/TTS_German_fm_14.wav
+TTS_German_fm_15.wav,Gabriella,,German,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_German_fm_15,./2024_FakeSample/TTS_Sample/TTS_German_fm_15.wav
+TTS_German_fm_16.wav,Gabriella,,German,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_German_fm_16,./2024_FakeSample/TTS_Sample/TTS_German_fm_16.wav
+TTS_German_fm_17.wav,Gabriella,,German,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_German_fm_17,./2024_FakeSample/TTS_Sample/TTS_German_fm_17.wav
+TTS_German_fm_18.wav,Gabriella,,German,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_German_fm_18,./2024_FakeSample/TTS_Sample/TTS_German_fm_18.wav
+TTS_German_fm_19.wav,Gabriella,,German,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_German_fm_19,./2024_FakeSample/TTS_Sample/TTS_German_fm_19.wav
+TTS_German_fm_20.wav,Gabriella,,German,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_German_fm_20,./2024_FakeSample/TTS_Sample/TTS_German_fm_20.wav
+TTS_german_ofm_1.wav,nora,,German,Female,Elder,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_german_ofm_1,./2024_FakeSample/TTS_Sample/TTS_german_ofm_1.wav
+TTS_german_ofm_2.wav,nora,,German,Female,Elder,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_german_ofm_2,./2024_FakeSample/TTS_Sample/TTS_german_ofm_2.wav
+TTS_german_ofm_3.wav,nora,,German,Female,Elder,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_german_ofm_3,./2024_FakeSample/TTS_Sample/TTS_german_ofm_3.wav
+TTS_german_ofm_4.wav,nora,,German,Female,Elder,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_german_ofm_4,./2024_FakeSample/TTS_Sample/TTS_german_ofm_4.wav
+TTS_german_ofm_5.wav,nora,,German,Female,Elder,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_german_ofm_5,./2024_FakeSample/TTS_Sample/TTS_german_ofm_5.wav
+TTS_german_ofm_6.wav,nora,,German,Female,Elder,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_german_ofm_6,./2024_FakeSample/TTS_Sample/TTS_german_ofm_6.wav
+TTS_german_ofm_7.wav,nora,,German,Female,Elder,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_german_ofm_7,./2024_FakeSample/TTS_Sample/TTS_german_ofm_7.wav
+TTS_german_ofm_8.wav,nora,,German,Female,Elder,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_german_ofm_8,./2024_FakeSample/TTS_Sample/TTS_german_ofm_8.wav
+TTS_german_ofm_9.wav,nora,,German,Female,Elder,,https://elevenlabs.io/speech-synthesis?task=text-to-speech,spoof,TTS_german_ofm_9,./2024_FakeSample/TTS_Sample/TTS_german_ofm_9.wav
+VC_Trump_1.wav,Trump,,English,Male,Elder,,https://www.youtube.com/watch?v=JruKb-Zeze8&t=8s,spoof,VC_Trump_1,./2024_FakeSample/VC_Sample/VC_Trump_1.wav
+VC_Trump_2.wav,Trump,,English,Male,Elder,,https://www.youtube.com/watch?v=JruKb-Zeze8&t=8s,spoof,VC_Trump_2,./2024_FakeSample/VC_Sample/VC_Trump_2.wav
+VC_Trump_3.wav,Trump,,English,Male,Elder,,https://www.youtube.com/watch?v=JruKb-Zeze8&t=8s,spoof,VC_Trump_3,./2024_FakeSample/VC_Sample/VC_Trump_3.wav
+VC_Trump_4.wav,Trump,,English,Male,Elder,,https://www.youtube.com/watch?v=JruKb-Zeze8&t=8s,spoof,VC_Trump_4,./2024_FakeSample/VC_Sample/VC_Trump_4.wav
+VC_Trump_5.wav,Trump,,English,Male,Elder,,https://www.youtube.com/watch?v=JruKb-Zeze8&t=8s,spoof,VC_Trump_5,./2024_FakeSample/VC_Sample/VC_Trump_5.wav
+VC_politician_1.wav,politician,,English,Male,Elder,,https://voice.ai/,spoof,VC_politician_1,./2024_FakeSample/VC_Sample/VC_politician_1.wav
+VC_politician_2.wav,politician,,English,Male,Elder,,https://voice.ai/,spoof,VC_politician_2,./2024_FakeSample/VC_Sample/VC_politician_2.wav
+VC_politician_3.wav,politician,,English,Male,Elder,,https://voice.ai/,spoof,VC_politician_3,./2024_FakeSample/VC_Sample/VC_politician_3.wav
+VC_politician_4.wav,politician,,English,Male,Elder,,https://voice.ai/,spoof,VC_politician_4,./2024_FakeSample/VC_Sample/VC_politician_4.wav
+VC_politician_5.wav,politician,,English,Male,Elder,,https://voice.ai/,spoof,VC_politician_5,./2024_FakeSample/VC_Sample/VC_politician_5.wav
+VC_politician_6.wav,politician,,English,Male,Elder,,https://voice.ai/,spoof,VC_politician_6,./2024_FakeSample/VC_Sample/VC_politician_6.wav
+VC_politician_7.wav,politician,,English,Male,Elder,,https://voice.ai/,spoof,VC_politician_7,./2024_FakeSample/VC_Sample/VC_politician_7.wav
+VC_politician_8.wav,politician,,English,Male,Elder,,https://voice.ai/,spoof,VC_politician_8,./2024_FakeSample/VC_Sample/VC_politician_8.wav
+VC_popstar_1.wav,popstar,,English,Female,Adult,,https://voice.ai/,spoof,VC_popstar_1,./2024_FakeSample/VC_Sample/VC_popstar_1.wav
+VC_popstar_2.wav,popstar,,English,Female,Adult,,https://voice.ai/,spoof,VC_popstar_2,./2024_FakeSample/VC_Sample/VC_popstar_2.wav
+VC_popstar_3.wav,popstar,,English,Female,Adult,,https://voice.ai/,spoof,VC_popstar_3,./2024_FakeSample/VC_Sample/VC_popstar_3.wav
+VC_popstar_4.wav,popstar,,English,Female,Adult,,https://voice.ai/,spoof,VC_popstar_4,./2024_FakeSample/VC_Sample/VC_popstar_4.wav
+VC_popstar_5.wav,popstar,,English,Female,Adult,,https://voice.ai/,spoof,VC_popstar_5,./2024_FakeSample/VC_Sample/VC_popstar_5.wav
+VC_popstar_6.wav,popstar,,English,Female,Adult,,https://voice.ai/,spoof,VC_popstar_6,./2024_FakeSample/VC_Sample/VC_popstar_6.wav
+VC_popstar_7.wav,popstar,,English,Female,Adult,,https://voice.ai/,spoof,VC_popstar_7,./2024_FakeSample/VC_Sample/VC_popstar_7.wav
+VC_popstar_8.wav,popstar,,English,Female,Adult,,https://voice.ai/,spoof,VC_popstar_8,./2024_FakeSample/VC_Sample/VC_popstar_8.wav
+VC_narrator_1.wav,narrator,,English,Male,Adult,,https://www.youtube.com/watch?v=G1tHLs-UK90,spoof,VC_narrator_1,./2024_FakeSample/VC_Sample/VC_narrator_1.wav
+VC_narrator_2.wav,narrator,,English,Male,Adult,,https://www.youtube.com/watch?v=G1tHLs-UK90,spoof,VC_narrator_2,./2024_FakeSample/VC_Sample/VC_narrator_2.wav
+VC_narrator_3.wav,narrator,,English,Male,Adult,,https://www.youtube.com/watch?v=G1tHLs-UK90,spoof,VC_narrator_3,./2024_FakeSample/VC_Sample/VC_narrator_3.wav
+VC_narrator_4.wav,narrator,,English,Male,Adult,,https://www.youtube.com/watch?v=G1tHLs-UK90,spoof,VC_narrator_4,./2024_FakeSample/VC_Sample/VC_narrator_4.wav
+VC_narrator_5.wav,narrator,,English,Male,Adult,,https://www.youtube.com/watch?v=G1tHLs-UK90,spoof,VC_narrator_5,./2024_FakeSample/VC_Sample/VC_narrator_5.wav
+VC_woman_1.wav,woman,,English,Female,Adult,,https://www.youtube.com/watch?v=G1tHLs-UK90,spoof,VC_woman_1,./2024_FakeSample/VC_Sample/VC_woman_1.wav
+VC_woman_2.wav,woman,,English,Female,Adult,,https://www.youtube.com/watch?v=G1tHLs-UK90,spoof,VC_woman_2,./2024_FakeSample/VC_Sample/VC_woman_2.wav
+VC_woman_3.wav,woman,,English,Female,Adult,,https://www.youtube.com/watch?v=G1tHLs-UK90,spoof,VC_woman_3,./2024_FakeSample/VC_Sample/VC_woman_3.wav
+VC_woman_4.wav,woman,,English,Female,Adult,,https://www.youtube.com/watch?v=G1tHLs-UK90,spoof,VC_woman_4,./2024_FakeSample/VC_Sample/VC_woman_4.wav
+VC_woman_5.wav,woman,,English,Female,Adult,,https://www.youtube.com/watch?v=G1tHLs-UK90,spoof,VC_woman_5,./2024_FakeSample/VC_Sample/VC_woman_5.wav
+VC_Biden_1.wav,Biden,,English,Male,Elder,,https://www.youtube.com/watch?v=nb3R30b-uhc,spoof,VC_Biden_1,./2024_FakeSample/VC_Sample/VC_Biden_1.wav
+VC_Biden_2.wav,Biden,,English,Male,Elder,,https://www.youtube.com/watch?v=nb3R30b-uhc,spoof,VC_Biden_2,./2024_FakeSample/VC_Sample/VC_Biden_2.wav
+VC_Biden_3.wav,Biden,,English,Male,Elder,,https://www.youtube.com/watch?v=nb3R30b-uhc,spoof,VC_Biden_3,./2024_FakeSample/VC_Sample/VC_Biden_3.wav
+VC_Biden_4.wav,Biden,,English,Male,Elder,,https://www.youtube.com/watch?v=nb3R30b-uhc,spoof,VC_Biden_4,./2024_FakeSample/VC_Sample/VC_Biden_4.wav
+VC_Biden_5.wav,Biden,,English,Male,Elder,,https://www.youtube.com/watch?v=nb3R30b-uhc,spoof,VC_Biden_5,./2024_FakeSample/VC_Sample/VC_Biden_5.wav
+VC_Izabela_1.wav,Izabela,,English,Female,Adult,,https://www.youtube.com/watch?v=0UVppC0Ihjk,spoof,VC_Izabela_1,./2024_FakeSample/VC_Sample/VC_Izabela_1.wav
+VC_Izabela_2.wav,Izabela,,English,Female,Adult,,https://www.youtube.com/watch?v=0UVppC0Ihjk,spoof,VC_Izabela_2,./2024_FakeSample/VC_Sample/VC_Izabela_2.wav
+VC_Izabela_3.wav,Izabela,,English,Female,Adult,,https://www.youtube.com/watch?v=0UVppC0Ihjk,spoof,VC_Izabela_3,./2024_FakeSample/VC_Sample/VC_Izabela_3.wav
+VC_Izabela_4.wav,Izabela,,English,Female,Adult,,https://www.youtube.com/watch?v=0UVppC0Ihjk,spoof,VC_Izabela_4,./2024_FakeSample/VC_Sample/VC_Izabela_4.wav
+VC_Izabela_5.wav,Izabela,,English,Female,Adult,,https://www.youtube.com/watch?v=0UVppC0Ihjk,spoof,VC_Izabela_5,./2024_FakeSample/VC_Sample/VC_Izabela_5.wav
+VC_Izabela_6.wav,Izabela,,English,Female,Adult,,https://www.youtube.com/watch?v=0UVppC0Ihjk,spoof,VC_Izabela_6,./2024_FakeSample/VC_Sample/VC_Izabela_6.wav
+VC_staruanko_1.wav,staruanko,,Korean,Female,Teenager,Music,https://www.youtube.com/shorts/PquGCk2ylYo,spoof,VC_staruanko_1,./2024_FakeSample/VC_Sample/VC_staruanko_1.wav
+VC_staruanko_2.wav,staruanko,,Korean,Female,Teenager,Music,https://www.youtube.com/shorts/PquGCk2ylYo,spoof,VC_staruanko_2,./2024_FakeSample/VC_Sample/VC_staruanko_2.wav
+VC_staruanko_3.wav,staruanko,,Korean,Female,Teenager,Music,https://www.youtube.com/shorts/PquGCk2ylYo,spoof,VC_staruanko_3,./2024_FakeSample/VC_Sample/VC_staruanko_3.wav
+VC_staruanko_4.wav,staruanko,,Korean,Female,Teenager,Music,https://www.youtube.com/shorts/PquGCk2ylYo,spoof,VC_staruanko_4,./2024_FakeSample/VC_Sample/VC_staruanko_4.wav
+VC_staruanko_5.wav,staruanko,,Korean,Female,Teenager,Music,https://www.youtube.com/shorts/PquGCk2ylYo,spoof,VC_staruanko_5,./2024_FakeSample/VC_Sample/VC_staruanko_5.wav
+VC_momose_1.wav,momose,,Japanese,Female,Teenager,,https://www.youtube.com/watch?v=DSx2UJqP0mM,spoof,VC_momose_1,./2024_FakeSample/VC_Sample/VC_momose_1.wav
+VC_momose_2.wav,momose,,Japanese,Female,Teenager,,https://www.youtube.com/watch?v=DSx2UJqP0mM,spoof,VC_momose_2,./2024_FakeSample/VC_Sample/VC_momose_2.wav
+VC_momose_3.wav,momose,,Japanese,Female,Teenager,,https://www.youtube.com/watch?v=DSx2UJqP0mM,spoof,VC_momose_3,./2024_FakeSample/VC_Sample/VC_momose_3.wav
+VC_momose_4.wav,momose,,Japanese,Female,Teenager,,https://www.youtube.com/watch?v=DSx2UJqP0mM,spoof,VC_momose_4,./2024_FakeSample/VC_Sample/VC_momose_4.wav
+VC_momose_5.wav,momose,,Japanese,Female,Teenager,,https://www.youtube.com/watch?v=DSx2UJqP0mM,spoof,VC_momose_5,./2024_FakeSample/VC_Sample/VC_momose_5.wav
+VC_momose_6.wav,momose,,Japanese,Female,Teenager,,https://www.youtube.com/watch?v=DSx2UJqP0mM,spoof,VC_momose_6,./2024_FakeSample/VC_Sample/VC_momose_6.wav
+VC_momose_7.wav,momose,,Japanese,Female,Teenager,,https://www.youtube.com/watch?v=DSx2UJqP0mM,spoof,VC_momose_7,./2024_FakeSample/VC_Sample/VC_momose_7.wav
+VC_Yang_1.wav,Yang,,Chinese,Male,Adult,,https://voice.ai/,spoof,VC_Yang_1,./2024_FakeSample/VC_Sample/VC_Yang_1.wav
+VC_Yang_2.wav,Yang,,Chinese,Male,Adult,,https://voice.ai/,spoof,VC_Yang_2,./2024_FakeSample/VC_Sample/VC_Yang_2.wav
+VC_Yang_3.wav,Yang,,Chinese,Male,Adult,,https://voice.ai/,spoof,VC_Yang_3,./2024_FakeSample/VC_Sample/VC_Yang_3.wav
+VC_Yang_4.wav,Yang,,Chinese,Male,Adult,,https://voice.ai/,spoof,VC_Yang_4,./2024_FakeSample/VC_Sample/VC_Yang_4.wav
+VC_Yang_5.wav,Yang,,Chinese,Male,Adult,,https://voice.ai/,spoof,VC_Yang_5,./2024_FakeSample/VC_Sample/VC_Yang_5.wav
+VC_Yang_6.wav,Yang,,Chinese,Male,Adult,,https://voice.ai/,spoof,VC_Yang_6,./2024_FakeSample/VC_Sample/VC_Yang_6.wav
+VC_Yang_7.wav,Yang,,Chinese,Male,Adult,,https://voice.ai/,spoof,VC_Yang_7,./2024_FakeSample/VC_Sample/VC_Yang_7.wav
+VC_fofamit_1.wav,girl,,English,Female,Teenager,Music,https://www.youtube.com/watch?v=aVfoC1EHlVs,spoof,VC_fofamit_1,./2024_FakeSample/VC_Sample/VC_fofamit_1.wav
+VC_fofamit_2.wav,girl,,English,Female,Teenager,Music,https://www.youtube.com/watch?v=aVfoC1EHlVs,spoof,VC_fofamit_2,./2024_FakeSample/VC_Sample/VC_fofamit_2.wav
+VC_fofamit_3.wav,girl,,English,Female,Teenager,Music,https://www.youtube.com/watch?v=aVfoC1EHlVs,spoof,VC_fofamit_3,./2024_FakeSample/VC_Sample/VC_fofamit_3.wav
+VC_fofamit_4.wav,girl,,English,Female,Teenager,Music,https://www.youtube.com/watch?v=aVfoC1EHlVs,spoof,VC_fofamit_4,./2024_FakeSample/VC_Sample/VC_fofamit_4.wav
+VC_fofamit_5.wav,girl,,English,Female,Teenager,Music,https://www.youtube.com/watch?v=aVfoC1EHlVs,spoof,VC_fofamit_5,./2024_FakeSample/VC_Sample/VC_fofamit_5.wav
+VC_shahrukckhan_1.wav,shahrukckhan,,Hindi,Male,Adult,,https://www.youtube.com/watch?v=dR4eijxUubw&t=781s,spoof,VC_shahrukckhan_1,./2024_FakeSample/VC_Sample/VC_shahrukckhan_1.wav
+VC_shahrukckhan_2.wav,shahrukckhan,,Hindi,Male,Adult,,https://www.youtube.com/watch?v=dR4eijxUubw&t=781s,spoof,VC_shahrukckhan_2,./2024_FakeSample/VC_Sample/VC_shahrukckhan_2.wav
+VC_shahrukckhan_3.wav,shahrukckhan,,Hindi,Male,Adult,,https://www.youtube.com/watch?v=dR4eijxUubw&t=781s,spoof,VC_shahrukckhan_3,./2024_FakeSample/VC_Sample/VC_shahrukckhan_3.wav
+VC_shahrukckhan_4.wav,shahrukckhan,,Hindi,Male,Adult,,https://www.youtube.com/watch?v=dR4eijxUubw&t=781s,spoof,VC_shahrukckhan_4,./2024_FakeSample/VC_Sample/VC_shahrukckhan_4.wav
+VC_shahrukckhan_5.wav,shahrukckhan,,Hindi,Male,Adult,,https://www.youtube.com/watch?v=dR4eijxUubw&t=781s,spoof,VC_shahrukckhan_5,./2024_FakeSample/VC_Sample/VC_shahrukckhan_5.wav
+VC_liam_1.wav,Liam,,English,Male,Elder,,https://youtu.be/YYvlkM_9mfw?si=QmVx0TNC7Tx-E7Hg,spoof,VC_liam_1,./2024_FakeSample/VC_Sample/VC_liam_1.wav
+VC_liam_2.wav,Liam,,English,Male,Elder,,https://youtu.be/YYvlkM_9mfw?si=QmVx0TNC7Tx-E7Hg,spoof,VC_liam_2,./2024_FakeSample/VC_Sample/VC_liam_2.wav
+VC_liam_3.wav,Liam,,English,Male,Elder,,https://youtu.be/YYvlkM_9mfw?si=QmVx0TNC7Tx-E7Hg,spoof,VC_liam_3,./2024_FakeSample/VC_Sample/VC_liam_3.wav
+VC_liam_4.wav,Liam,,English,Male,Elder,,https://youtu.be/YYvlkM_9mfw?si=QmVx0TNC7Tx-E7Hg,spoof,VC_liam_4,./2024_FakeSample/VC_Sample/VC_liam_4.wav
+VC_Bob_to_son_1.wav,Seokhee son,,English,Male,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_Bob_to_son_1,./2024_FakeSample/VC_Sample/VC_Bob_to_son_1.wav
+VC_Bob_to_son_2.wav,Seokhee son,,English,Male,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_Bob_to_son_2,./2024_FakeSample/VC_Sample/VC_Bob_to_son_2.wav
+VC_Bob_to_son_3.wav,Seokhee son,,English,Male,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_Bob_to_son_3,./2024_FakeSample/VC_Sample/VC_Bob_to_son_3.wav
+VC_Bob_to_son_4.wav,Seokhee son,,English,Male,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_Bob_to_son_4,./2024_FakeSample/VC_Sample/VC_Bob_to_son_4.wav
+VC_Bob_to_son_5.wav,Seokhee son,,English,Male,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_Bob_to_son_5,./2024_FakeSample/VC_Sample/VC_Bob_to_son_5.wav
+VC_Bob_to_son_6.wav,Seokhee son,,English,Male,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_Bob_to_son_6,./2024_FakeSample/VC_Sample/VC_Bob_to_son_6.wav
+VC_Bob_to_son_7.wav,Seokhee son,,English,Male,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_Bob_to_son_7,./2024_FakeSample/VC_Sample/VC_Bob_to_son_7.wav
+VC_son_to_charlotte_1.wav,charlotte,,Korean,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_son_to_charlotte_1,./2024_FakeSample/VC_Sample/VC_son_to_charlotte_1.wav
+VC_son_to_charlotte_2.wav,charlotte,,Korean,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_son_to_charlotte_2,./2024_FakeSample/VC_Sample/VC_son_to_charlotte_2.wav
+VC_son_to_charlotte_3.wav,charlotte,,Korean,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_son_to_charlotte_3,./2024_FakeSample/VC_Sample/VC_son_to_charlotte_3.wav
+VC_son_to_charlotte_4.wav,charlotte,,Korean,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_son_to_charlotte_4,./2024_FakeSample/VC_Sample/VC_son_to_charlotte_4.wav
+VC_son_to_charlotte_5.wav,charlotte,,Korean,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_son_to_charlotte_5,./2024_FakeSample/VC_Sample/VC_son_to_charlotte_5.wav
+VC_son_to_charlotte_6.wav,charlotte,,Korean,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_son_to_charlotte_6,./2024_FakeSample/VC_Sample/VC_son_to_charlotte_6.wav
+VC_son_to_charlotte_7.wav,charlotte,,Korean,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_son_to_charlotte_7,./2024_FakeSample/VC_Sample/VC_son_to_charlotte_7.wav
+VC_choi_to_adam_1.wav,adam,,Korean,Male,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_choi_to_adam_1,./2024_FakeSample/VC_Sample/VC_choi_to_adam_1.wav
+VC_choi_to_adam_2.wav,adam,,Korean,Male,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_choi_to_adam_2,./2024_FakeSample/VC_Sample/VC_choi_to_adam_2.wav
+VC_choi_to_adam_3.wav,adam,,Korean,Male,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_choi_to_adam_3,./2024_FakeSample/VC_Sample/VC_choi_to_adam_3.wav
+VC_choi_to_adam_4.wav,adam,,Korean,Male,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_choi_to_adam_4,./2024_FakeSample/VC_Sample/VC_choi_to_adam_4.wav
+VC_choi_to_adam_5.wav,adam,,Korean,Male,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_choi_to_adam_5,./2024_FakeSample/VC_Sample/VC_choi_to_adam_5.wav
+VC_choi_to_adam_6.wav,adam,,Korean,Male,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_choi_to_adam_6,./2024_FakeSample/VC_Sample/VC_choi_to_adam_6.wav
+VC_han_to_freya_1.wav,freya,,Korean,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_han_to_freya_1,./2024_FakeSample/VC_Sample/VC_han_to_freya_1.wav
+VC_han_to_freya_2.wav,freya,,Korean,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_han_to_freya_2,./2024_FakeSample/VC_Sample/VC_han_to_freya_2.wav
+VC_han_to_freya_3.wav,freya,,Korean,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_han_to_freya_3,./2024_FakeSample/VC_Sample/VC_han_to_freya_3.wav
+VC_han_to_freya_4.wav,freya,,Korean,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_han_to_freya_4,./2024_FakeSample/VC_Sample/VC_han_to_freya_4.wav
+VC_han_to_freya_5.wav,freya,,Korean,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_han_to_freya_5,./2024_FakeSample/VC_Sample/VC_han_to_freya_5.wav
+VC_han_to_freya_6.wav,freya,,Korean,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_han_to_freya_6,./2024_FakeSample/VC_Sample/VC_han_to_freya_6.wav
+VC_han_to_freya_7.wav,freya,,Korean,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_han_to_freya_7,./2024_FakeSample/VC_Sample/VC_han_to_freya_7.wav
+VC_wanyu_1.wav,wanyu,,Chinese,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_wanyu_1,./2024_FakeSample/VC_Sample/VC_wanyu_1.wav
+VC_wanyu_2.wav,wanyu,,Chinese,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_wanyu_2,./2024_FakeSample/VC_Sample/VC_wanyu_2.wav
+VC_wanyu_3.wav,wanyu,,Chinese,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_wanyu_3,./2024_FakeSample/VC_Sample/VC_wanyu_3.wav
+VC_wanyu_4.wav,wanyu,,Chinese,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_wanyu_4,./2024_FakeSample/VC_Sample/VC_wanyu_4.wav
+VC_wanyu_5.wav,wanyu,,Chinese,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_wanyu_5,./2024_FakeSample/VC_Sample/VC_wanyu_5.wav
+VC_wanyu_6.wav,wanyu,,Chinese,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_wanyu_6,./2024_FakeSample/VC_Sample/VC_wanyu_6.wav
+VC_chinese_1.wav,,GAN,Chinese,Male,Adult,,https://github.com/jackaduma/CycleGAN-VC2/tree/master/converted_sound/S0913,spoof,VC_chinese_1,./2024_FakeSample/VC_Sample/VC_chinese_1.wav
+VC_chinese_2.wav,,GAN,Chinese,Male,Adult,,https://github.com/jackaduma/CycleGAN-VC2/tree/master/converted_sound/S0913,spoof,VC_chinese_2,./2024_FakeSample/VC_Sample/VC_chinese_2.wav
+VC_chinese_3.wav,,GAN,Chinese,Male,Adult,,https://github.com/jackaduma/CycleGAN-VC2/tree/master/converted_sound/S0913,spoof,VC_chinese_3,./2024_FakeSample/VC_Sample/VC_chinese_3.wav
+VC_chinese_4.wav,,GAN,Chinese,Male,Adult,,https://github.com/jackaduma/CycleGAN-VC2/tree/master/converted_sound/S0913,spoof,VC_chinese_4,./2024_FakeSample/VC_Sample/VC_chinese_4.wav
+VC_chinese_5.wav,,GAN,Chinese,Male,Adult,,https://github.com/jackaduma/CycleGAN-VC2/tree/master/converted_sound/S0913,spoof,VC_chinese_5,./2024_FakeSample/VC_Sample/VC_chinese_5.wav
+VC_chinese_6.wav,,GAN,Chinese,Male,Adult,,https://github.com/jackaduma/CycleGAN-VC2/tree/master/converted_sound/S0913,spoof,VC_chinese_6,./2024_FakeSample/VC_Sample/VC_chinese_6.wav
+VC_chinese_7.wav,,GAN,Chinese,Male,Adult,,https://github.com/jackaduma/CycleGAN-VC2/tree/master/converted_sound/S0913,spoof,VC_chinese_7,./2024_FakeSample/VC_Sample/VC_chinese_7.wav
+VC_StarGAN_based_1.wav,VC voice,GAN,English,Male,Adult,,https://github.com/SamuelBroughton/StarGAN-Voice-Conversion-2/tree/master/converted,spoof,VC_StarGAN_based_1,./2024_FakeSample/VC_Sample/VC_StarGAN_based_1.wav
+VC_StarGAN_based_2.wav,VC voice,GAN,English,Male,Adult,,https://github.com/SamuelBroughton/StarGAN-Voice-Conversion-2/tree/master/converted,spoof,VC_StarGAN_based_2,./2024_FakeSample/VC_Sample/VC_StarGAN_based_2.wav
+VC_StarGAN_based_3.wav,VC voice,GAN,English,Male,Adult,,https://github.com/SamuelBroughton/StarGAN-Voice-Conversion-2/tree/master/converted,spoof,VC_StarGAN_based_3,./2024_FakeSample/VC_Sample/VC_StarGAN_based_3.wav
+VC_StarGAN_based_4.wav,VC voice,GAN,English,Male,Adult,,https://github.com/SamuelBroughton/StarGAN-Voice-Conversion-2/tree/master/converted,spoof,VC_StarGAN_based_4,./2024_FakeSample/VC_Sample/VC_StarGAN_based_4.wav
+VC_StarGAN_based_5.wav,VC voice,GAN,English,Male,Adult,,https://github.com/SamuelBroughton/StarGAN-Voice-Conversion-2/tree/master/converted,spoof,VC_StarGAN_based_5,./2024_FakeSample/VC_Sample/VC_StarGAN_based_5.wav
+VC_StarGAN_based_6.wav,VC voice,GAN,English,Male,Adult,,https://github.com/SamuelBroughton/StarGAN-Voice-Conversion-2/tree/master/converted,spoof,VC_StarGAN_based_6,./2024_FakeSample/VC_Sample/VC_StarGAN_based_6.wav
+VC_StarGAN_based_7.wav,VC voice,GAN,English,Male,Adult,,https://github.com/SamuelBroughton/StarGAN-Voice-Conversion-2/tree/master/converted,spoof,VC_StarGAN_based_7,./2024_FakeSample/VC_Sample/VC_StarGAN_based_7.wav
+VC_StarGAN_based_8.wav,VC voice,GAN,English,Male,Adult,,https://github.com/SamuelBroughton/StarGAN-Voice-Conversion-2/tree/master/converted,spoof,VC_StarGAN_based_8,./2024_FakeSample/VC_Sample/VC_StarGAN_based_8.wav
+VC_StarGAN_based_9.wav,VC voice,GAN,English,Female,Adult,,https://github.com/dipjyoti92/StarGAN-Voice-Conversion,spoof,VC_StarGAN_based_9,./2024_FakeSample/VC_Sample/VC_StarGAN_based_9.wav
+VC_StarGAN_based_10.wav,VC voice,GAN,English,Female,Adult,,https://github.com/dipjyoti92/StarGAN-Voice-Conversion,spoof,VC_StarGAN_based_10,./2024_FakeSample/VC_Sample/VC_StarGAN_based_10.wav
+VC_StarGAN_based_11.wav,VC voice,GAN,English,Female,Adult,,https://github.com/dipjyoti92/StarGAN-Voice-Conversion,spoof,VC_StarGAN_based_11,./2024_FakeSample/VC_Sample/VC_StarGAN_based_11.wav
+VC_StarGAN_based_12.wav,VC voice,GAN,English,Female,Adult,,https://github.com/dipjyoti92/StarGAN-Voice-Conversion,spoof,VC_StarGAN_based_12,./2024_FakeSample/VC_Sample/VC_StarGAN_based_12.wav
+VC_StarGAN_based_13.wav,VC voice,GAN,English,Female,Adult,,https://github.com/dipjyoti92/StarGAN-Voice-Conversion,spoof,VC_StarGAN_based_13,./2024_FakeSample/VC_Sample/VC_StarGAN_based_13.wav
+VC_VITS_1.wav,VC voice,VITS,Korean,Female,Child,,https://huggingface.co/spaces/skytnt/moe-tts,spoof,VC_VITS_1,./2024_FakeSample/VC_Sample/VC_VITS_1.wav
+VC_VITS_2.wav,VC voice,VITS,Korean,Female,Child,,https://huggingface.co/spaces/skytnt/moe-tts,spoof,VC_VITS_2,./2024_FakeSample/VC_Sample/VC_VITS_2.wav
+VC_VITS_3.wav,VC voice,VITS,Korean,Female,Child,,https://huggingface.co/spaces/skytnt/moe-tts,spoof,VC_VITS_3,./2024_FakeSample/VC_Sample/VC_VITS_3.wav
+VC_VITS_4.wav,VC voice,VITS,Korean,Female,Child,,https://huggingface.co/spaces/skytnt/moe-tts,spoof,VC_VITS_4,./2024_FakeSample/VC_Sample/VC_VITS_4.wav
+VC_VITS_5.wav,VC voice,VITS,Korean,Female,Child,,https://huggingface.co/spaces/skytnt/moe-tts,spoof,VC_VITS_5,./2024_FakeSample/VC_Sample/VC_VITS_5.wav
+VC_VITS_6.wav,VC voice,VITS,Korean,Female,Child,,https://huggingface.co/spaces/skytnt/moe-tts,spoof,VC_VITS_6,./2024_FakeSample/VC_Sample/VC_VITS_6.wav
+VC_VITS_7.wav,VC voice,VITS,Korean,Female,Child,,https://huggingface.co/spaces/skytnt/moe-tts,spoof,VC_VITS_7,./2024_FakeSample/VC_Sample/VC_VITS_7.wav
+VC_MaskCycleGAN_m_1.wav,VC voice,GAN,English,Male,Adult,,https://www.kecl.ntt.co.jp/people/kaneko.takuhiro/projects/maskcyclegan-vc/index.html,spoof,VC_MaskCycleGAN_m_1,./2024_FakeSample/VC_Sample/VC_MaskCycleGAN_m_1.wav
+VC_MaskCycleGAN_m_2.wav,VC voice,GAN,English,Male,Adult,,https://www.kecl.ntt.co.jp/people/kaneko.takuhiro/projects/maskcyclegan-vc/index.html,spoof,VC_MaskCycleGAN_m_2,./2024_FakeSample/VC_Sample/VC_MaskCycleGAN_m_2.wav
+VC_MaskCycleGAN_m_3.wav,VC voice,GAN,English,Male,Adult,,https://www.kecl.ntt.co.jp/people/kaneko.takuhiro/projects/maskcyclegan-vc/index.html,spoof,VC_MaskCycleGAN_m_3,./2024_FakeSample/VC_Sample/VC_MaskCycleGAN_m_3.wav
+VC_MaskCycleGAN_m_4.wav,VC voice,GAN,English,Male,Adult,,https://www.kecl.ntt.co.jp/people/kaneko.takuhiro/projects/maskcyclegan-vc/index.html,spoof,VC_MaskCycleGAN_m_4,./2024_FakeSample/VC_Sample/VC_MaskCycleGAN_m_4.wav
+VC_MaskCycleGAN_m_5.wav,VC voice,GAN,English,Male,Adult,,https://www.kecl.ntt.co.jp/people/kaneko.takuhiro/projects/maskcyclegan-vc/index.html,spoof,VC_MaskCycleGAN_m_5,./2024_FakeSample/VC_Sample/VC_MaskCycleGAN_m_5.wav
+VC_MaskCycleGAN_m_6.wav,VC voice,GAN,English,Male,Adult,,https://www.kecl.ntt.co.jp/people/kaneko.takuhiro/projects/maskcyclegan-vc/index.html,spoof,VC_MaskCycleGAN_m_6,./2024_FakeSample/VC_Sample/VC_MaskCycleGAN_m_6.wav
+VC_MaskCycleGAN_fm_1.wav,VC voice,GAN,English,Female,Adult,,https://www.kecl.ntt.co.jp/people/kaneko.takuhiro/projects/maskcyclegan-vc/index.html,spoof,VC_MaskCycleGAN_fm_1,./2024_FakeSample/VC_Sample/VC_MaskCycleGAN_fm_1.wav
+VC_MaskCycleGAN_fm_2.wav,VC voice,GAN,English,Female,Adult,,https://www.kecl.ntt.co.jp/people/kaneko.takuhiro/projects/maskcyclegan-vc/index.html,spoof,VC_MaskCycleGAN_fm_2,./2024_FakeSample/VC_Sample/VC_MaskCycleGAN_fm_2.wav
+VC_MaskCycleGAN_fm_3.wav,VC voice,GAN,English,Female,Adult,,https://www.kecl.ntt.co.jp/people/kaneko.takuhiro/projects/maskcyclegan-vc/index.html,spoof,VC_MaskCycleGAN_fm_3,./2024_FakeSample/VC_Sample/VC_MaskCycleGAN_fm_3.wav
+VC_MaskCycleGAN_fm_4.wav,VC voice,GAN,English,Female,Adult,,https://www.kecl.ntt.co.jp/people/kaneko.takuhiro/projects/maskcyclegan-vc/index.html,spoof,VC_MaskCycleGAN_fm_4,./2024_FakeSample/VC_Sample/VC_MaskCycleGAN_fm_4.wav
+VC_MaskCycleGAN_fm_5.wav,VC voice,GAN,English,Female,Adult,,https://www.kecl.ntt.co.jp/people/kaneko.takuhiro/projects/maskcyclegan-vc/index.html,spoof,VC_MaskCycleGAN_fm_5,./2024_FakeSample/VC_Sample/VC_MaskCycleGAN_fm_5.wav
+VC_MaskCycleGAN_fm_6.wav,VC voice,GAN,English,Female,Adult,,https://www.kecl.ntt.co.jp/people/kaneko.takuhiro/projects/maskcyclegan-vc/index.html,spoof,VC_MaskCycleGAN_fm_6,./2024_FakeSample/VC_Sample/VC_MaskCycleGAN_fm_6.wav
+VC_HiFi-GAN_1.wav,VC voice,GAN,English,Male,Adult,,https://huggingface.co/spaces/Matthijs/speecht5-vc-demo,spoof,VC_HiFi-GAN_1,./2024_FakeSample/VC_Sample/VC_HiFi-GAN_1.wav
+VC_HiFi-GAN_2.wav,VC voice,GAN,English,Male,Adult,,https://huggingface.co/spaces/Matthijs/speecht5-vc-demo,spoof,VC_HiFi-GAN_2,./2024_FakeSample/VC_Sample/VC_HiFi-GAN_2.wav
+VC_HiFi-GAN_3.wav,VC voice,GAN,English,Male,Adult,,https://huggingface.co/spaces/Matthijs/speecht5-vc-demo,spoof,VC_HiFi-GAN_3,./2024_FakeSample/VC_Sample/VC_HiFi-GAN_3.wav
+VC_HiFi-GAN_4.wav,VC voice,GAN,English,Male,Adult,,https://huggingface.co/spaces/Matthijs/speecht5-vc-demo,spoof,VC_HiFi-GAN_4,./2024_FakeSample/VC_Sample/VC_HiFi-GAN_4.wav
+VC_HiFi-GAN_5.wav,VC voice,GAN,English,Male,Adult,,https://huggingface.co/spaces/Matthijs/speecht5-vc-demo,spoof,VC_HiFi-GAN_5,./2024_FakeSample/VC_Sample/VC_HiFi-GAN_5.wav
+VC_HiFi-GAN_6.wav,VC voice,GAN,English,Male,Adult,,https://huggingface.co/spaces/Matthijs/speecht5-vc-demo,spoof,VC_HiFi-GAN_6,./2024_FakeSample/VC_Sample/VC_HiFi-GAN_6.wav
+VC_HiFi-GAN_7.wav,VC voice,GAN,English,Male,Adult,,https://huggingface.co/spaces/Matthijs/speecht5-vc-demo,spoof,VC_HiFi-GAN_7,./2024_FakeSample/VC_Sample/VC_HiFi-GAN_7.wav
+VC_HiFi-GAN_8.wav,VC voice,GAN,English,Female,Adult,,https://huggingface.co/spaces/Matthijs/speecht5-vc-demo,spoof,VC_HiFi-GAN_8,./2024_FakeSample/VC_Sample/VC_HiFi-GAN_8.wav
+VC_HiFi-GAN_9.wav,VC voice,GAN,English,Female,Adult,,https://huggingface.co/spaces/Matthijs/speecht5-vc-demo,spoof,VC_HiFi-GAN_9,./2024_FakeSample/VC_Sample/VC_HiFi-GAN_9.wav
+VC_HiFi-GAN_10.wav,VC voice,GAN,English,Female,Adult,,https://huggingface.co/spaces/Matthijs/speecht5-vc-demo,spoof,VC_HiFi-GAN_10,./2024_FakeSample/VC_Sample/VC_HiFi-GAN_10.wav
+VC_HiFi-GAN_11.wav,VC voice,GAN,English,Female,Adult,,https://huggingface.co/spaces/Matthijs/speecht5-vc-demo,spoof,VC_HiFi-GAN_11,./2024_FakeSample/VC_Sample/VC_HiFi-GAN_11.wav
+VC_HiFi-GAN_12.wav,VC voice,GAN,English,Female,Adult,,https://huggingface.co/spaces/Matthijs/speecht5-vc-demo,spoof,VC_HiFi-GAN_12,./2024_FakeSample/VC_Sample/VC_HiFi-GAN_12.wav
+VC_HiFi-GAN_13.wav,VC voice,GAN,English,Female,Adult,,https://huggingface.co/spaces/Matthijs/speecht5-vc-demo,spoof,VC_HiFi-GAN_13,./2024_FakeSample/VC_Sample/VC_HiFi-GAN_13.wav
+VC_serena_1.wav,Serena,,English,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_serena_1,./2024_FakeSample/VC_Sample/VC_serena_1.wav
+VC_serena_2.wav,Serena,,English,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_serena_2,./2024_FakeSample/VC_Sample/VC_serena_2.wav
+VC_serena_3.wav,Serena,,English,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_serena_3,./2024_FakeSample/VC_Sample/VC_serena_3.wav
+VC_serena_4.wav,Serena,,English,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_serena_4,./2024_FakeSample/VC_Sample/VC_serena_4.wav
+VC_serena_5.wav,Serena,,English,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_serena_5,./2024_FakeSample/VC_Sample/VC_serena_5.wav
+VC_serena_6.wav,Serena,,English,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_serena_6,./2024_FakeSample/VC_Sample/VC_serena_6.wav
+VC_serena_7.wav,Serena,,English,Female,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_serena_7,./2024_FakeSample/VC_Sample/VC_serena_7.wav
+VC_thomas_1.wav,thomas,,English,Male,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_thomas_1,./2024_FakeSample/VC_Sample/VC_thomas_1.wav
+VC_thomas_2.wav,thomas,,English,Male,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_thomas_2,./2024_FakeSample/VC_Sample/VC_thomas_2.wav
+VC_thomas_3.wav,thomas,,English,Male,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_thomas_3,./2024_FakeSample/VC_Sample/VC_thomas_3.wav
+VC_thomas_4.wav,thomas,,English,Male,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_thomas_4,./2024_FakeSample/VC_Sample/VC_thomas_4.wav
+VC_thomas_5.wav,thomas,,English,Male,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_thomas_5,./2024_FakeSample/VC_Sample/VC_thomas_5.wav
+VC_thomas_6.wav,thomas,,English,Male,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_thomas_6,./2024_FakeSample/VC_Sample/VC_thomas_6.wav
+VC_thomas_7.wav,thomas,,English,Male,Adult,,https://elevenlabs.io/speech-synthesis?task=speech-to-speech,spoof,VC_thomas_7,./2024_FakeSample/VC_Sample/VC_thomas_7.wav
+VC_musk_to_BrunoMars_1.wav,BrunoMars,Diffusion,English,Male,Adult,,https://huggingface.co/spaces/amphion/singing_voice_conversion,spoof,VC_musk_to_BrunoMars_1,./2024_FakeSample/VC_Sample/VC_musk_to_BrunoMars_1.wav
+VC_musk_to_BrunoMars_2.wav,BrunoMars,Diffusion,English,Male,Adult,,https://huggingface.co/spaces/amphion/singing_voice_conversion,spoof,VC_musk_to_BrunoMars_2,./2024_FakeSample/VC_Sample/VC_musk_to_BrunoMars_2.wav
+VC_musk_to_BrunoMars_3.wav,BrunoMars,Diffusion,English,Male,Adult,,https://huggingface.co/spaces/amphion/singing_voice_conversion,spoof,VC_musk_to_BrunoMars_3,./2024_FakeSample/VC_Sample/VC_musk_to_BrunoMars_3.wav
+VC_musk_to_BrunoMars_4.wav,BrunoMars,Diffusion,English,Male,Adult,,https://huggingface.co/spaces/amphion/singing_voice_conversion,spoof,VC_musk_to_BrunoMars_4,./2024_FakeSample/VC_Sample/VC_musk_to_BrunoMars_4.wav
+VC_musk_to_BrunoMars_5.wav,BrunoMars,Diffusion,English,Male,Adult,,https://huggingface.co/spaces/amphion/singing_voice_conversion,spoof,VC_musk_to_BrunoMars_5,./2024_FakeSample/VC_Sample/VC_musk_to_BrunoMars_5.wav
+VC_musk_to_BrunoMars_6.wav,BrunoMars,Diffusion,English,Male,Adult,,https://huggingface.co/spaces/amphion/singing_voice_conversion,spoof,VC_musk_to_BrunoMars_6,./2024_FakeSample/VC_Sample/VC_musk_to_BrunoMars_6.wav
+VC_FanBingBing_to_Tsai_Chin_1.wav,Tsai Chin,Diffusion,Chinese,Female,Elder,,https://huggingface.co/spaces/amphion/singing_voice_conversion,spoof,VC_FanBingBing_to_Tsai_Chin_1,./2024_FakeSample/VC_Sample/VC_FanBingBing_to_Tsai_Chin_1.wav
+VC_FanBingBing_to_Tsai_Chin_2.wav,Tsai Chin,Diffusion,Chinese,Female,Elder,,https://huggingface.co/spaces/amphion/singing_voice_conversion,spoof,VC_FanBingBing_to_Tsai_Chin_2,./2024_FakeSample/VC_Sample/VC_FanBingBing_to_Tsai_Chin_2.wav
+VC_FanBingBing_to_Tsai_Chin_3.wav,Tsai Chin,Diffusion,Chinese,Female,Elder,,https://huggingface.co/spaces/amphion/singing_voice_conversion,spoof,VC_FanBingBing_to_Tsai_Chin_3,./2024_FakeSample/VC_Sample/VC_FanBingBing_to_Tsai_Chin_3.wav
+VC_FanBingBing_to_Tsai_Chin_4.wav,Tsai Chin,Diffusion,Chinese,Female,Elder,,https://huggingface.co/spaces/amphion/singing_voice_conversion,spoof,VC_FanBingBing_to_Tsai_Chin_4,./2024_FakeSample/VC_Sample/VC_FanBingBing_to_Tsai_Chin_4.wav
+VC_FanBingBing_to_Tsai_Chin_5.wav,Tsai Chin,Diffusion,Chinese,Female,Elder,,https://huggingface.co/spaces/amphion/singing_voice_conversion,spoof,VC_FanBingBing_to_Tsai_Chin_5,./2024_FakeSample/VC_Sample/VC_FanBingBing_to_Tsai_Chin_5.wav

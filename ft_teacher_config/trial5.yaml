@@ -36,7 +36,7 @@ train:
   freeze_ssl_num_epoch: 0 # 0 for no freeze
   dataset: 'LA19'
   train_teacher: True
-  ssl_teacher_path: '/nfs/datab/hungdx/KDW2V-AASISTL/xlsr2_300m.pt'
+  ssl_teacher_path: '/datab/hungdx/KDW2V-AASISTL/xlsr2_300m.pt'
   augment_mode: 'rawboost' # 'rawboost' for rawboost, 'audiomentations' for audiomentations
   algo: -1 # No augmentations
   student_resume: ''

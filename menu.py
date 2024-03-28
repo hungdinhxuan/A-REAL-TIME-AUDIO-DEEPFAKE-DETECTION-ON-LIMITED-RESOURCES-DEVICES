@@ -201,7 +201,7 @@ def get_hyp_tuning_menu():
     parser = argparse.ArgumentParser(
         description='ASVspoof2021 baseline system')
     # Dataset
-    parser.add_argument('--database_path', type=str, default='/nfs/datab/hungdx/KDW2V-AASISTL/databases/',
+    parser.add_argument('--database_path', type=str, default='/datab/hungdx/KDW2V-AASISTL/databases/',
                         help='Change this to user\'s full directory address of LA database (ASVspoof2019- for training & development (used as validation), ASVspoof2021 DF for evaluation scores). We assume that all three ASVspoof 2019 LA train, LA dev and ASVspoof2021 DF eval data folders are in the same database_path directory.')
     '''
     % database_path/
@@ -211,7 +211,7 @@ def get_hyp_tuning_menu():
     %      |- ASVspoof2019_LA_dev/flac
     '''
 
-    parser.add_argument('--protocols_path', type=str, default='/nfs/datab/hungdx/KDW2V-AASISTL/protocols/',
+    parser.add_argument('--protocols_path', type=str, default='/datab/hungdx/KDW2V-AASISTL/protocols/',
                         help='Change with path to user\'s DF database protocols directory address')
     parser.add_argument('--batch_size', type=int, default=14)
     parser.add_argument('--num_epochs', type=int, default=100)
@@ -223,7 +223,7 @@ def get_hyp_tuning_menu():
                         help='random seed (default: 1234)')
 
     parser.add_argument('--model_path', type=str,
-                        default='/nfs/datab/hungdx/KDW2V-AASISTL/W2V2-AASIST-teacher.pth', help='Model checkpoint')
+                        default='/datab/hungdx/KDW2V-AASISTL/W2V2-AASIST-teacher.pth', help='Model checkpoint')
 
     parser.add_argument('--cudnn-deterministic-toggle', action='store_false',
                         default=True,

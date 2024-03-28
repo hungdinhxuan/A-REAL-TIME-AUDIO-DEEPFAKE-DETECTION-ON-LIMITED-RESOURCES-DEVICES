@@ -191,9 +191,9 @@ class W2V2_COAASIST(nn.Module):
         return output
 
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
+# device = "cuda" if torch.cuda.is_available() else "cpu"
 
-model = W2V2_COAASIST(
-    device, ssl_cpkt_path="/nfs/datab/hungdx/KDW2V-AASISTL/xlsr2_300m.pt")
+# model = W2V2_COAASIST(
+#     device, ssl_cpkt_path="/datab/hungdx/KDW2V-AASISTL/xlsr2_300m.pt")
 
-summary(model, input_size=(1, 64600), device=device)
+# summary(model, input_size=(1, 64600), device=device)

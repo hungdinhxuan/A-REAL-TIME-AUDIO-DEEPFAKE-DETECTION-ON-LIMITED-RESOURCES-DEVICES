@@ -14,6 +14,7 @@ import onnxruntime
 from startup_config import set_random_seed
 from main import W2V2_TA
 import logging
+from torchinfo import summary
 import torch.onnx
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -57,14 +58,14 @@ args = get_main_menu()
 set_random_seed(1221, args)
 
 
-class WrapperModel(nn.Module):
+class WrapperScaledModel(nn.Module):
     def __init__(self, model):
         super().__init__()
         self.model = model
         self.softmax = nn.Softmax(dim=1)
-        self.threshold = -1.3279
-        self.min_score = -2.36
-        self.max_score = 5.69
+        self.threshold = -4.852697849273682
+        self.min_score = -5.182643413543701
+        self.max_score = 4.105420112609863
 
     def scaled_likelihood(self, score: float) -> float:
         '''
@@ -99,8 +100,49 @@ class WrapperModel(nn.Module):
         return spoof_score
 
 
+class WrapperModel(nn.Module):
+    def __init__(self, model):
+        super().__init__()
+        self.model = model
+        self.softmax = nn.Softmax(dim=1)
+
+    def forward(self, x):
+        wav_padded = pad(x).unsqueeze(0)
+        output = self.model(wav_padded)
+        return self.softmax(output)[0][0]
+
+
+class WrapperFusionModel(nn.Module):
+    def __init__(self, models: nn.ModuleList):
+        super().__init__()
+        self.models = models
+        self.softmax = nn.Softmax(dim=1)
+
+        #
+        for model in self.models:
+            model.eval()
+
+    def forward(self, x) -> Tensor:
+
+        wav_padded = pad(x).unsqueeze(0)
+        outputs = torch.stack([model(wav_padded) for model in self.models])
+        # print("Outputs")
+        # print(outputs)
+
+        # Calculate the average score
+        avg_output = outputs.mean(dim=0)
+        # print("Average output")
+        # print(avg_output)
+
+        # Apply softmax
+        softmax_output = self.softmax(avg_output)
+
+        return softmax_output[0][0]
+
+
 # Load spoofed sample
-input, _ = librosa.load("LA_T_1541806.wav", sr=16000)
+input, _ = librosa.load(
+    "/datab/hungdx/KDW2V-AASISTL/US Presidents Play Minecraft 5/chunk_129200.wav", sr=16000)
 input = torch.tensor(input).unsqueeze(0)
 # input = torch.zeros(1, 64600)
 
@@ -111,7 +153,7 @@ checkpoint = args.student_model_path
 
 # Load another model
 model = Distil_W2V2BASE_AASISTL(
-    device, ssl_cpkt_path='/nfs/datab/hungdx/KDW2V-AASISTL/wav2vec_small.pt')
+    device, ssl_cpkt_path="/datad/hungdx/KDW2V-AASISTL/wav2vec_small.pt")
 
 model = nn.DataParallel(model).to(device)
 
@@ -129,8 +171,39 @@ with torch.no_grad():
     after = model(padded_input)
     print(after)
 
+# ================================================================ Testing fusion model ================================================================
+# model2 = Distil_W2V2BASE_Linear(
+#     device, ssl_cpkt_path='/datab/hungdx/KDW2V-AASISTL/wav2vec_small.pt')
+# model2 = nn.DataParallel(model2).to(device)
+# model2.load_state_dict(torch.load(
+#     "/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_Linear_DKDLoss_cnsl_noaudiomentations/best_checkpoint_39.pth", map_location=device))
+
+# model2.module.ssl_model = W2V2_TA(import_fairseq_model(
+#     model2.module.ssl_model.model
+# )).to(device)
+
+# model2.eval()
+
+# # Fusion model
+# fusion_model = WrapperFusionModel(nn.ModuleList([model, model2])).to(device)
+# fusion_model.eval()
+# with torch.no_grad():
+#     print("After fusion")
+#     after = fusion_model(padded_input)
+#     print(after)
+
+# # Summary of the model
+# summary(fusion_model, input_size=(1, 64600))
+# ================================================================ Testing fusion model ================================================================
+
 # Scriptable
-model_fp32 = WrapperModel(model.module).to(device)
+
+# # Wrapper model
+model_fp32 = WrapperScaledModel(model.module).to(device)
+
+# Wrapper to scaled model
+# model_fp32 = WrapperModel(model.module).to(device)
+
 model_fp32.eval()
 
 # Get last file name from path
@@ -209,18 +282,18 @@ torch.jit.save(jit_model, SAVE_MODEL_PATH_LAPTOP)
 print("Saved model to ", SAVE_MODEL_PATH_LAPTOP)
 
 
-# opt_model = optimize_for_mobile(jit_model)
-# print("After optimize_for_mobile")
-# with torch.no_grad():
-#     after = opt_model(input)
-#     print(after)
+opt_model = optimize_for_mobile(jit_model)
+print("After optimize_for_mobile")
+with torch.no_grad():
+    after = opt_model(input)
+    print(after)
 
-# # Save optimized model
-# SAVE_MODEL_PATH_MOBILE = SAVE_MODEL_PATH % "mobile"
-# opt_model.save(SAVE_MODEL_PATH_MOBILE)
-# print("Saved model to ", SAVE_MODEL_PATH_MOBILE)
+# Save optimized model
+SAVE_MODEL_PATH_MOBILE = SAVE_MODEL_PATH % "mobile"
+opt_model.save(SAVE_MODEL_PATH_MOBILE)
+print("Saved model to ", SAVE_MODEL_PATH_MOBILE)
 
 
-# # Save
-# # opt_model._save_for_lite_interpreter("W2V2BASE_AASISTL_SelfKD_KDLoss_Without_teacher_best_checkpoint_126.ptl")
-# print("Done~")
+# Save
+# opt_model._save_for_lite_interpreter("W2V2BASE_AASISTL_SelfKD_KDLoss_Without_teacher_best_checkpoint_126.ptl")
+print("Done~")

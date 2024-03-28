@@ -1,0 +1,81 @@
+ 0.3021  0.6742
+[ CPUFloatType{1,2} ]
+Chunk 1/137 - Prediction: 0, JIT Output: 0.40802934765815735, Scaled Prediction: 0, Scaled JIT Output: 0.35735464096069336, Accuracy: 0.0%, Scaled Accuracy: 0.0%
+-1.8499  2.4583
+[ CPUFloatType{1,2} ]
+Chunk 2/137 - Prediction: 0, JIT Output: 0.013279872015118599, Scaled Prediction: 0, Scaled JIT Output: 0.23025007545948029, Accuracy: 0.0%, Scaled Accuracy: 0.0%
+-0.7581  1.5593
+[ CPUFloatType{1,2} ]
+Chunk 3/137 - Prediction: 0, JIT Output: 0.08969138562679291, Scaled Prediction: 0, Scaled JIT Output: 0.2943000793457031, Accuracy: 0.0%, Scaled Accuracy: 0.0%
+ 0.7744  0.1693
+[ CPUFloatType{1,2} ]
+Chunk 4/137 - Prediction: 1, JIT Output: 0.6468192338943481, Scaled Prediction: 0, Scaled JIT Output: 0.39332982897758484, Accuracy: 25.0%, Scaled Accuracy: 0.0%
+-0.0599  0.9686
+[ CPUFloatType{1,2} ]
+Chunk 5/137 - Prediction: 0, JIT Output: 0.2633815109729767, Scaled Prediction: 0, Scaled JIT Output: 0.3363851308822632, Accuracy: 20.0%, Scaled Accuracy: 0.0%
+-0.9242  1.6808
+[ CPUFloatType{1,2} ]
+Chunk 6/137 - Prediction: 0, JIT Output: 0.0688144639134407, Scaled Prediction: 0, Scaled JIT Output: 0.2856377065181732, Accuracy: 16.666666666666664%, Scaled Accuracy: 0.0%
+-0.1828  1.1248
+[ CPUFloatType{1,2} ]
+Chunk 7/137 - Prediction: 0, JIT Output: 0.21288500726222992, Scaled Prediction: 0, Scaled JIT Output: 0.3252548277378082, Accuracy: 14.285714285714285%, Scaled Accuracy: 0.0%
+-0.1959  1.1113
+[ CPUFloatType{1,2} ]
+Chunk 8/137 - Prediction: 0, JIT Output: 0.21295258402824402, Scaled Prediction: 0, Scaled JIT Output: 0.3262123167514801, Accuracy: 12.5%, Scaled Accuracy: 0.0%
+-0.7703  1.5485
+[ CPUFloatType{1,2} ]
+Chunk 9/137 - Prediction: 0, JIT Output: 0.08958124369382858, Scaled Prediction: 0, Scaled JIT Output: 0.2950676679611206, Accuracy: 11.11111111111111%, Scaled Accuracy: 0.0%
+-1.4780  2.0998
+[ CPUFloatType{1,2} ]
+Chunk 10/137 - Prediction: 0, JIT Output: 0.027177562937140465, Scaled Prediction: 0, Scaled JIT Output: 0.2557862401008606, Accuracy: 10.0%, Scaled Accuracy: 0.0%
+ 0.3813  0.5680
+[ CPUFloatType{1,2} ]
+Chunk 11/137 - Prediction: 0, JIT Output: 0.45345473289489746, Scaled Prediction: 0, Scaled JIT Output: 0.36492252349853516, Accuracy: 9.090909090909092%, Scaled Accuracy: 0.0%
+-2.4950  3.0672
+[ CPUFloatType{1,2} ]
+Chunk 12/137 - Prediction: 0, JIT Output: 0.003825475461781025, Scaled Prediction: 0, Scaled JIT Output: 0.18686175346374512, Accuracy: 8.333333333333332%, Scaled Accuracy: 0.0%
+-3.8069  4.4265
+[ CPUFloatType{1,2} ]
+Chunk 13/137 - Prediction: 0, JIT Output: 0.0002655549324117601, Scaled Prediction: 0, Scaled JIT Output: 0.09002107381820679, Accuracy: 7.6923076923076925%, Scaled Accuracy: 0.0%
+ 0.5112  0.4263
+[ CPUFloatType{1,2} ]
+Chunk 14/137 - Prediction: 1, JIT Output: 0.5212010145187378, Scaled Prediction: 0, Scaled JIT Output: 0.3750178813934326, Accuracy: 14.285714285714285%, Scaled Accuracy: 0.0%
+ 0.7545  0.1245
+[ CPUFloatType{1,2} ]
+Chunk 15/137 - Prediction: 1, JIT Output: 0.6524902582168579, Scaled Prediction: 0, Scaled JIT Output: 0.3965222239494324, Accuracy: 20.0%, Scaled Accuracy: 0.0%
+-1.2753  1.9747
+[ CPUFloatType{1,2} ]
+Chunk 16/137 - Prediction: 0, JIT Output: 0.03732779249548912, Scaled Prediction: 0, Scaled JIT Output: 0.2647045850753784, Accuracy: 18.75%, Scaled Accuracy: 0.0%
+-1.1122  1.8171
+[ CPUFloatType{1,2} ]
+Chunk 17/137 - Prediction: 0, JIT Output: 0.05072200670838356, Scaled Prediction: 0, Scaled JIT Output: 0.2759276330471039, Accuracy: 17.647058823529413%, Scaled Accuracy: 0.0%
+-3.3418  3.9137
+[ CPUFloatType{1,2} ]
+Chunk 18/137 - Prediction: 0, JIT Output: 0.0007057823822833598, Scaled Prediction: 0, Scaled JIT Output: 0.12655314803123474, Accuracy: 16.666666666666664%, Scaled Accuracy: 0.0%
+-0.6121  1.4361
+[ CPUFloatType{1,2} ]
+Chunk 19/137 - Prediction: 0, JIT Output: 0.11423217505216599, Scaled Prediction: 0, Scaled JIT Output: 0.3030753433704376, Accuracy: 15.789473684210526%, Scaled Accuracy: 0.0%
+-0.1754  1.1193
+[ CPUFloatType{1,2} ]
+Chunk 20/137 - Prediction: 0, JIT Output: 0.21505507826805115, Scaled Prediction: 0, Scaled JIT Output: 0.3256473243236542, Accuracy: 15.0%, Scaled Accuracy: 0.0%
+ 0.7756  0.1443
+[ CPUFloatType{1,2} ]
+Chunk 21/137 - Prediction: 1, JIT Output: 0.6527742147445679, Scaled Prediction: 0, Scaled JIT Output: 0.39511099457740784, Accuracy: 19.047619047619047%, Scaled Accuracy: 0.0%
+-0.7005  1.5068
+[ CPUFloatType{1,2} ]
+Chunk 22/137 - Prediction: 0, JIT Output: 0.0990925133228302, Scaled Prediction: 0, Scaled JIT Output: 0.29803764820098877, Accuracy: 18.181818181818183%, Scaled Accuracy: 0.0%
+-0.2594  1.1758
+[ CPUFloatType{1,2} ]
+Chunk 23/137 - Prediction: 0, JIT Output: 0.19227826595306396, Scaled Prediction: 0, Scaled JIT Output: 0.3216182589530945, Accuracy: 17.391304347826086%, Scaled Accuracy: 0.0%
+-0.2274  1.2223
+[ CPUFloatType{1,2} ]
+Chunk 24/137 - Prediction: 0, JIT Output: 0.19005030393600464, Scaled Prediction: 0, Scaled JIT Output: 0.3183107376098633, Accuracy: 16.666666666666664%, Scaled Accuracy: 0.0%
+-0.1416  1.0972
+[ CPUFloatType{1,2} ]
+Chunk 25/137 - Prediction: 0, JIT Output: 0.22464825212955475, Scaled Prediction: 0, Scaled JIT Output: 0.32721975445747375, Accuracy: 16.0%, Scaled Accuracy: 0.0%
+-0.6765  1.4774
+[ CPUFloatType{1,2} ]
+Chunk 26/137 - Prediction: 0, JIT Output: 0.10397261381149292, Scaled Prediction: 0, Scaled JIT Output: 0.3001343905925751, Accuracy: 15.384615384615385%, Scaled Accuracy: 0.0%
+-0.6909  1.5086
+[ CPUFloatType{1,2} ]
+Chunk 27/137 - Prediction: 0, JIT Output: 0.099789559841156, Scaled Prediction: 0, Scaled JIT Output: 0.2979060709476471, Accuracy: 14.814814814814813%, Scaled Accuracy: 0.0%

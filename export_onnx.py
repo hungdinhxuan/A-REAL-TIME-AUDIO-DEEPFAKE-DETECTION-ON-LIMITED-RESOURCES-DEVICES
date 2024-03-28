@@ -78,10 +78,10 @@ padded_input = pad(input).unsqueeze(0)
 
 print("Pdaded input shape", padded_input.shape)
 
-checkpoint = '/nfs/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_3_v10/best_checkpoint_63.pth'
+checkpoint = '/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_3_v10/best_checkpoint_63.pth'
 
 model = SelfDistil_W2V2BASE_AASISTL(
-    device, ssl_cpkt_path='/nfs/datab/hungdx/KDW2V-AASISTL/wav2vec_small.pt')
+    device, ssl_cpkt_path='/datab/hungdx/KDW2V-AASISTL/wav2vec_small.pt')
 # model = W2V2_AASIST(device)
 
 model = nn.DataParallel(model).to(device)

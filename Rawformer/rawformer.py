@@ -97,6 +97,6 @@ if __name__ == "__main__":
     from torchinfo import summary
 
     model = Rawformer_SE_W2V(
-        "cuda:2", "/nfs/datab/hungdx/KDW2V-AASISTL/xlsr2_300m.pt", 1024).to("cuda:2")
+        "cuda:2", "/datab/hungdx/KDW2V-AASISTL/xlsr2_300m.pt", 1024).to("cuda:2")
 
     summary(model, (2, 16000*4))
