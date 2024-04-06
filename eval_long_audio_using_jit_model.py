@@ -5,8 +5,8 @@ import numpy as np
 import os
 import soundfile as sf
 # Load the model
-model_scripted_ckpt = "/datab/hungdx/KDW2V-AASISTL/exports/W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_5_best11_mobile.pt"
-model_scaled_ckpt = "/datab/hungdx/KDW2V-AASISTL/exports/W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_5_best_checkpoint_11_scaled2mobile.pt"
+model_scripted_ckpt = "/datad/hungdx/KDW2V-AASISTL/exports/W2V2BASE_Linear_DKDLoss_noaudioaug_b16_randomstart_MultiStepLR_feb07_best_checkpoint_41_wrap2smobile.pt"
+model_scaled_ckpt = "/datad/hungdx/KDW2V-AASISTL/exports/W2V2BASE_Linear_DKDLoss_noaudioaug_b16_randomstart_MultiStepLR_feb07_best_checkpoint_41_wrap2s_scaledmobile.pt"
 
 
 jit_model = torch.jit.load(model_scripted_ckpt)
@@ -41,7 +41,7 @@ label = 0  # 0 for real, 1 for fake
 os.makedirs(saved_chunk_path, exist_ok=True)
 
 
-def process_audio_file(audio_file_path, sample_rate=16000, chunk_size=64600):
+def process_audio_file(audio_file_path, sample_rate=16000, chunk_size=32000):
     # Load the audio file
     input, sr = librosa.load(audio_file_path, sr=sample_rate)
     total_chunks = len(input) // chunk_size

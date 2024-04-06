@@ -37,6 +37,7 @@ def get_main_menu():
     parser.add_argument('--batch_size', type=int, default=14)
     # can change the defult like5
     parser.add_argument('--num_epochs', type=int, default=100)
+    parser.add_argument('--padding', type=float, default=4.0375)
     parser.add_argument('--lr', type=float, default=0.000001)
     parser.add_argument('--weight_decay', type=float, default=0.0001)
     parser.add_argument('--loss', type=str, default='weighted_CCE')

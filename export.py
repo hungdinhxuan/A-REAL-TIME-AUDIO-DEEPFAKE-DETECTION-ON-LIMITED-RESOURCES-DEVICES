@@ -19,7 +19,15 @@ import torch.onnx
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-PADDING_SIZE = 64600
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
+logger.debug(f"Using device {device}")
+
+args = get_main_menu()
+
+PADDING_SIZE = int(args.padding * 16000)  # 1s = 16000 samples
+print("PADDING", PADDING_SIZE)
+set_random_seed(1221, args)
 
 
 def perform_onnx_inference(model_path, input):
@@ -51,21 +59,19 @@ def pad(x, max_len: int = PADDING_SIZE):
     return padded_x
 
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
-logger.debug(f"Using device {device}")
-
-args = get_main_menu()
-set_random_seed(1221, args)
-
-
 class WrapperScaledModel(nn.Module):
     def __init__(self, model):
         super().__init__()
         self.model = model
         self.softmax = nn.Softmax(dim=1)
-        self.threshold = -4.852697849273682
-        self.min_score = -5.182643413543701
-        self.max_score = 4.105420112609863
+        self.threshold = -4.29123592376709
+
+        self.min_score = -5.11803150177002
+
+        self.max_score = 4.07210111618042
+
+        print('WrapperScaledModel: ', self.threshold,
+              self.min_score, self.max_score)
 
     def scaled_likelihood(self, score: float) -> float:
         '''
@@ -105,6 +111,7 @@ class WrapperModel(nn.Module):
         super().__init__()
         self.model = model
         self.softmax = nn.Softmax(dim=1)
+        print('WrapperModel')
 
     def forward(self, x):
         wav_padded = pad(x).unsqueeze(0)
@@ -142,7 +149,7 @@ class WrapperFusionModel(nn.Module):
 
 # Load spoofed sample
 input, _ = librosa.load(
-    "/datab/hungdx/KDW2V-AASISTL/US Presidents Play Minecraft 5/chunk_129200.wav", sr=16000)
+    "/datad/hungdx/KDW2V-AASISTL/LA_T_1541806.wav", sr=16000)
 input = torch.tensor(input).unsqueeze(0)
 # input = torch.zeros(1, 64600)
 
@@ -151,21 +158,30 @@ padded_input = pad(input).unsqueeze(0)
 
 checkpoint = args.student_model_path
 
-# Load another model
-model = Distil_W2V2BASE_AASISTL(
+# Load Linear model
+model = Distil_W2V2BASE_Linear(
     device, ssl_cpkt_path="/datad/hungdx/KDW2V-AASISTL/wav2vec_small.pt")
 
 model = nn.DataParallel(model).to(device)
 
+# Load checkpoint
 model.load_state_dict(torch.load(
-    checkpoint, map_location=device), strict=False)
+    checkpoint, map_location=device))
+
+print("Loaded model from ", checkpoint)
+
+model.eval()
+
+print("Before replace")
+with torch.no_grad():
+    before = model(padded_input)
+    print(before)
 
 model.module.ssl_model = W2V2_TA(import_fairseq_model(
     model.module.ssl_model.model
 )).to(device)
 
 model.eval()
-
 print("After replace")
 with torch.no_grad():
     after = model(padded_input)

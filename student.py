@@ -3167,11 +3167,13 @@ class Distil_W2V2BASE_Linear(nn.Module):
         self.LL = nn.Linear(self.ssl_model.out_dim, 128)
         self.backend = BackEnd(128, 128, 2, 0.5, False)
 
+        self.relu = nn.ReLU()
+
     def forward(self, x):
         # -------pre-trained Wav2vec model fine tunning ------------------------##
         x_ssl_feat = self.ssl_model(x.squeeze(-1))
         x = self.LL(x_ssl_feat)  # (bs,frame_number,feat_out_dim)
-        x = nn.ReLU()(x)
+        x = self.relu(x)
         output = self.backend(x)
         return output
 

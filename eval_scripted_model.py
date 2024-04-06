@@ -4,7 +4,7 @@ import librosa
 import numpy as np
 
 # Load the model
-model_scripted_ckpt = "/datab/hungdx/KDW2V-AASISTL/exports/W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_5_best_checkpoint_11_scaledmobile.pt"
+model_scripted_ckpt = "/datad/hungdx/KDW2V-AASISTL/exports/W2V2BASE_Linear_DKDLoss_noaudioaug_b16_randomstart_MultiStepLR_feb07_best_checkpoint_41_wrap2smobile.pt"
 # Get last name from the path
 model_name = os.path.basename(model_scripted_ckpt)
 
