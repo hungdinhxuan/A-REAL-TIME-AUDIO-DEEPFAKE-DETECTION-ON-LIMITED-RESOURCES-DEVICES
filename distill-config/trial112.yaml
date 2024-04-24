@@ -8,7 +8,7 @@ model:
     teacher_module_ios:
       - 'False:True'
       - 'False:True'
-    pretrained_path: '/datad/hungdx/KDW2V-AASISTL/conf-5-linear-feb07-29-36-epoch46.pth'
+    pretrained_path: '/datad/hungdx/KDW2V-AASISTL/pretrained/vib_conf-5_gelu_acmccs_apr3_moreko_epoch22.pth'
 
     is_parallel: False
 

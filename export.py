@@ -64,11 +64,11 @@ class WrapperScaledModel(nn.Module):
         super().__init__()
         self.model = model
         self.softmax = nn.Softmax(dim=1)
-        self.threshold = -4.29123592376709
+        self.threshold = -4.35825252532959
 
-        self.min_score = -5.11803150177002
+        self.min_score = -5.1182541847229
 
-        self.max_score = 4.07210111618042
+        self.max_score = 4.072232246398926
 
         print('WrapperScaledModel: ', self.threshold,
               self.min_score, self.max_score)
@@ -149,7 +149,7 @@ class WrapperFusionModel(nn.Module):
 
 # Load spoofed sample
 input, _ = librosa.load(
-    "/datad/hungdx/KDW2V-AASISTL/LA_T_1541806.wav", sr=16000)
+    "/datad/Datasets/moreko/wavs/09MKIS0040_12815.wav", sr=16000)  # Bona fide
 input = torch.tensor(input).unsqueeze(0)
 # input = torch.zeros(1, 64600)
 
@@ -158,9 +158,13 @@ padded_input = pad(input).unsqueeze(0)
 
 checkpoint = args.student_model_path
 
-# Load Linear model
+# Init Linear model
 model = Distil_W2V2BASE_Linear(
     device, ssl_cpkt_path="/datad/hungdx/KDW2V-AASISTL/wav2vec_small.pt")
+
+# Init VIB model
+# model = Distil_W2V2BASE_VIB(
+#     device, ssl_cpkt_path="/datad/hungdx/KDW2V-AASISTL/wav2vec_small.pt")
 
 model = nn.DataParallel(model).to(device)
 
@@ -215,10 +219,13 @@ with torch.no_grad():
 # Scriptable
 
 # # Wrapper model
-model_fp32 = WrapperScaledModel(model.module).to(device)
 
-# Wrapper to scaled model
-# model_fp32 = WrapperModel(model.module).to(device)
+if args.scale_export:
+    print("Using scaled model")
+    model_fp32 = WrapperScaledModel(model.module).to(device)
+else:
+    print("Using normal model")
+    model_fp32 = WrapperModel(model.module).to(device)
 
 model_fp32.eval()
 

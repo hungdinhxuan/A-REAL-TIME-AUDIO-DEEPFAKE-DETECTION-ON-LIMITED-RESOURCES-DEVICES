@@ -1,0 +1,89 @@
+name: 'W2V2BASE_VIB_DKDLoss_audiomentations_b16_randomstart_CosineAnnealingWarmRestarts_acmccs_apr3_moreko'
+model:
+  teacher:
+    name: 'W2V2_VIB'
+    teacher_module_paths:
+      - 'LL'
+      - 'backend'
+    teacher_module_ios:
+      - 'False:True'
+      - 'False:True'
+    pretrained_path: '/datad/hungdx/KDW2V-AASISTL/pretrained/vib_conf-5_gelu_acmccs_apr3_moreko_epoch22.pth'
+    is_parallel: False
+
+  student:
+    name: 'Distil_W2V2BASE_VIB'
+    student_module_paths:
+      - 'LL'
+      - 'backend'
+    student_module_ios:
+      - 'False:True'
+      - 'False:True'
+
+# is_learning_rate_scheduler: True
+
+# learning_rate_scheduler:
+#   name: 'MultiStepLR'
+#   params:
+#     milestones: [40, 70]
+#     gamma: 0.2
+#     verbose: True
+is_learning_rate_scheduler: True
+
+learning_rate_scheduler:
+  name: 'CosineAnnealingWarmRestarts'
+  params:
+    T_0: 20
+    T_mult: 2 # factor to increase T_0 after each restart
+    eta_min: 0.000001
+    verbose: False
+
+
+train:
+
+  learning_rate: 0.00001
+  weight_decay: 0.00001
+  batch_size: 16
+  num_epochs: 300
+  num_workers: 4
+  amp: True
+  teacher: True
+  patience: 30
+  seed: 21312
+  freeze_ssl_num_epoch: 0 # 0 for no freeze
+  dataset: 'moreko'
+  augment_mode: 'audiomentations' # 'rawboost' for rawboost, 'audiomentations' for audiomentations
+  algo: -1 # No augmentation
+  student_resume: '' # Stateless training
+  cross_entropy_loss_weight: [0.21, 0.79]
+  is_kl_loss: False
+
+  
+
+criterion_weights: [1]
+
+criterions:
+
+  - key: 'DKDLoss'
+    kwargs:
+      student_module_path: 'backend'
+      student_module_io: 'output'
+      teacher_module_path: 'backend'
+      teacher_module_io: 'output'
+      alpha: 1
+      beta: 8
+      T: 4
+
+  # - key: 'CosineLoss'
+  #   kwargs:
+  #     student_module_path: 'LL'
+  #     student_module_io: 'output'
+  #     teacher_module_path: 'LL'
+  #     teacher_module_io: 'output'
+
+  # - key: 'MSELoss'
+  #   kwargs:
+  #     student_module_path: 'LL'
+  #     student_module_io: 'output'
+  #     teacher_module_path: 'LL'
+  #     teacher_module_io: 'output'

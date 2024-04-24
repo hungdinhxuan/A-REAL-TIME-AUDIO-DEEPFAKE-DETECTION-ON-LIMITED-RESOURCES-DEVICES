@@ -1,0 +1,71 @@
+name: 'Distil_XLSR_AASIST_to_AASIST_DKD_loss_CosineAnnealingWarmRestarts'
+model:
+  teacher:
+    name: 'W2V2_AASIST'
+    teacher_module_paths:
+      - 'out_layer'
+    teacher_module_ios:
+      - 'False:True'
+    pretrained_path: '/datad/hungdx/KDW2V-AASISTL/pretrained/Best_LA_model_for_DF.pth'
+
+    is_parallel: True
+
+  student:
+    name: 'AASIST'
+    type: 'non_ssl'
+    student_module_paths:
+      - 'out_layer'
+    student_module_ios:
+      - 'False:True'
+    kwargs:
+      first_conv: 128
+      filts: [70, [1, 32], [32, 32], [32, 64], [64, 64]]
+      gat_dims: [64, 32]
+      pool_ratios: [0.5, 0.7, 0.5, 0.5]
+      temperatures: [2.0, 2.0, 100.0, 100.0]
+
+      
+is_learning_rate_scheduler: True
+
+learning_rate_scheduler:
+  name: 'CosineAnnealingWarmRestarts'
+  params:
+    T_0: 10
+    T_mult: 2 # factor to increase T_0 after each restart
+    eta_min: 0.000001
+    verbose: False
+
+train:
+
+  learning_rate: 0.00001
+  weight_decay: 0.00001
+  batch_size: 32
+  num_epochs: 300
+  num_workers: 4
+  amp: True
+  teacher: True
+  patience: 30
+  seed: 421
+  freeze_ssl_num_epoch: 0 # 0 for no freeze
+  dataset: 'LA19'
+  augment_mode: 'rawboost' # 'rawboost' for rawboost, 'audiomentations' for audiomentations
+  algo: 3 # No augmentation
+  student_resume: '' # Stateless training
+  cross_entropy_loss_weight: [0.1, 0.9]
+  is_kl_loss: False
+  restore: True
+
+  
+criterion_weights: [1]
+
+criterions:
+
+  - key: 'DKDLoss'
+    kwargs:
+      student_module_path: 'out_layer'
+      student_module_io: 'output'
+      teacher_module_path: 'out_layer'
+      teacher_module_io: 'output'
+      alpha: 1
+      beta: 8
+      T: 4

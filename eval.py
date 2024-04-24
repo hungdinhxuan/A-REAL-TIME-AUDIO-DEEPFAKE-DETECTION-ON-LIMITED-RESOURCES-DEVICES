@@ -10,6 +10,11 @@ from main import produce_evaluation_file, W2V2_TA
 from torchaudio.models.wav2vec2.utils import import_fairseq_model
 from wav2vec2_linear_nll_multi import BackEnd
 from models import *
+from aasist.AASIST import *
+import yaml
+import os
+from torchdistill.models.registry import get_model
+from wav2vec2_vib import Model as W2V2_VIB
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -250,7 +255,7 @@ def update_ssl_model_weights(model, model_list: nn.ModuleList):
 
 if args.is_eval_teacher:
     logger.info("Evaluating teacher model")
-    teacher = W2V2_AASIST(
+    teacher = W2V2_VIB(
         device, ssl_cpkt_path="/datab/hungdx/KDW2V-AASISTL/xlsr2_300m.pt").to(device)
 
     teacher.load_state_dict(torch.load(
@@ -269,39 +274,59 @@ if args.is_eval_teacher:
         produce_evaluation_file(eval_set, teacher, device, args.eval_output,
                                 batch_size=args.batch_size_eval, kd_method=kd_method, is_half=args.half)
     else:
+        if args.dataset == 'moreko':
+            print('Eval moreko')
         file_eval = genSpoof_list_v2(dir_meta=os.path.join(args.database_path, args.protocols_path),
-                                     is_train=False, is_dev=False, is_eval=True)
+                                     is_train=False, is_dev=False, is_eval=True, special=True if args.dataset == 'moreko' else False)
         logger.info(f'no. of eval trials {len(file_eval)}')
         eval_set = Dataset_cnsl_eval(
             list_IDs=file_eval, base_dir=os.path.join(args.database_path))
         produce_evaluation_file(eval_set, teacher, device, args.eval_output,
                                 batch_size=args.batch_size_eval, kd_method=kd_method, is_half=args.half)
+    print("Done eval teachet")
+    sys.exit(0)
 
 
-if args.student_model_type in globals():
+if args.student_model_type in globals() and args.yaml == '':
     logger.info(f"Using {args.student_model_type}")
+
     student_model = globals()[args.student_model_type](
         device, ssl_cpkt_path="/datab/hungdx/KDW2V-AASISTL/wav2vec_small.pt")
+
+elif args.yaml != '':
+    with open(args.yaml, 'r') as f:
+        logger.info('Load configuration file {}'.format(args.yaml))
+        config = yaml.safe_load(f)
+        student_model_name = config['model']['student']['name']
+        if student_model_name.startswith('Distil_XLSR_N_Trans_Layer'):
+            student_model = get_model(
+                student_model_name, device=device, **config['model']['student']['kwargs']).to(device)
+        else:
+            student_model = get_model(
+                student_model_name, d_args=config['model']['student']['kwargs']).to(device)
+
 elif args.student_model_type == 'Distil_W2V2BASE_ConvNeXt_COAASISTL':
     logger.info("Using Distil_W2V2BASE_ConvNeXt_COAASISTL")
     student_model = Distil_W2V2BASE_ConvNeXt_COAASISTL(
         device, ssl_cpkt_path="/datab/hungdx/KDW2V-AASISTL/wav2vec_small.pt")
 
-
 else:
     logger.info("Using Distil_W2V2BASE_AASISTL")
+
     student_model = Distil_W2V2BASE_AASISTL(
         device, ssl_cpkt_path="/datab/hungdx/KDW2V-AASISTL/wav2vec_small.pt")
 
 student_model = torch.nn.DataParallel(student_model).to(device)
 student_model.load_state_dict(torch.load(
-    args.student_model_path, map_location=device), strict=False)
+    args.student_model_path, map_location=device))
 logger.info("Loaded student model from {}".format(args.student_model_path))
 
 
 logger.info("Wrapped ssl model to torchaudio")
-student_model.module.ssl_model = W2V2_TA(import_fairseq_model(
-    student_model.module.ssl_model.model)).to(device)
+
+if not args.student_model_type == 'AASIST':
+    student_model.module.ssl_model = W2V2_TA(import_fairseq_model(
+        student_model.module.ssl_model.model)).to(device)
 
 # Compile model
 # student_model = torch.compile(student_model)
@@ -344,8 +369,10 @@ elif args.dataset == 'in_the_wild':
 else:
     kd_method = 'self_KD_Teacher' if args.student_model_type == 'SelfDistil_W2V2BASE_AASISTL' else 'NaN'
     print(kd_method)
+    if args.dataset == 'moreko':
+        print('Eval moreko')
     file_eval = genSpoof_list_v2(dir_meta=os.path.join(args.database_path, args.protocols_path),
-                                 is_train=False, is_dev=False, is_eval=True)
+                                 is_train=False, is_dev=False, is_eval=True, special=True if args.dataset == 'moreko' else False)
     logger.info(f'no. of eval trials {len(file_eval)}')
     eval_set = Dataset_cnsl_eval(
         list_IDs=file_eval, base_dir=os.path.join(args.database_path))

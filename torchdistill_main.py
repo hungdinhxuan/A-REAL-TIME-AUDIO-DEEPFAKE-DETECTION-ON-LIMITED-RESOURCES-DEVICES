@@ -2,12 +2,13 @@ import torch
 import os
 import sys
 from wav2vec2_linear_nll_multi import Model as W2V2_NLL_Multi
+from wav2vec2_vib import Model as Wav2Vec2VIB
 from Rawformer import *
 from student import *
 from teacher import *
 from data_utils import *
 from torchdistill_utils import *
-from co_aasist import *
+
 from torchdistill.models.registry import get_model
 
 from torchdistill.core.forward_hook import ForwardHookManager
@@ -28,7 +29,7 @@ from wandb import AlertLevel
 from contrast.supcontrastloss import SupConLoss
 from engine.dot import DistillationOrientedTrainer
 import eval_metrics_DF as em
-
+from aasist.AASIST import *
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -133,6 +134,8 @@ student_model_name = config['model']['student'].get(
 teacher_model_name = config['model']['teacher'].get('name', 'W2V2_TA')
 model_path = config['model']['teacher'].get('pretrained_path', None)
 student_model_path = config['train'].get('student_resume', None)
+student_model_type = config['model']['student'].get(
+    'type', 'ssl')
 augment_mode = config["train"].get("augment_mode", "rawboost")
 dataset = config["train"].get("dataset", "LA19")
 dot = config["train"].get("dot", False)
@@ -152,9 +155,9 @@ if len(teacher_dict) > 0:
 
 train_teacher = config["train"].get("train_teacher", False)
 ssl_teacher_path = config["train"].get(
-    "ssl_teacher_path", "/datab/hungdx/KDW2V-AASISTL/xlsr2_300m.pt")
+    "ssl_teacher_path", "/datad/hungdx/KDW2V-AASISTL/pretrained/xlsr2_300m.pt")
 ssl_student_path = config["train"].get(
-    "ssl_student_path", "/datab/hungdx/KDW2V-AASISTL/wav2vec_small.pt")
+    "ssl_student_path", "/datad/hungdx/KDW2V-AASISTL/wav2vec_small.pt")
 
 if augment_mode == "rawboost":
     # DEFAULT rawboost 3
@@ -172,8 +175,20 @@ logger.info('Random seed: {}'.format(seed))
 
 teacher_model = get_model(config['model']['teacher']['name'],
                           device=device, ssl_cpkt_path=ssl_teacher_path).to(device)
-student_model = get_model(config['model']['student']['name'],
-                          device=device, ssl_cpkt_path=ssl_student_path).to(device)
+
+if student_model_type == 'ssl':
+    if not student_model_name.startswith('Distil_XLSR_N_Trans_Layer'):
+        student_model = get_model(student_model_name,
+                                  device=device, ssl_cpkt_path=ssl_student_path).to(device)
+    else:
+        student_model = get_model(
+            student_model_name, device=device, **config['model']['student']['kwargs']).to(device)
+else:
+    student_model = get_model(
+        student_model_name, d_args=config['model']['student']['kwargs']).to(device)
+
+print("Current number of student parameters: ",  sum(p.numel()
+      for p in student_model.parameters()))
 
 teacher_forward_hook_manager = ForwardHookManager(device)
 student_forward_hook_manager = ForwardHookManager(device)
@@ -334,7 +349,8 @@ else:
 
 scaler = torch.cuda.amp.GradScaler(enabled=config['train']['amp'])
 writer = SummaryWriter('logs/{}'.format(config['name']))
-model_save_path = os.path.join("models", config['name'])
+# model_save_path = os.path.join("models", config['name'])
+model_save_path = os.path.join("runs", config['name'])  # Change to runs
 
 if not os.path.exists(model_save_path):
     os.makedirs(model_save_path)
@@ -434,7 +450,10 @@ if restore:
     if len(checkpoints) == 0:
         logger.info('No checkpoint found')
         sys.exit(0)
-    last_checkpoint = max(checkpoints, key=lambda x: int(x.split('_')[1]))
+    # Sort the checkpoint by epoch
+    checkpoints = sorted(checkpoints, key=lambda x: int(
+        x.split('_')[-1].split('.')[0]))
+    last_checkpoint = checkpoints[-1]
 
     student_model_path = os.path.join(
         previous_model_saved_path, last_checkpoint)
@@ -462,11 +481,14 @@ for epoch in tqdm(range(start_epoch, num_epochs), colour='green'):
         student_model.module.ssl_model.frozen()
 
     else:
-        if student_model.module.ssl_model.freeze:
-            logger.info('Unfreeze SSL model')
-            student_model.module.ssl_model.unfrozen()
-        else:
-            # Do nothing
+        try:
+            if student_model.module.ssl_model.freeze:
+                logger.info('Unfreeze SSL model')
+                student_model.module.ssl_model.unfrozen()
+            else:
+                # Do nothing
+                pass
+        except:
             pass
 
     if "self_kd_config" not in config:

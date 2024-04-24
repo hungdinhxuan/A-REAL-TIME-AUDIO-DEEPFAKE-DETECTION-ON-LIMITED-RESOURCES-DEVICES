@@ -1,0 +1,122 @@
+name: 'Distil_XLSR_6_Trans_Layer_Linear_DKDLoss_and_OCKDLoss_noaudioaug_b16_randomstart_CosineAnnealingWarmRestarts_feb07'
+model:
+  teacher:
+    name: 'W2V2_NLL_Multi'
+    teacher_module_paths:
+      - 'LL'
+      - 'backend'
+      - 'ssl_model.model.encoder.layers.5.final_layer_norm'
+      - 'ssl_model.model.encoder.layers.11.final_layer_norm'
+      - 'ssl_model.model.encoder.layers.23.final_layer_norm'
+    teacher_module_ios:
+      - 'False:True'
+      - 'False:True'
+      - 'False:True'
+      - 'False:True'
+      - 'False:True'
+    pretrained_path: '/datad/hungdx/KDW2V-AASISTL/conf-5-linear-feb07-29-36-epoch46.pth'
+
+    is_parallel: False
+
+  student:
+    name: 'Distil_XLSR_N_Trans_Layer_Linear'
+    student_module_paths:
+      - 'LL'
+      - 'backend'
+      - 'ssl_model.model.encoder.layers.1.final_layer_norm'
+      - 'ssl_model.model.encoder.layers.3.final_layer_norm'
+      - 'ssl_model.model.encoder.layers.5.final_layer_norm'
+    student_module_ios:
+      - 'False:True'
+      - 'False:True'
+      - 'False:True'
+      - 'False:True'
+      - 'False:True'
+    kwargs:
+      num_layers: 6 # 6 for 6 transformer layers, 12 for 12 transformer layers
+
+is_learning_rate_scheduler: True
+
+learning_rate_scheduler:
+  name: 'CosineAnnealingWarmRestarts'
+  params:
+    T_0: 20
+    T_mult: 2 # factor to increase T_0 after each restart
+    eta_min: 0.000001
+    verbose: False
+
+train:
+
+  learning_rate: 0.00001
+  weight_decay: 0.00001
+  batch_size: 16
+  num_epochs: 300
+  num_workers: 4
+  amp: True
+  teacher: True
+  patience: 30
+  seed: 3121
+  freeze_ssl_num_epoch: 0 # 0 for no freeze
+  dataset: 'supcon_feb07'
+  augment_mode: 'rawboost' # 'rawboost' for rawboost, 'audiomentations' for audiomentations
+  algo: -1 # No augmentation
+  student_resume: '' # Stateless training
+  cross_entropy_loss_weight: [0.21, 0.79]
+  is_kl_loss: False
+
+  
+
+criterion_weights: [1, 1]
+
+criterions:
+
+  - key: 'DKDLoss'
+    kwargs:
+      student_module_path: 'backend'
+      student_module_io: 'output'
+      teacher_module_path: 'backend'
+      teacher_module_io: 'output'
+      alpha: 1
+      beta: 8
+      T: 4
+
+  # - key: 'CosineLoss'
+  #   kwargs:
+  #     student_module_path: 'LL'
+  #     student_module_io: 'output'
+  #     teacher_module_path: 'LL'
+  #     teacher_module_io: 'output'
+
+  # - key: 'MSELoss'
+  #   kwargs:
+  #     student_module_path: 'LL'
+  #     student_module_io: 'output'
+  #     teacher_module_path: 'LL'
+  #     teacher_module_io: 'output'
+
+  - key: 'OCKDLoss'
+    kwargs:
+      at_pairs:
+        pair1:
+          teacher:
+            io: 'output'
+            path: 'ssl_model.model.encoder.layers.5.final_layer_norm'
+          student:
+            io: 'output'
+            path: 'ssl_model.model.encoder.layers.1.final_layer_norm'
+        pair2:
+          teacher:
+            io: 'output'
+            path: 'ssl_model.model.encoder.layers.11.final_layer_norm'
+          student:
+            io: 'output'
+            path: 'ssl_model.model.encoder.layers.3.final_layer_norm'
+        pair3:
+          teacher:
+            io: 'output'
+            path: 'ssl_model.model.encoder.layers.23.final_layer_norm'
+          student:
+            io: 'output'
+            path: 'ssl_model.model.encoder.layers.5.final_layer_norm'
+      lamd: 0.00001
+      batch_size: 16

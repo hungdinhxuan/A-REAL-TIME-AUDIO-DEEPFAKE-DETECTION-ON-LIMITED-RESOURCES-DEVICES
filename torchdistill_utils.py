@@ -144,7 +144,7 @@ def self_KD_teacher_train_epoch(train_loader, student, teacher, optimizer, devic
             # Get teacher output
             if config['train']['teacher']:
                 with torch.no_grad():
-                    pr
+
                     logits = teacher(batch_x)
                     teacher_io_dict = teacher_forward_hook_manager.pop_io_dict()
 
@@ -377,8 +377,9 @@ def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, co
                         mid_level_criterion_config=loss)
 
                     if forward_target:
-                        kd_loss += (loss_i.forward(student_io_dict,
-                                    teacher_io_dict, batch_y) * weight)
+                        if config['train']['teacher']:
+                            kd_loss += (loss_i.forward(student_io_dict,
+                                        teacher_io_dict, batch_y) * weight)
                         total_loss += kd_loss
                     else:
 

@@ -259,30 +259,6 @@ class DistilSSLModel(nn.Module):
         return x
 
 
-class QuantizedModel(nn.Module):
-    def __init__(self, model_fp32):
-
-        super().__init__()
-        # QuantStub converts tensors from floating point to quantized.
-        # This will only be used for inputs.
-        self.quant = torch.quantization.QuantStub()
-        # DeQuantStub converts tensors from quantized to floating point.
-        # This will only be used for outputs.
-        self.dequant = torch.quantization.DeQuantStub()
-        # FP32 model
-        self.model_fp32 = model_fp32
-
-    def forward(self, x):
-        # manually specify where tensors will be converted from floating
-        # point to quantized in the quantized model
-        x = self.quant(x)
-        x = self.model_fp32(x)
-        # manually specify where tensors will be converted from quantized
-        # to floating point in the quantized model
-        x = self.dequant(x)
-        return x
-
-
 ''' Jee-weon Jung, Hee-Soo Heo, Hemlata Tak, Hye-jin Shim, Joon Son Chung, Bong-Jin Lee, Ha-Jin Yu and Nicholas Evans. 
     AASIST: Audio Anti-Spoofing Using Integrated Spectro-Temporal Graph Attention Networks. 
     In Proc. ICASSP 2022, pp: 6367--6371.'''
@@ -691,6 +667,69 @@ class SEblock(nn.Module):
         y = self.avg_pool(x).view(b, c)
         y = self.fc(y).view(b, c, 1, 1)
         return x * y.expand_as(x)
+
+
+def middle_indices(array_length, number_of_middle_elements):
+    # Calculate the start index
+    start_index = (array_length - number_of_middle_elements) // 2
+    # Calculate the end index
+    end_index = start_index + number_of_middle_elements
+    # Create a list of the middle indices
+    middle_indices = list(range(start_index, end_index))
+    return middle_indices
+
+
+class My_XLSR_FE(nn.Module):
+
+    def __init__(self, device, **kwargs):
+        super().__init__()
+        self.num_layers = kwargs.get('num_layers', 24)
+        self.order = kwargs.get('order', 'first')
+        self.custom_order = kwargs.get('custom_order', None)
+        if self.num_layers < 1 or self.num_layers > 24:
+            raise ValueError(
+                "Number of layers must be at least 1 and at most 24.")
+        model, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([
+                                                                                 '/datad/hungdx/Rawformer-implementation-anti-spoofing/pretrained/xlsr2_300m.pt'])
+        self.model = model[0]
+        self.model = self.model.to(device)
+        self.out_dim = 1024
+
+        if self.order == 'last':
+            # Get the last n layers
+            self.model.encoder.layers = self.model.encoder.layers[-self.num_layers:]
+        elif self.order == 'first':
+            # Get the first n layers
+            self.model.encoder.layers = self.model.encoder.layers[:self.num_layers]
+        elif self.order == 'middle':
+            indices = middle_indices(24, self.num_layers)
+
+            self.model.encoder.layers = nn.ModuleList([
+                self.model.encoder.layers[i] for i in indices])
+        else:
+            if self.custom_order is None:
+                raise ValueError(
+                    "Custom order must be provided as a list of integers (0-23).")
+
+            # Check if the custom order is valid
+            if type(self.custom_order) != list:
+                raise ValueError("Custom order must be a list of integers.")
+
+            if len(self.custom_order) != self.num_layers:
+                raise ValueError(
+                    "Length of custom order must be less than or equal to the number of layers.")
+            self.model.encoder.layers = nn.ModuleList([
+                self.model.encoder.layers[i] for i in self.custom_order])
+
+    def forward(self, x):
+        input_tmp = x[:, :, 0] if x.ndim == 3 else x
+        emb = self.model(input_tmp, mask=False, features_only=True)[
+            'x']
+
+        return emb
+
+    def extract_feat(self, x):
+        return self.forward(x)
 
 
 class Res2Net(nn.Module):

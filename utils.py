@@ -63,7 +63,7 @@ class EarlyStopping:
         torch.save(model.state_dict(), path_save)
 
         command = f"""
-        CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=5 PYTHONPATH=$PYTHONPATH:/datab/hungdx/KDW2V-AASISTL/fairseq python eval.py --student_model_path "{path_save}" --eval_output="./{path_save}.txt" --batch_size_eval=300 --wrapper_ssl --dataset='cnsl' --database_path='/home/hungdx/Datasets/supcon_cnsl_feb07' --protocols_path='protocol.txt' --student_model_type='Distil_W2V2BASE_Linear'
+        CUDA_VISIBLE_DEVICES=2 OMP_NUM_THREADS=5 PYTHONPATH=$PYTHONPATH:/datab/hungdx/KDW2V-AASISTL/fairseq python eval.py --student_model_path "{path_save}" --eval_output="./Distil_XLSR_N_Trans_Layer_Linear_DKDLoss_noaudioaug_b16_randomstart_MultiStepLR_feb07_best1_feb07Distil_XLSR_N_Trans_Layer_Linear_DKDLoss_noaudioaug_b16_randomstart_MultiStepLR_feb07_best1_feb07_{path_save}.txt" --batch_size_eval=200 --wrapper_ssl --dataset='cnsl' --database_path='/home/hungdx/Datasets/supcon_cnsl_feb07' --protocols_path='protocol.txt' --student_model_type Distil_XLSR_N_Trans_Layer_Linear --yaml /datad/hungdx/KDW2V-AASISTL/distill-config/trial128.yaml
         """
 
         # subprocess.Popen(command, shell=True)

@@ -5,7 +5,7 @@ def get_main_menu():
     parser = argparse.ArgumentParser(
         description='ASVspoof2021 baseline system')
     # Dataset
-    parser.add_argument('--database_path', type=str, default='/datab/hungdx/KDW2V-AASISTL/databases/',
+    parser.add_argument('--database_path', type=str, default='/datad/hungdx/KDW2V-AASISTL/databases/',
                         help='Change this to user\'s full directory address of LA database (ASVspoof2019- for training & development (used as validation), ASVspoof2021 DF for evaluation scores). We assume that all three ASVspoof 2019 LA train, LA dev and ASVspoof2021 DF eval data folders are in the same database_path directory.')
     '''
     % database_path/
@@ -32,6 +32,7 @@ def get_main_menu():
     # Hyperparameters
     parser.add_argument('--yaml', type=str, default='config.yaml',
                         help='YAML file for hyperparameters')
+
     parser.add_argument('--dataset', type=str, default='DF21',
                         help='Dataset for evaluation')
     parser.add_argument('--batch_size', type=int, default=14)
@@ -78,6 +79,9 @@ def get_main_menu():
                         default=False, help='eval database')
     parser.add_argument('--is_eval_teacher', action='store_true',
                         default=False, help='eval teacher')
+    parser.add_argument('--scale_export', action='store_true',
+                        default=False, help='Export scaled version')
+
     parser.add_argument('--batch_size_eval', type=int, default=14)
     parser.add_argument('--eval_part', type=int, default=0)
     # backend options
