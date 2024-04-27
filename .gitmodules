@@ -4,3 +4,6 @@
 [submodule "torchdistill"]
 	path = torchdistill
 	url = https://github.com/hungdinhxuan/torchdistill
+[submodule "aasist"]
+	path = aasist
+	url = https://github.com/clovaai/aasist

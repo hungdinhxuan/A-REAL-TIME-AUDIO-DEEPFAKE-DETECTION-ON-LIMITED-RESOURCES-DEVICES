@@ -8,7 +8,7 @@ model:
     teacher_module_ios:
       - 'False:True'
       - 'False:True'
-    pretrained_path: '/nfs/datab/hungdx/KDW2V-AASISTL/supcon_jan22_longR3_epoch_43.pth'
+    pretrained_path: '/datab/hungdx/KDW2V-AASISTL/supcon_jan22_longR3_epoch_43.pth'
     is_parallel: False 
 
   student:
@@ -46,7 +46,7 @@ train:
   teacher: True
   patience: 30
   seed: 1142
-  student_resume: '/nfs/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_SelfKD_KDLoss_Cosine_DISTLoss_teacher_ReduceLROnPlateau_cnsl/best_checkpoint_66.pth'
+  student_resume: '/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_SelfKD_KDLoss_Cosine_DISTLoss_teacher_ReduceLROnPlateau_cnsl/best_checkpoint_66.pth'
   augment_mode: 'audiomentations' # 'rawboost' for rawboost, 'audiomentations' for audiomentations
   dataset: 'supcon_jan22' # 'LA19' for ASVspoof2019LA, 'supcon_jan22' for supcon_jan22
   freeze_ssl_num_epoch: 0

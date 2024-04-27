@@ -15,7 +15,7 @@ device = "cpu"
 
 # model = W2V2_AASIST()
 # model = nn.DataParallel(model).to(device)
-# model_path = "/nfs/datab/hungdx/KDW2V-AASISTL/W2V2-AASIST-teacher.pth"
+# model_path = "/datab/hungdx/KDW2V-AASISTL/W2V2-AASIST-teacher.pth"
 # # Load the model
 # model.load_state_dict(torch.load(model_path,map_location=device))
 # print("Loaded model from {}".format(model_path))
@@ -23,7 +23,7 @@ device = "cpu"
 model = Distil_W2V2_AASISTL_Regressor(device=device)
 model = nn.DataParallel(model).to(device)
 
-model_path = "/nfs/datab/hungdx/KDW2V-AASISTL/models/model_DF_weighted_CCE_100_30_1e-06_KD_mse/best_checkpoint_47.pth"
+model_path = "/datab/hungdx/KDW2V-AASISTL/models/model_DF_weighted_CCE_100_30_1e-06_KD_mse/best_checkpoint_47.pth"
 
 # Load the model
 model.load_state_dict(torch.load(model_path,map_location=device))

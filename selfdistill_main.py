@@ -15,6 +15,7 @@ from tqdm import tqdm
 from main import W2V2_TA
 from contrast.supcontrastloss import SupConLoss
 import wandb
+from kdtoolkit import kd_loss_function, feature_loss_function
 
 class DistillKL(nn.Module):
     """
@@ -81,7 +82,7 @@ def kd_train_epoch(train_loader, student, optimizer, device, scaler, config, cri
                 logit = student(batch_x)
                 loss_cls += criterion_cls(logit, batch_y)
             elif method == 'mixup':   
-                logit, mixup_loss = Mixup(student, batch_x, batch_y, criterion_cls, alpha=0.4)
+                logit, mixup_loss = Mixup(student, batch_x, batch_y, criterion_cls, alpha=0.1)
                 loss_cls += mixup_loss
             elif method == 'manifold_mixup':   
                 logit, manifold_mixup_loss = ManifoldMixup(student, batch_x, batch_y, criterion_cls, alpha=2.0)
@@ -138,6 +139,41 @@ def kd_train_epoch(train_loader, student, optimizer, device, scaler, config, cri
                 logit, bake_loss_cls, bake_loss_div = BAKE(student, batch_x, batch_y, criterion_cls, criterion_div, args)
                 loss_cls += bake_loss_cls
                 loss_div += bake_loss_div
+            
+            elif method == 'BYOT':
+                temperature = 2
+                
+                batch_out, spectral_output, temporal_output, graph_output_S, graph_output_T, hs_gal_output_S, hs_gal_output_T, middle_feature1, middle_feature2, final_feature1, final_feature2, x_ssl_feat = student(batch_x)
+
+                batch_loss = criterion_cls(batch_out, batch_y)
+                spectral_loss = criterion_cls(spectral_output, batch_y)
+                temporal_loss = criterion_cls(temporal_output, batch_y)
+                graph_loss_S = criterion_cls(graph_output_S, batch_y)
+                graph_loss_T = criterion_cls(graph_output_T, batch_y)
+                hs_gal_loss_S = criterion_cls(hs_gal_output_S, batch_y)
+                hs_gal_loss_T = criterion_cls(hs_gal_output_T, batch_y)
+
+                loss_cls += batch_loss + spectral_loss + temporal_loss + graph_loss_S + graph_loss_T + hs_gal_loss_S + hs_gal_loss_T
+
+                # kl divergence
+                temp = batch_out / temperature
+                temp = torch.softmax(temp, dim=1)
+                temp_detach = temp.detach()
+
+                kd_spectral_loss = kd_loss_function(spectral_output, temp_detach, temperature) * (temperature**2)
+                kd_temporal_loss = kd_loss_function(temporal_output, temp_detach, temperature) * (temperature**2)
+                kd_graph_loss_S = kd_loss_function(graph_output_S, temp_detach, temperature) * (temperature**2)
+                kd_graph_loss_T = kd_loss_function(graph_output_T, temp_detach, temperature) * (temperature**2)
+                kd_hs_gal_loss_S = kd_loss_function(hs_gal_output_S, temp_detach, temperature) * (temperature**2)
+                kd_hs_gal_loss_T = kd_loss_function(hs_gal_output_T, temp_detach, temperature) * (temperature**2)
+
+                # Calculate loss (feature loss)
+                # We didn't apply backward for final feature
+                feature_loss_1 = feature_loss_function(middle_feature1, final_feature1.detach())
+                feature_loss_2 = feature_loss_function(middle_feature2, final_feature2.detach())
+
+                loss_div += kd_spectral_loss + kd_temporal_loss + kd_graph_loss_S + kd_graph_loss_T + kd_hs_gal_loss_S + kd_hs_gal_loss_T + feature_loss_1 + feature_loss_2
+
         
             else:
                 raise ValueError('Unknown method: {}'.format(args.method))
@@ -155,7 +191,7 @@ def kd_train_epoch(train_loader, student, optimizer, device, scaler, config, cri
             name_scheduler = config['learning_rate_scheduler']['name']
             if name_scheduler == 'CosineAnnealingWarmRestarts':
                 exp_lr_scheduler.step(epoch + i / iters)
-            elif name_scheduler in ['ReduceLROnPlateau', 'MultiStepLR']:
+            elif name_scheduler in ['ReduceLROnPlateau', 'MultiStepLR', 'StepLR']:
                 # Update learning rate scheduler in validation so do nothing here
                 pass
             else:
@@ -172,7 +208,7 @@ def kd_train_epoch(train_loader, student, optimizer, device, scaler, config, cri
     
     return running_loss, running_loss_cls, running_loss_div
 
-def kd_val_epoch(dev_loader, model, device, criterion_cls):
+def kd_val_epoch(dev_loader, model, device, criterion_cls, student_model_name):
     logger.info('Validation ----')
     val_loss = 0
     model.eval()
@@ -186,7 +222,10 @@ def kd_val_epoch(dev_loader, model, device, criterion_cls):
             num_total += batch_size
             batch_x = batch_x.to(device)
             
-            batch_out = model(batch_x)
+            if student_model_name == 'SelfDistil_W2V2BASE_AASISTL':
+                batch_out, spectral_output, temporal_output, graph_output_S, graph_output_T, hs_gal_output_S, hs_gal_output_T, middle_feature1, middle_feature2, final_feature1, final_feature2, x_ssl_feat = model(batch_x)
+            else:
+                batch_out = model(batch_x)
             
             batch_y = batch_y.view(-1).type(torch.int64).to(device)
 
@@ -244,7 +283,7 @@ patience = config['train'].get('patience', 10)
 use_amp = config['train'].get('amp', False)
 learning_rate_scheduler_name = config['learning_rate_scheduler'].get('name', None)
 student_model_name = config['model']['student'].get('name', 'Distil_W2V2BASE_AASISTL')
-
+ssl_student_path = config["train"].get("ssl_student_path", "/datab/hungdx/KDW2V-AASISTL/wav2vec_small.pt")
 ## Wandb
 wandb.init(project="selfdistill", config={
     **config,
@@ -254,7 +293,7 @@ name=config['name']
 
 args.batch_size = config['train']['batch_size']
 
-student_model = get_model(student_model_name, device=device).to(device)
+student_model = get_model(student_model_name, device=device, ssl_cpkt_path=ssl_student_path).to(device)
 
 # student_forward_hook_manager = ForwardHookManager(device)
 student_model = torch.nn.DataParallel(student_model).to(device)
@@ -332,14 +371,14 @@ for epoch in tqdm(range(num_epochs), colour='green'):
     # Train
     train_loss, train_loss_cls, train_loss_div = kd_train_epoch(train_loader, student_model, optimizer, device, scaler, config, criterion_list, method, exp_lr_scheduler, use_amp)
     # Eval
-    eval_loss, accuracy = kd_val_epoch(dev_loader, student_model, device, criterion_cls)
+    eval_loss, accuracy = kd_val_epoch(dev_loader, student_model, device, criterion_cls, student_model_name)
 
     logger.info('Epoch {}/{}: train_loss: {:.4f}, train_loss_cls: {:.4f}, train_loss_div: {:.4f}, eval_loss: {:.4f}, accuracy: {:.2f}'.format(epoch, num_epochs - 1, train_loss, train_loss_cls, train_loss_div, eval_loss, accuracy))
 
     if exp_lr_scheduler is not None:
         if learning_rate_scheduler_name == 'ReduceLROnPlateau':
             exp_lr_scheduler.step(eval_loss)
-        elif learning_rate_scheduler_name == 'MultiStepLR':
+        elif learning_rate_scheduler_name == 'MultiStepLR' or learning_rate_scheduler_name == 'StepLR':
             exp_lr_scheduler.step()
     
 

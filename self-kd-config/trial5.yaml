@@ -1,0 +1,38 @@
+name: 'W2V2BASE_AASISTL_SelfKD_mixup_Without_teacher_audiomentations4'
+model:
+
+  student:
+    name: 'Distil_W2V2BASE_AASISTL'
+
+is_learning_rate_scheduler: False
+
+learning_rate_scheduler:
+  name: 'CosineAnnealingWarmRestarts'
+  params:
+    T_0: 20
+    T_mult: 1
+    eta_min: 0.0000001
+    verbose: False
+    
+train:
+  learning_rate: 0.000001
+  weight_decay: 0.00001
+  batch_size: 32
+  num_epochs: 500
+  num_workers: 4
+  amp: True
+  teacher: False
+  patience: 30
+  seed: 142
+  freeze_ssl_num_epoch: 0 # 0 for no freeze
+  dataset: 'supcon_jan22'
+  augment_mode: 'audiomentations' # 'rawboost' for rawboost, 'audiomentations' for audiomentations
+  cross_entropy_loss_weight: [0.21, 0.79]
+  raytune: False
+  method: 'mixup'
+  sup_contrastive: False
+  sup_contrastive_loss_weights: [0.1, 0.07]
+  sup_contrastive_mode: 'supcon' # 'simclr' or 'supcon'
+  student_resume: '/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_3_v10/best_checkpoint_63.pth'
+  student_resume_strict: False
+criterions:

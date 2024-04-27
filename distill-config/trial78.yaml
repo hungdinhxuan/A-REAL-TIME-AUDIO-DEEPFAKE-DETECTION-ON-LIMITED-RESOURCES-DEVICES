@@ -1,0 +1,83 @@
+name: 'W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_6_v2'
+# run with rawboost 4
+model:
+  teacher:
+    name: 'W2V2_NLL_Multi'
+    teacher_module_paths:
+      - 'LL'
+      - 'backend'
+    teacher_module_ios:
+      - 'False:True'
+      - 'False:True'
+    pretrained_path: '/datab/hungdx/KDW2V-AASISTL/conf-5-linear-feb07-29-36-epoch46.pth'
+    is_parallel: False
+
+  student:
+    name: 'Distil_W2V2BASE_AASISTL'
+    student_module_paths:
+      - 'LL'
+      - 'out_layer'
+    student_module_ios:
+      - 'False:True'
+      - 'False:True'
+
+is_learning_rate_scheduler: False
+
+learning_rate_scheduler:
+  name: 'MultiStepLR'
+  params:
+    milestones: [10, 20, 60]
+    gamma: 0.5
+    verbose: True
+
+train:
+
+  learning_rate: 0.0000001
+  weight_decay: 0.000001
+  batch_size: 16
+  num_epochs: 500
+  num_workers: 4
+  amp: True
+  teacher: True
+  patience: 30
+  seed: 5782
+  freeze_ssl_num_epoch: 0 # 0 for no freeze
+  dataset: 'supcon_jan22'
+  augment_mode: 'audiomentations' # 'rawboost' for rawboost, 'audiomentations' for audiomentations
+  algo: 8
+  student_resume: '/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_3_v10/best_checkpoint_63.pth'
+  mixup: False
+  cross_entropy_loss_weight: [0.21, 0.79]
+  # sup_contrastive: True
+  # sup_contrastive_loss_weights: [0.07, 0.07]
+  # sup_contrastive_mode: 'supcon' # 'simclr' or 'supcon'
+  
+
+criterion_weights: [1]
+
+criterions:
+
+  - key: 'DKDLoss'
+    kwargs:
+      student_module_path: 'out_layer'
+      student_module_io: 'output'
+      teacher_module_path: 'backend'
+      teacher_module_io: 'output'
+      alpha: 1
+      beta: 8
+      T: 4
+
+
+  # - key: 'CosineLoss'
+  #   kwargs:
+  #     student_module_path: 'LL'
+  #     student_module_io: 'output'
+  #     teacher_module_path: 'LL'
+  #     teacher_module_io: 'output'
+  
+  # - key: 'MSELoss'
+  #   kwargs:
+  #     student_module_path: 'LL'
+  #     student_module_io: 'output'
+  #     teacher_module_path: 'LL'
+  #     teacher_module_io: 'output'

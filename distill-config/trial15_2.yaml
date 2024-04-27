@@ -6,7 +6,7 @@ model:
       - 'out_layer'
     teacher_module_ios:
       - 'True:True'
-    pretrained_path: '/nfs/datab/hungdx/KDW2V-AASISTL/supcon_jan22_longR3_epoch_43.pth'
+    pretrained_path: '/datab/hungdx/KDW2V-AASISTL/supcon_jan22_longR3_epoch_43.pth'
     is_parallel: False
 
   student:
@@ -40,7 +40,7 @@ train:
   augment_mode: 'audiomentations' # 'rawboost' for rawboost, 'audiomentations' for audiomentations
   alpha: 0.9
   cross_entropy_loss_weight: [0.21, 0.79]
-  student_resume: '/nfs/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_PKTLoss_cnsl/best_checkpoint_42.pth'
+  student_resume: '/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_PKTLoss_cnsl/best_checkpoint_42.pth'
   
 
 criterion_weights: [1]

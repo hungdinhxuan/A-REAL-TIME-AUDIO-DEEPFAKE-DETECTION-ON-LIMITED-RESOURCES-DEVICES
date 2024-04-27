@@ -1,0 +1,37 @@
+name: 'W2V2BASE_AASISTL_SelfKD_BYOT_voxceleb2'
+model:
+
+  student:
+    name: 'SelfDistil_W2V2BASE_AASISTL'
+
+is_learning_rate_scheduler: True
+
+learning_rate_scheduler:
+  name: 'StepLR'
+  params:
+    step_size: 20
+    gamma: 0.5
+    verbose: True
+    
+train:
+  learning_rate: 0.000005
+  weight_decay: 0.00001
+  batch_size: 16
+  num_epochs: 500
+  num_workers: 4
+  amp: True
+  teacher: False
+  patience: 30
+  seed: 1142
+  freeze_ssl_num_epoch: 0 # 0 for no freeze
+  dataset: 'voxceleb2'
+  augment_mode: 'audiomentations' # 'rawboost' for rawboost, 'audiomentations' for audiomentations
+  cross_entropy_loss_weight: [0.21, 0.79]
+  raytune: False
+  method: 'BYOT'
+  sup_contrastive: False
+  sup_contrastive_loss_weights: [0.1, 0.07]
+  sup_contrastive_mode: 'supcon' # 'simclr' or 'supcon'
+  student_resume: '/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_3_v10/best_checkpoint_63.pth'
+  student_resume_strict: False
+criterions:

@@ -41,7 +41,7 @@ train:
   teacher: False
   patience: 30
   seed: 42
-  student_resume: '/nfs/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_SelfKD_KDLoss_Without_teacher/best_checkpoint_126.pth'
+  student_resume: '/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_SelfKD_KDLoss_Without_teacher/best_checkpoint_126.pth'
   augment_mode: 'audiomentations'
 
 
