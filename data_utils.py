@@ -482,14 +482,14 @@ class Dataset_cnsl_augment_v2(Dataset):
 
 
 class Dataset_cnsl_eval(Dataset):
-    def __init__(self, list_IDs, base_dir):
+    def __init__(self, list_IDs, base_dir, padding_size=PADDING_SIZE):
         '''self.list_IDs	: list of strings (each string: utt key),
             '''
 
         self.list_IDs = list_IDs
         self.base_dir = base_dir
         # take ~4 sec audio (PADDING_SIZE samples)
-        self.duration = PADDING_SIZE
+        self.duration = padding_size
 
     def __len__(self):
         return len(self.list_IDs)

@@ -1,4 +1,4 @@
-name: 'Distil_XLSR_6_Last_Trans_Layer_VIB_DKDLoss_MSE_noaudioaug_b16_randomstart_feb07'
+name: 'Distil_XLSR_6_Last_Trans_Layer_VIB_DKDLoss_Cosine_noaudioaug_b16_randomstart_feb07'
 model:
   teacher:
     name: 'W2V2_VIB'
@@ -66,7 +66,7 @@ train:
 
   
 
-criterion_weights: [1, .8, .8, .8]
+criterion_weights: [1, 1, 1, 1]
 
 criterions:
 

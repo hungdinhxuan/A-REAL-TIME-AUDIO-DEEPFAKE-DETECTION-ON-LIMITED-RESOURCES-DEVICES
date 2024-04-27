@@ -1,5 +1,6 @@
 from student import *
 from teacher import *
+from data_utils import *
 from torch import Tensor
 import torch
 import torch.nn as nn
@@ -16,6 +17,10 @@ from main import W2V2_TA
 import logging
 from torchinfo import summary
 import torch.onnx
+import yaml
+from torchdistill.models.registry import get_model
+
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -159,12 +164,22 @@ padded_input = pad(input).unsqueeze(0)
 checkpoint = args.student_model_path
 
 # Init Linear model
-model = Distil_W2V2BASE_Linear(
-    device, ssl_cpkt_path="/datad/hungdx/KDW2V-AASISTL/wav2vec_small.pt")
+# model = Distil_W2V2BASE_Linear(
+#     device, ssl_cpkt_path="/datad/hungdx/KDW2V-AASISTL/wav2vec_small.pt")
 
 # Init VIB model
 # model = Distil_W2V2BASE_VIB(
 #     device, ssl_cpkt_path="/datad/hungdx/KDW2V-AASISTL/wav2vec_small.pt")
+
+
+# Latest model
+with open(args.yaml, 'r') as f:
+    config = yaml.safe_load(f)
+student_model_name = config['model']['student']['name']
+
+model = get_model(
+    student_model_name, device=device, **config['model']['student']['kwargs']).to(device)
+
 
 model = nn.DataParallel(model).to(device)
 

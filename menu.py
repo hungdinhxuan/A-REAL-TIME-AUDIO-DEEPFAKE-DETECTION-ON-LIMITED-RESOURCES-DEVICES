@@ -47,6 +47,8 @@ def get_main_menu():
     # model
     parser.add_argument('--seed', type=int, default=1234,
                         help='random seed (default: 1234)')
+    parser.add_argument('--padding_size', type=int, default=64600,
+                        help='padding size (default: 64600)')
     parser.add_argument('--workers', type=int, default=8,
                         help='numbers of worker')
 

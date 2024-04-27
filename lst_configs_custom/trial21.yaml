@@ -1,19 +1,23 @@
-name: 'Distil_XLSR_6_First_Trans_Layer_VIB_DKDLoss_Cosine_noaudioaug_b16_randomstart_feb07'
+name: 'Distil_XLSR_5_Custom_Trans_Layer_VIB_DKDLoss_MSE_noaudioaug_b16_randomstart_feb07_4_5_6_7_8th'
 model:
   teacher:
     name: 'W2V2_VIB'
     teacher_module_paths:
       - 'LL'
       - 'backend'
-      - 'ssl_model.model.encoder.layers.9.final_layer_norm'
-      - 'ssl_model.model.encoder.layers.11.final_layer_norm'
-      - 'ssl_model.model.encoder.layers.14.final_layer_norm'
+      - 'ssl_model.model.encoder.layers.4.final_layer_norm'
+      - 'ssl_model.model.encoder.layers.6.final_layer_norm'
+      - 'ssl_model.model.encoder.layers.8.final_layer_norm'
+      
+
     teacher_module_ios:
       - 'False:True'
       - 'False:True'
       - 'False:True'
       - 'False:True'
       - 'False:True'
+      
+
     pretrained_path: '/datad/hungdx/KDW2V-AASISTL/pretrained/vib_conf-5_gelu_acmccs_apr3_moreko_telephone_epoch22.pth'
 
     is_parallel: False
@@ -25,23 +29,26 @@ model:
       - 'backend'
       - 'ssl_model.model.encoder.layers.0.final_layer_norm'
       - 'ssl_model.model.encoder.layers.2.final_layer_norm'
-      - 'ssl_model.model.encoder.layers.5.final_layer_norm'
+      - 'ssl_model.model.encoder.layers.4.final_layer_norm'
+      
     student_module_ios:
       - 'False:True'
       - 'False:True'
       - 'False:True'
       - 'False:True'
       - 'False:True'
+
     kwargs:
-      num_layers: 6 # 
-      order: 'first' # 'middle' for middle layers, 'first' for first layers, 'last' for last layers
+      num_layers: 5 # 5
+      order: 'custom' # 'middle' for middle layers, 'first' for first layers, 'last' for last layers, "custom" for custom layers
+      custom_order: [4, 5, 6, 7, 8] # 5th, 6th, 7th, 8th, 9th layer
 
 is_learning_rate_scheduler: True
 
 learning_rate_scheduler:
   name: "MultiStepLR"
   params:
-    milestones: [20, 60]
+    milestones: [50, 70]
     gamma: 0.5
     verbose: True
 
@@ -55,7 +62,7 @@ train:
   amp: True
   teacher: True
   patience: 30
-  seed: 422152
+  seed: 1212
   freeze_ssl_num_epoch: 0 # 0 for no freeze
   dataset: 'supcon_feb07'
   augment_mode: 'rawboost' # 'rawboost' for rawboost, 'audiomentations' for audiomentations
@@ -64,9 +71,8 @@ train:
   cross_entropy_loss_weight: [0.21, 0.79]
   is_kl_loss: False
 
-  
 
-criterion_weights: [1, 1, 1, 1]
+criterion_weights: [1, 1, 1, 1, 1, 1, 1]
 
 criterions:
 
@@ -80,25 +86,46 @@ criterions:
       beta: 8
       T: 4
 
+  - key: 'MSELoss'
+    kwargs:
+      student_module_path: 'ssl_model.model.encoder.layers.0.final_layer_norm'
+      student_module_io: 'output'
+      teacher_module_path: 'ssl_model.model.encoder.layers.4.final_layer_norm'
+      teacher_module_io: 'output'
+  
   - key: 'CosineLoss'
     kwargs:
       student_module_path: 'ssl_model.model.encoder.layers.0.final_layer_norm'
       student_module_io: 'output'
-      teacher_module_path: 'ssl_model.model.encoder.layers.9.final_layer_norm'
+      teacher_module_path: 'ssl_model.model.encoder.layers.4.final_layer_norm'
+      teacher_module_io: 'output'
+  
+  - key: 'MSELoss'
+    kwargs:
+      student_module_path: 'ssl_model.model.encoder.layers.2.final_layer_norm'
+      student_module_io: 'output'
+      teacher_module_path: 'ssl_model.model.encoder.layers.6.final_layer_norm'
       teacher_module_io: 'output'
   
   - key: 'CosineLoss'
     kwargs:
       student_module_path: 'ssl_model.model.encoder.layers.2.final_layer_norm'
       student_module_io: 'output'
-      teacher_module_path: 'ssl_model.model.encoder.layers.11.final_layer_norm'
+      teacher_module_path: 'ssl_model.model.encoder.layers.6.final_layer_norm'
+      teacher_module_io: 'output'
+
+  - key: 'MSELoss'
+    kwargs:
+      student_module_path: 'ssl_model.model.encoder.layers.4.final_layer_norm'
+      student_module_io: 'output'
+      teacher_module_path: 'ssl_model.model.encoder.layers.8.final_layer_norm'
       teacher_module_io: 'output'
   
   - key: 'CosineLoss'
     kwargs:
-      student_module_path: 'ssl_model.model.encoder.layers.5.final_layer_norm'
+      student_module_path: 'ssl_model.model.encoder.layers.4.final_layer_norm'
       student_module_io: 'output'
-      teacher_module_path: 'ssl_model.model.encoder.layers.14.final_layer_norm'
+      teacher_module_path: 'ssl_model.model.encoder.layers.8.final_layer_norm'
       teacher_module_io: 'output'
-
+  
   

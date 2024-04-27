@@ -142,7 +142,8 @@ dot = config["train"].get("dot", False)
 mixup = config["train"].get("mixup", False)
 restore = config["train"].get("restore", False)
 teacher_dict = config["model"].get("teacher_multi", {})
-
+copy_weights = config["train"].get("copy_weights", False)
+is_teacher_parallel = config["model"]["teacher"].get("is_parallel", True)
 
 teacher_module_list = []
 
@@ -226,6 +227,16 @@ if "student_resume" in config["train"] and config["train"]["student_resume"] != 
         config["train"]["student_resume"], map_location=device), strict=False)
     logger.info("Loaded student model from {}".format(
         config["train"]["student_resume"]))
+
+
+if copy_weights:
+    if is_teacher_parallel:
+        student_model.module.load_state_dict(
+            teacher_model.module.state_dict(), strict=False)
+    else:
+        student_model.module.load_state_dict(
+            teacher_model.state_dict(), strict=False)
+    logger.info("Copied teacher weights to student")
 
 # Register forward hook
 logger.info('Register forward hook for teacher')

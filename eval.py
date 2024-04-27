@@ -260,7 +260,14 @@ if args.is_eval_teacher:
 
     teacher.load_state_dict(torch.load(
         args.student_model_path))
-    logger.info("Loaded teacher model from {}".format(args.student_model_path))
+
+    #  Keep 5 transformer layers
+    # teacher.ssl_model.model.encoder.layers = teacher.ssl_model.model.encoder.layers[:5]
+
+    # logger.info("Loaded teacher model from {}".format(args.student_model_path))
+
+    # print("Number of parameters in teacher model: {}".format(
+    #     sum(p.numel() for p in teacher.parameters())))
 
     kd_method = 'NaN'
     print(kd_method)
@@ -322,11 +329,14 @@ student_model.load_state_dict(torch.load(
 logger.info("Loaded student model from {}".format(args.student_model_path))
 
 
-logger.info("Wrapped ssl model to torchaudio")
-
 if not args.student_model_type == 'AASIST':
+    logger.info("Wrapped ssl model to torchaudio")
     student_model.module.ssl_model = W2V2_TA(import_fairseq_model(
         student_model.module.ssl_model.model)).to(device)
+
+print("Number of parameters in student model: {}".format(
+    sum(p.numel() for p in student_model.parameters())))
+
 
 # Compile model
 # student_model = torch.compile(student_model)
@@ -374,7 +384,9 @@ else:
     file_eval = genSpoof_list_v2(dir_meta=os.path.join(args.database_path, args.protocols_path),
                                  is_train=False, is_dev=False, is_eval=True, special=True if args.dataset == 'moreko' else False)
     logger.info(f'no. of eval trials {len(file_eval)}')
+    print("Current padding size is {}".format(args.padding_size))
+
     eval_set = Dataset_cnsl_eval(
-        list_IDs=file_eval, base_dir=os.path.join(args.database_path))
+        list_IDs=file_eval, base_dir=os.path.join(args.database_path), padding_size=args.padding_size)
     produce_evaluation_file(eval_set, student_model, device, args.eval_output,
                             batch_size=args.batch_size_eval, kd_method=kd_method, is_half=args.half)

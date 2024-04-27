@@ -715,9 +715,9 @@ class My_XLSR_FE(nn.Module):
             if type(self.custom_order) != list:
                 raise ValueError("Custom order must be a list of integers.")
 
-            if len(self.custom_order) != self.num_layers:
-                raise ValueError(
-                    "Length of custom order must be less than or equal to the number of layers.")
+            # if len(self.custom_order) != self.num_layers:
+            #     raise ValueError(
+            #         "Length of custom order must be less than or equal to the number of layers.")
             self.model.encoder.layers = nn.ModuleList([
                 self.model.encoder.layers[i] for i in self.custom_order])
 
