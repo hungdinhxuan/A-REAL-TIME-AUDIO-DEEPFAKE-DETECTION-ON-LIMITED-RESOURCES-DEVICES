@@ -15,7 +15,7 @@ from torchaudio.pipelines import WAV2VEC2_ASR_BASE_960H, WAV2VEC2_BASE
 from torchaudio.models.wav2vec2.utils import import_fairseq_model
 from transformers.models.wav2vec2.convert_wav2vec2_original_pytorch_checkpoint_to_pytorch import recursively_load_weights
 from typing import Optional
-
+from torchaudio.models import wav2vec2_model
 # class Wav2Vec2Model(nn.Module):
 
 #     def __init__(self, cp_path, device, model_type='base'):
@@ -259,8 +259,8 @@ class DistilSSLModel(nn.Module):
         return x
 
 
-''' Jee-weon Jung, Hee-Soo Heo, Hemlata Tak, Hye-jin Shim, Joon Son Chung, Bong-Jin Lee, Ha-Jin Yu and Nicholas Evans. 
-    AASIST: Audio Anti-Spoofing Using Integrated Spectro-Temporal Graph Attention Networks. 
+''' Jee-weon Jung, Hee-Soo Heo, Hemlata Tak, Hye-jin Shim, Joon Son Chung, Bong-Jin Lee, Ha-Jin Yu and Nicholas Evans.
+    AASIST: Audio Anti-Spoofing Using Integrated Spectro-Temporal Graph Attention Networks.
     In Proc. ICASSP 2022, pp: 6367--6371.'''
 
 
@@ -727,6 +727,49 @@ class My_XLSR_FE(nn.Module):
             'x']
 
         return emb
+
+    def extract_feat(self, x):
+        return self.forward(x)
+
+
+class Custom_Wav2Vec2_Fe(nn.Module):
+    def __init__(self, device, **kwargs):
+        super().__init__()
+        extractor_conv_layer_config = [
+            (256, 10, 5),
+            (256, 3, 2),
+            (512, 3, 2),
+            (512, 3, 2),
+            (512, 3, 2),
+            (512, 2, 2),
+            (512, 2, 2),
+        ]
+        self.out_dim = 384
+
+        self.model = wav2vec2_model(
+            extractor_mode="layer_norm",
+            extractor_conv_bias=True,
+            encoder_embed_dim=384,
+            encoder_projection_dropout=0.0,
+            encoder_pos_conv_kernel=128,
+            encoder_pos_conv_groups=16,
+            encoder_num_layers=12,
+            encoder_num_heads=16,
+            encoder_attention_dropout=0.0,
+            encoder_ff_interm_features=1536,
+            encoder_ff_interm_dropout=0.0,
+            encoder_dropout=0.0,
+            encoder_layer_norm_first=True,
+            encoder_layer_drop=0.0,
+            extractor_conv_layer_config=extractor_conv_layer_config,
+            aux_num_out=None,
+        ).to(device)
+
+    def forward(self, x):
+        input_tmp = x[:, :, 0] if x.ndim == 3 else x
+        feat, _ = self.model(input_tmp)
+
+        return feat
 
     def extract_feat(self, x):
         return self.forward(x)

@@ -22,6 +22,47 @@ def pad(x, max_len: int = 64600) -> Tensor:
     return padded_x
 
 
+class EarlyStopping_new:
+    def __init__(self, patience=7, verbose=False, delta=0):
+        # how many times will you tolerate for loss not being on decrease
+        self.patience = patience
+        self.verbose = verbose  # whether to print tip info
+        self.counter = 0  # now how many times loss not on decrease
+        self.best_score = None
+        self.early_stop = False
+        self.val_loss_min = np.Inf
+        self.delta = delta
+
+    def __call__(self, val_loss, model, path):
+        score = -val_loss
+        if self.best_score is None:
+            self.best_score = score
+            self.save_checkpoint(val_loss, model, path)
+
+        # meaning: current score is not 'delta' better than best_score, representing that
+        # further training may not bring remarkable improvement in loss.
+        elif score < self.best_score + self.delta:
+            self.counter += 1
+            print(
+                f'EarlyStopping counter: {self.counter} out of {self.patience}')
+            # 'No Improvement' times become higher than patience --> Stop Further Training
+            if self.counter >= self.patience:
+                self.early_stop = True
+
+        else:  # model's loss is still on decrease, save the now best model and go on training
+            self.best_score = score
+            self.save_checkpoint(val_loss, model, path)
+            self.counter = 0
+
+    def save_checkpoint(self, val_loss, model, path):
+        # used for saving the current best model
+        if self.verbose:
+            print(
+                f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).  Saving model ...')
+        torch.save(model.state_dict(), path + '/' + 'checkpoint.pth')
+        self.val_loss_min = val_loss
+
+
 class EarlyStopping:
     def __init__(self, patience=7, verbose=False, delta=0, model_save_path=None):
         self.patience = patience
@@ -67,9 +108,9 @@ class EarlyStopping:
         """
 
         # subprocess.Popen(command, shell=True)
-        with open(os.devnull, 'w') as devnull:
-            subprocess.Popen(command, shell=True, stdin=devnull,
-                             stdout=devnull, stderr=devnull)
+        # with open(os.devnull, 'w') as devnull:
+        #     subprocess.Popen(command, shell=True, stdin=devnull,
+        #                      stdout=devnull, stderr=devnull)
         # Remove previous best model to save memory
         # if epoch > 0:
         #     previous_best_model_path = os.path.join(self.model_save_path, 'best_checkpoint_{}.pth'.format(epoch-1))

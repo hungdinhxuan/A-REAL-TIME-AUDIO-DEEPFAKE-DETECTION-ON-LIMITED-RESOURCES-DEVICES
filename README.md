@@ -81,7 +81,7 @@ CUDA_VISIBLE_DEVICES=1 OMP_NUM_THREADS=1 PYTHONPATH=$PYTHONPATH:/datab/hungdx/KD
 
 ### CNSL dataset
 ```
-CUDA_VISIBLE_DEVICES=3 OMP_NUM_THREADS=5 PYTHONPATH=$PYTHONPATH:/datad/hungdx/KDW2V-AASISTL/fairseq python torchdistill_main.py --yaml '/datad/hungdx/KDW2V-AASISTL/lst_configs_custom/trial22.yaml' --database_path='/home/hungdx/Datasets/supcon_cnsl_feb07' --protocols_path='protocol.txt' 
+CUDA_VISIBLE_DEVICES=2 OMP_NUM_THREADS=5 PYTHONPATH=$PYTHONPATH:/datad/hungdx/KDW2V-AASISTL/fairseq python torchdistill_main.py --yaml '/datad/hungdx/KDW2V-AASISTL/lst_configs_custom/trial51.yaml' --database_path='/home/hungdx/Datasets/supcon_cnsl_feb07' --protocols_path='protocol.txt' 
 ```
 
 ### MoreKor
@@ -183,8 +183,15 @@ CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=5 PYTHONPATH=$PYTHONPATH:/datab/hungdx/KD
 
 ### Eval Feb07 Distil_XLSR_N_Trans_Layer_VIB
 ``` 
-CUDA_VISIBLE_DEVICES=2 OMP_NUM_THREADS=5 PYTHONPATH=$PYTHONPATH:/datab/hungdx/KDW2V-AASISTL/fairseq python eval.py --student_model_path "/datad/hungdx/KDW2V-AASISTL/runs/Distil_XLSR_5_Custom_Trans_Layer_VIB_DKDLoss_MSE_noaudioaug_b16_randomstart_feb07_1_2_3_4_5th/best_checkpoint_38.pth" --eval_output="./Distil_XLSR_5_Custom_Trans_Layer_VIB_DKDLoss_MSE_noaudioaug_b16_randomstart_feb07_1_2_3_4_5th_feb07_2.5s.txt" --batch_size_eval=400 --wrapper_ssl --database_path='/home/hungdx/Datasets/supcon_cnsl_feb07' --protocols_path='protocol.txt' --yaml='/datad/hungdx/KDW2V-AASISTL/lst_configs_custom/trial18.yaml' --dataset='feb07' --student_model_type='Distil_XLSR_N_Trans_Layer_VIB' --padding_size=40000
+CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=5 PYTHONPATH=$PYTHONPATH:/datab/hungdx/KDW2V-AASISTL/fairseq python eval.py --student_model_path "/datad/hungdx/KDW2V-AASISTL/runs/Distil_XLSR_5_Custom_Trans_Layer_VIB_DKDLoss_MSE_noaudioaug_b16_randomstart_feb07_1_2_3_4_5th_new_hyp_copy_weights_tuning_MSE/best_checkpoint_19.pth" --eval_output="./Distil_XLSR_5_Custom_Trans_Layer_VIB_DKDLoss_MSE_noaudioaug_b16_randomstart_feb07_1_2_3_4_5th_new_hyp_copy_weights_tuning_MSE_feb07_1s.txt" --batch_size_eval=400 --wrapper_ssl --database_path='/home/hungdx/Datasets/supcon_cnsl_feb07' --protocols_path='protocol.txt' --yaml='/datad/hungdx/KDW2V-AASISTL/lst_configs_custom/trial46.yaml' --dataset='feb07' --student_model_type='Distil_XLSR_N_Trans_Layer_VIB' --padding_size=16000 
 ```
+
+### Eval DF21 Distil_XLSR_N_Trans_Layer_VIB
+```
+CUDA_VISIBLE_DEVICES=3 OMP_NUM_THREADS=5 PYTHONPATH=$PYTHONPATH:/datab/hungdx/KDW2V-AASISTL/fairseq python eval.py --student_model_path "/datad/hungdx/KDW2V-AASISTL/runs/Distil_XLSR_4_Custom_Trans_Layer_VIB_DKDLoss_MSE_noaudioaug_b16_randomstart_feb07_2_3_4_5th_copy_weights_hyp_tuning_v1/best_checkpoint_33.pth" --eval_output="./Distil_XLSR_4_Custom_Trans_Layer_VIB_DKDLoss_MSE_noaudioaug_b16_randomstart_feb07_2_3_4_5th_copy_weights_hyp_tuning_v1_best33_df21_2s.txt" --batch_size_eval=300 --wrapper_ssl --database_path='/home/hungdx/Datasets/' --yaml='/datad/hungdx/KDW2V-AASISTL/lst_configs_custom/trial30.yaml' --dataset='DF21' --student_model_type='Distil_XLSR_N_Trans_Layer_VIB' --padding_size=32000 --num_eval_samples=-1
+```
+
+
 
 ### Eval MOreKor from VIB MoreKor
 ```
@@ -193,7 +200,7 @@ CUDA_VISIBLE_DEVICES=3 OMP_NUM_THREADS=5 PYTHONPATH=$PYTHONPATH:/datab/hungdx/KD
 
 # Export models
 ```
-CUDA_VISIBLE_DEVICES="" PYTHONPATH=$PYTHONPATH:/datab/hungdx/KDW2V-AASISTL/fairseq python export.py --student_model_path="/datad/hungdx/KDW2V-AASISTL/runs/Distil_XLSR_5_Custom_Trans_Layer_VIB_DKDLoss_MSE_noaudioaug_b16_randomstart_feb07_1_2_3_4_5th/best_checkpoint_38.pth" --comment="wrapper_2.5s" --padding=2.5 --yaml="/datad/hungdx/KDW2V-AASISTL/lst_configs_custom/trial18.yaml"
+CUDA_VISIBLE_DEVICES="" PYTHONPATH=$PYTHONPATH:/datab/hungdx/KDW2V-AASISTL/fairseq python export.py --student_model_path="/datad/hungdx/KDW2V-AASISTL/runs/Distil_XLSR_4_Custom_Trans_Layer_VIB_DKDLoss_MSE_noaudioaug_b16_randomstart_feb07_2_3_4_5th_copy_weights/best_checkpoint_8.pth" --comment="wrapper_2s" --padding=2 --yaml="/datad/hungdx/KDW2V-AASISTL/lst_configs_custom/trial24.yaml"
 ```
 
 ```
@@ -209,5 +216,5 @@ CUDA_VISIBLE_DEVICES=3 OMP_NUM_THREADS=1 PYTHONPATH=$PYTHONPATH:/datab/hungdx/KD
 ### Eval again teacher
 
 ```
-CUDA_VISIBLE_DEVICES=3 OMP_NUM_THREADS=5 PYTHONPATH=$PYTHONPATH:/datab/hungdx/KDW2V-AASISTL/fairseq python eval.py --student_model_path "/datad/hungdx/KDW2V-AASISTL/pretrained/vib_conf-5_gelu_acmccs_apr3_moreko_telephone_epoch22.pth" --eval_output="./vib_conf-5_gelu_acmccs_apr3_moreko_telephone_epoch22.pth.txt" --batch_size_eval=100 --database_path='/home/hungdx/Datasets/supcon_cnsl_feb07' --protocols_path='protocol.txt' --dataset='feb07' --student_model_type='Distil_W2V2BASE_VIB' --is_eval_teacher
+CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=5 PYTHONPATH=$PYTHONPATH:/datab/hungdx/KDW2V-AASISTL/fairseq python eval.py --student_model_path "/datad/hungdx/KDW2V-AASISTL/pretrained/vib_conf-5_gelu_acmccs_apr3_moreko_telephone_epoch22.pth" --eval_output="./results_teacher/vib_conf-5_gelu_acmccs_apr3_moreko_telephone_epoch22_feb07_1s.txt" --batch_size_eval=100 --database_path='/home/hungdx/Datasets/supcon_cnsl_feb07' --protocols_path='protocol.txt' --dataset='feb07' --student_model_type='Distil_W2V2BASE_VIB' --is_eval_teacher --padding_size=16000
 ```

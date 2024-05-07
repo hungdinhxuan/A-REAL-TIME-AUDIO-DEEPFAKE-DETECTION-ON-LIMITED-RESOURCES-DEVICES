@@ -313,6 +313,15 @@ def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, co
     iters = len(train_loader)
     # Create a progress bar
     pbar = tqdm(enumerate(train_loader), total=len(train_loader))
+    # loss list for monitoring
+    loss_dict = dict()
+    loss_dict['ce_loss'] = 0
+
+    criterions = config.get('criterions', [])
+
+    for loss in criterions:
+        loss_dict[loss['key']] = 0
+
     for i, (batch_x, batch_y) in pbar:
 
         # Mixed precision training
@@ -378,8 +387,11 @@ def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, co
 
                     if forward_target:
                         if config['train']['teacher']:
-                            kd_loss += (loss_i.forward(student_io_dict,
-                                        teacher_io_dict, batch_y) * weight)
+                            tmp_loss = (loss_i.forward(student_io_dict,
+                                                       teacher_io_dict, batch_y) * weight)
+                            loss_dict[loss['key']
+                                      ] += (tmp_loss.item() * batch_size)
+                            kd_loss += tmp_loss
                         total_loss += kd_loss
                     else:
 
@@ -391,6 +403,7 @@ def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, co
             # Loss = alpha * CE + beta * KL + gamma * KDs
             # Default: alpha = 1, beta = 1, gamma = 1
             ce_loss += criterion(batch_out, batch_y)  # CE loss
+            loss_dict['ce_loss'] += (ce_loss.item() * batch_size)
             total_loss += ce_loss
 
             if is_l1_loss:
@@ -476,7 +489,7 @@ def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, co
     running_loss /= num_total
     train_acc = (num_correct / num_total) * 100
     logger.info("Accuracy: {}".format(train_acc))
-    return running_loss, train_acc
+    return running_loss, train_acc, loss_dict
 
 
 def kd_val_epoch(dev_loader, model, device, config):

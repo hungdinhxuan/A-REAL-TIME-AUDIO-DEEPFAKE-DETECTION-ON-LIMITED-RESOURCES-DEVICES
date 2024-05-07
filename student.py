@@ -9,6 +9,7 @@ from wav2vec2_vib import BackEnd as BackEndVIB
 from wav2vec2_vib import VIB
 from conformer import ConformerBlock
 from torch.nn.modules.transformer import _get_clones
+from torchaudio.models import wav2vec2_model
 
 
 @register_model(key='W2V2BASE_HF_AASISTL')
@@ -785,6 +786,30 @@ class Distil_XLSR_N_Trans_Layer_VIB(nn.Module):
         # create network wav2vec 2.0
         ####
         self.ssl_model = My_XLSR_FE(device, **kwargs).to(device)
+        self.LL = nn.Linear(self.ssl_model.out_dim, 128)
+        self.VIB = VIB(128, 128, 64)
+        self.backend = BackEndVIB(64, 64, 2, 0.5, False)
+        self.gelu = nn.GELU()
+
+    def forward(self, x):
+        # -------pre-trained Wav2vec model fine tunning ------------------------##
+        x_ssl_feat = self.ssl_model(x.squeeze(-1))
+        x = self.LL(x_ssl_feat)  # (bs,frame_number,feat_out_dim)
+        x = self.gelu(x)
+        x, decoded, mu, logvar = self.VIB(x)
+        output = self.backend(x)
+        return output
+
+
+@register_model(key='Distil_Wav2vec2_Custom_VIB')
+class Distil_Wav2vec2_Custom_VIB(nn.Module):
+
+    def __init__(self, device, ssl_cpkt_path=None, **kwargs):
+        super().__init__()
+        ####
+        # create network wav2vec 2.0
+        ####
+        self.ssl_model = Custom_Wav2Vec2_Fe(device, **kwargs).to(device)
         self.LL = nn.Linear(self.ssl_model.out_dim, 128)
         self.VIB = VIB(128, 128, 64)
         self.backend = BackEndVIB(64, 64, 2, 0.5, False)

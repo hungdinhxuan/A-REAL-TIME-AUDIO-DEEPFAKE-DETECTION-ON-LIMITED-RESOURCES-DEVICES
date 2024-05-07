@@ -25,6 +25,7 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 args = get_main_menu()
 
 set_random_seed(args.seed, args)
+print("Current padding size is {}".format(args.padding_size))
 
 
 class W2VBASE_Fusion_AASISTL_Linear(nn.Module):
@@ -287,7 +288,7 @@ if args.is_eval_teacher:
                                      is_train=False, is_dev=False, is_eval=True, special=True if args.dataset == 'moreko' else False)
         logger.info(f'no. of eval trials {len(file_eval)}')
         eval_set = Dataset_cnsl_eval(
-            list_IDs=file_eval, base_dir=os.path.join(args.database_path))
+            list_IDs=file_eval, base_dir=os.path.join(args.database_path), padding_size=args.padding_size)
         produce_evaluation_file(eval_set, teacher, device, args.eval_output,
                                 batch_size=args.batch_size_eval, kd_method=kd_method, is_half=args.half)
     print("Done eval teachet")
@@ -384,7 +385,6 @@ else:
     file_eval = genSpoof_list_v2(dir_meta=os.path.join(args.database_path, args.protocols_path),
                                  is_train=False, is_dev=False, is_eval=True, special=True if args.dataset == 'moreko' else False)
     logger.info(f'no. of eval trials {len(file_eval)}')
-    print("Current padding size is {}".format(args.padding_size))
 
     eval_set = Dataset_cnsl_eval(
         list_IDs=file_eval, base_dir=os.path.join(args.database_path), padding_size=args.padding_size)

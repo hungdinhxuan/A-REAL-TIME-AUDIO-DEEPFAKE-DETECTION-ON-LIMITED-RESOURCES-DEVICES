@@ -144,6 +144,12 @@ restore = config["train"].get("restore", False)
 teacher_dict = config["model"].get("teacher_multi", {})
 copy_weights = config["train"].get("copy_weights", False)
 is_teacher_parallel = config["model"]["teacher"].get("is_parallel", True)
+freeze_layers = config["train"].get("freeze_layers", [])
+
+custom_order_copy_weights = config["model"]["student"].get("kwargs", {}).get(
+    "custom_order", [])
+order = config["model"]["student"].get("kwargs", {}).get(
+    "order", None)
 
 teacher_module_list = []
 
@@ -236,7 +242,21 @@ if copy_weights:
     else:
         student_model.module.load_state_dict(
             teacher_model.state_dict(), strict=False)
+
     logger.info("Copied teacher weights to student")
+
+    if len(custom_order_copy_weights) > 0 and order == "custom":
+        logger.info("Copy transformer weights with custom order")
+        for index, value in enumerate(custom_order_copy_weights):
+            if is_teacher_parallel:
+                student_model.module.ssl_model.model.encoder.layers[index].load_state_dict(
+                    teacher_model.module.ssl_model.model.encoder.layers[value].state_dict(), strict=False)
+            else:
+                student_model.module.ssl_model.model.encoder.layers[index].load_state_dict(
+                    teacher_model.ssl_model.model.encoder.layers[value].state_dict(), strict=False)
+            logger.info(
+                f"Copied teacher transformer weights from  to ssl_model.model.encoder.layers[{value}] to ssl_model.model.encoder.layers[{index}] student")
+
 
 # Register forward hook
 logger.info('Register forward hook for teacher')
@@ -483,6 +503,17 @@ if restore:
             'Failed to restore from previous checkpoint, the checkpoint may be corrupted or deprecated')
         sys.exit(0)
 
+
+######### Freeze layers #########
+if len(freeze_layers) > 0:
+    logger.info('Freeze layers')
+    for name, param in student_model.module.named_parameters():
+        if any(layer in name for layer in freeze_layers):
+            param.requires_grad = False
+            logger.info(f'Freeze {name}')
+
+    summary(student_model, (1, 16000))
+
 for epoch in tqdm(range(start_epoch, num_epochs), colour='green'):
     logger.info('Epoch {}/{}'.format(epoch, num_epochs - 1))
 
@@ -504,16 +535,20 @@ for epoch in tqdm(range(start_epoch, num_epochs), colour='green'):
 
     if "self_kd_config" not in config:
 
-        train_loss, train_acc = kd_train_epoch(train_loader, student_model, teacher_model, optimizer, device, scaler,
-                                               config, student_forward_hook_manager, teacher_forward_hook_manager, epoch, exp_lr_scheduler=exp_lr_scheduler, use_amp=use_amp)
+        train_loss, train_acc, loss_dict = kd_train_epoch(train_loader, student_model, teacher_model, optimizer, device, scaler,
+                                                          config, student_forward_hook_manager, teacher_forward_hook_manager, epoch, exp_lr_scheduler=exp_lr_scheduler, use_amp=use_amp)
         eval_loss, accuracy = kd_val_epoch(
             dev_loader, student_model, device, config)
         logger.info(
             'Epoch: {} - train_loss: {} - eval_loss: {}'.format(epoch, train_loss, eval_loss))
         writer.add_scalar('Accuracy/train', train_acc, epoch)
-        # wandb.log({
-        #     "Accuracy_train": train_acc
-        # })
+        for key, value in loss_dict.items():
+            wandb.log({key: value})
+            writer.add_scalar(f'train_key', value, epoch)
+
+        wandb.log({
+            "Accuracy_train": train_acc
+        })
     else:
         train_loss, train_total_label_loss, train_total_kd_loss, train_total_feature_loss, running_total_hidden_rep_loss, running_sup_contrastive_loss = self_KD_teacher_train_epoch(
             train_loader, student_model, teacher_model, optimizer, device, scaler, config, student_forward_hook_manager, teacher_forward_hook_manager, exp_lr_scheduler, temperature=temperature, alpha=alpha, beta=beta, use_amp=use_amp)
