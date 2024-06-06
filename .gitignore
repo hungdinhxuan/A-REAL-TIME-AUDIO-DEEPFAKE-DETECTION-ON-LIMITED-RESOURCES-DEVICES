@@ -35,3 +35,5 @@ test_samples
 models/*
 runs/*
 results/*
+
+*runs

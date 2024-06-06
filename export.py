@@ -19,7 +19,7 @@ from torchinfo import summary
 import torch.onnx
 import yaml
 from torchdistill.models.registry import get_model
-
+from wav2vec2_vib import Model as W2V2_VIB
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -180,8 +180,9 @@ student_model_name = config['model']['student']['name']
 model = get_model(
     student_model_name, device=device, **config['model']['student']['kwargs']).to(device)
 
-
 model = nn.DataParallel(model).to(device)
+# model = W2V2_VIB(device, ssl_cpkt_path='/datad/hungdx/KDW2V-AASISTL/pretrained/xlsr2_300m.pt')
+
 
 # Load checkpoint
 model.load_state_dict(torch.load(
@@ -199,6 +200,9 @@ with torch.no_grad():
 model.module.ssl_model = W2V2_TA(import_fairseq_model(
     model.module.ssl_model.model
 )).to(device)
+# model.ssl_model = W2V2_TA(import_fairseq_model(
+#     model.ssl_model.model
+# )).to(device)
 
 model.eval()
 print("After replace")
@@ -241,6 +245,7 @@ if args.scale_export:
 else:
     print("Using normal model")
     model_fp32 = WrapperModel(model.module).to(device)
+    # model_fp32 = WrapperModel(model).to(device)
 
 model_fp32.eval()
 

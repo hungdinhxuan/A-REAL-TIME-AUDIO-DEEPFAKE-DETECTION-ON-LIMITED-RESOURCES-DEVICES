@@ -8,6 +8,8 @@ from kdtoolkit import kd_loss_function, feature_loss_function
 from torchdistill.losses.registry import get_mid_level_loss
 from contrast.supcontrastloss import SupConLoss, supcon_loss
 import numpy as np
+from utils import AverageMeter
+from losses import MSELoss, CosineLoss
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -288,13 +290,13 @@ def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, co
     is_kl_loss = config["train"].get("is_kl_loss", False)
     is_l1_loss = config["train"].get("is_l1_loss", False)
     forward_target = "alpha" not in config['train']
-    alpha = float(config['train'].get('alpha', 0))
+    alpha = float(config['train'].get('alpha', 1))
     beta = float(config['train'].get('beta', 0.5))
     weight = torch.FloatTensor(config['train'].get(
         'cross_entropy_loss_weight', [0.1, 0.9])).to(device)
     criterion = nn.CrossEntropyLoss(weight=weight)
     dot = config['train'].get('dot', False)
-
+    is_recon_loss = config['train'].get('is_recon_loss', False)
     num_total = 0.0
 
     if not config['train']['teacher']:
@@ -315,12 +317,27 @@ def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, co
     pbar = tqdm(enumerate(train_loader), total=len(train_loader))
     # loss list for monitoring
     loss_dict = dict()
-    loss_dict['ce_loss'] = 0
+    loss_dict['ce_loss'] = AverageMeter()
 
     criterions = config.get('criterions', [])
+    criterion_key_list = []
+
+    if is_recon_loss:
+        loss_dict['recon_loss'] = AverageMeter()
+        loss_dict['BCE'] = AverageMeter()
+        loss_dict['KLD'] = AverageMeter()
 
     for loss in criterions:
-        loss_dict[loss['key']] = 0
+        # loss_dict[f"{loss['key']}_{loss['kwargs']['student_module_path']}_{loss['kwargs']['teacher_module_path']}"] = 0
+
+        student_module_path = loss.get('kwargs', {}).get(
+            'student_module_path', 'default_student_module_path')
+        teacher_module_path = loss.get('kwargs', {}).get(
+            'teacher_module_path', 'default_teacher_module_path')
+        key = loss.get('key', 'default_key')
+        criterion_key = f"{key}_{student_module_path}_{teacher_module_path}"
+        criterion_key_list.append(criterion_key)
+        loss_dict[criterion_key] = AverageMeter()
 
     for i, (batch_x, batch_y) in pbar:
 
@@ -330,6 +347,7 @@ def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, co
             total_loss = torch.tensor(0.).to(device)
             kd_loss = torch.tensor(0.).to(device)
             ce_loss = torch.tensor(0.).to(device)
+            recon_loss = torch.tensor(0.).to(device)
             kl_loss = torch.tensor(0.).to(device)
             batch_size = batch_x.size(0)
             batch_x = batch_x.to(device)
@@ -365,12 +383,6 @@ def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, co
                     t_logits = teacher(batch_x)
                     teacher_io_dict = teacher_forward_hook_manager.pop_io_dict()
 
-                # KL loss (default T = 2)
-                if is_kl_loss:
-                    kl_loss = DistillKL(T=config["train"].get("T", 2)
-                                        )(batch_out, t_logits)
-                    total_loss += kl_loss
-
             # Check if key exists
 
             if 'criterions' in config and 'criterion_weights' in config:
@@ -379,72 +391,52 @@ def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, co
                     raise ValueError(
                         'Number of criterions and criterion_weights must be the same')
 
-                for loss, weight in zip(config['criterions'], config['criterion_weights']):
+                for loss, weight, criterion_key in zip(config['criterions'], config['criterion_weights'], criterion_key_list):
                     weight = float(weight)
 
                     loss_i = get_mid_level_loss(
                         mid_level_criterion_config=loss)
 
-                    if forward_target:
-                        if config['train']['teacher']:
-                            tmp_loss = (loss_i.forward(student_io_dict,
-                                                       teacher_io_dict, batch_y) * weight)
-                            loss_dict[loss['key']
-                                      ] += (tmp_loss.item() * batch_size)
-                            kd_loss += tmp_loss
-                        total_loss += kd_loss
-                    else:
+                    if config['train']['teacher']:
+                        tmp_loss = loss_i.forward(student_io_dict,
+                                                  teacher_io_dict, batch_y)
+                        loss_dict[criterion_key
+                                  ].update(tmp_loss.item(), batch_size)
 
-                        kd_loss += (loss_i.forward(student_io_dict,
-                                    teacher_io_dict) * weight)
-                        total_loss += kd_loss
+                        kd_loss += (tmp_loss * weight)
+                    total_loss += kd_loss
+                    # else:
+
+                    #     kd_loss += (loss_i.forward(student_io_dict,
+                    #                 teacher_io_dict) * weight)
+                    #     total_loss += kd_loss
 
             # Current loss function
             # Loss = alpha * CE + beta * KL + gamma * KDs
             # Default: alpha = 1, beta = 1, gamma = 1
-            ce_loss += criterion(batch_out, batch_y)  # CE loss
-            loss_dict['ce_loss'] += (ce_loss.item() * batch_size)
+            ce_loss_tmp = criterion(batch_out, batch_y)  # CE loss
+            ce_loss += alpha * ce_loss_tmp  # CE loss * alpha
+            loss_dict['ce_loss'].update(ce_loss_tmp.item(), batch_size)
             total_loss += ce_loss
+
+            if is_recon_loss:
+                z, decoded, mu, logvar = student_io_dict['VIB']['output']
+                # feats_w2v = student_io_dict['LL']['output']
+
+                # BCE = F.binary_cross_entropy(torch.sigmoid(
+                #     decoded), torch.sigmoid(feats_w2v), reduction='sum')
+                KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+
+                # loss_dict['BCE'].update(BCE.item(), batch_size)
+                loss_dict['KLD'].update(KLD.item(), batch_size)
+
+                recon_loss = 0.000001*KLD
+                loss_dict['recon_loss'].update(recon_loss.item(), batch_size)
 
             if is_l1_loss:
                 l1_loss = nn.L1Loss()
                 total_loss += l1_loss(batch_out,
                                       batch_y)
-
-            # if not forward_target or dot:
-            #     alpha = 1
-            #     # CE loss
-            #     batch_loss = criterion(batch_out, batch_y)
-            #     total_loss += (alpha * batch_loss)
-            #     ce_loss += (alpha * batch_loss)
-
-            #     # ## Total loss + KL divergence loss
-            #     # kl_loss = DistillKL(T=config["train"].get("T", 2))
-            #     # total_loss += (beta * kl_loss(batch_out, t_logits))
-            #     if mixup:
-            #         batch_loss_b = criterion(batch_out, batch_y_b)
-            #         total_loss += (lam * total_loss + (1-lam) * batch_loss_b)
-            #         ce_loss += (lam * ce_loss + (1-lam) * batch_loss_b)
-
-            # if "sup_contrastive" in config["train"] and config["train"]["sup_contrastive"]:
-            #     sup_weights = config["train"].get(
-            #         "sup_contrastive_loss_weight", [0.1, 0.07])
-            #     sup_loss = SupConLoss(
-            #         temperature=sup_weights[0], base_temperature=sup_weights[1])
-            #     sup_mode = config["train"].get(
-            #         "sup_contrastive_mode", "supcon")
-
-            #     if sup_mode == "supcon":
-            #         def sim_metric_seq(mat1, mat2): return torch.bmm(
-            #             mat1.permute(1, 0, 2), mat2.permute(1, 2, 0)).mean(0)
-
-            #         emb = student_io_dict['LL']['output']
-
-            #         sup_loss = sup_loss.forward(
-            #             emb, batch_y)
-            #     else:
-            #         sup_loss = sup_loss.forward(student_hidden_representation)
-            #     total_loss += sup_loss
 
         # Scaler
         if not dot:
@@ -505,6 +497,24 @@ def kd_val_epoch(dev_loader, model, device, config):
     bona_scores = []
     spoof_scores = []
 
+    loss_dict = dict()
+    loss_dict['ce_loss'] = AverageMeter()
+
+    criterions = config.get('criterions', [])
+    criterion_key_list = []
+
+    for loss in criterions:
+        # loss_dict[f"{loss['key']}_{loss['kwargs']['student_module_path']}_{loss['kwargs']['teacher_module_path']}"] = 0
+
+        student_module_path = loss.get('kwargs', {}).get(
+            'student_module_path', 'default_student_module_path')
+        teacher_module_path = loss.get('kwargs', {}).get(
+            'teacher_module_path', 'default_teacher_module_path')
+        key = loss.get('key', 'default_key')
+        criterion_key = f"{key}_{student_module_path}_{teacher_module_path}"
+        criterion_key_list.append(criterion_key)
+        loss_dict[criterion_key] = AverageMeter()
+
     with torch.inference_mode():
         for batch_x, batch_y in tqdm(dev_loader):
             batch_size = batch_x.size(0)
@@ -534,13 +544,6 @@ def kd_val_epoch(dev_loader, model, device, config):
             _, batch_pred = batch_out.max(dim=1)
             num_correct += (batch_pred == batch_y).sum(dim=0).item()
 
-            # Calculate EER
-            # for x, y in zip(batch_x, batch_y):
-            #     if y == 1:
-            #         bona_scores.append(x)
-            #     else:
-            #         spoof_scores.append(x)
-
         # eer_cm, th = em.compute_eer(bona_scores, spoof_scores) * 100
         # logger.info("EER: {}% - Threshold: {}".format(eer_cm , th))
         accuracy = (num_correct / num_total) * 100
@@ -548,3 +551,593 @@ def kd_val_epoch(dev_loader, model, device, config):
         val_loss /= num_total
         print('[VALIDATION] eval_accuracy: ', accuracy)
         return val_loss, accuracy
+
+
+def kd_val_epoch_advanced(dev_loader, student, teacher, device,  config, student_forward_hook_manager, teacher_forward_hook_manager):
+    logger.info('Validation ----')
+    val_loss = 0
+
+    student.eval()
+    teacher.eval()
+
+    alpha = float(config['train'].get('alpha', 1))
+    weight = torch.FloatTensor(config['train'].get(
+        'cross_entropy_loss_weight', [0.1, 0.9])).to(device)
+
+    criterion = nn.CrossEntropyLoss(weight=weight)
+    num_total = 0.0
+    num_correct = 0.0
+    bona_scores = []
+    spoof_scores = []
+    running_loss = 0
+    loss_dict = dict()
+    loss_dict['ce_loss'] = AverageMeter()
+
+    criterions = config.get('criterions', [])
+    criterion_key_list = []
+
+    for loss in criterions:
+        # loss_dict[f"{loss['key']}_{loss['kwargs']['student_module_path']}_{loss['kwargs']['teacher_module_path']}"] = 0
+
+        student_module_path = loss.get('kwargs', {}).get(
+            'student_module_path', 'default_student_module_path')
+        teacher_module_path = loss.get('kwargs', {}).get(
+            'teacher_module_path', 'default_teacher_module_path')
+        key = loss.get('key', 'default_key')
+        criterion_key = f"{key}_{student_module_path}_{teacher_module_path}"
+        criterion_key_list.append(criterion_key)
+        loss_dict[criterion_key] = AverageMeter()
+
+    with torch.inference_mode():
+        for batch_x, batch_y in tqdm(dev_loader):
+            total_loss = torch.tensor(0.).to(device)
+            kd_loss = torch.tensor(0.).to(device)
+            ce_loss = torch.tensor(0.).to(device)
+            batch_size = batch_x.size(0)
+            num_total += batch_size
+            if len(batch_x.shape) == 3:
+                batch_x = batch_x.squeeze(0).transpose(0, 1)
+            batch_x = batch_x.to(device)
+
+            if config["model"]["student"]["name"].startswith("Self"):
+                batch_out, spectral_output, temporal_output, graph_output_S, graph_output_T, hs_gal_output_S, hs_gal_output_T, middle_feature1, middle_feature2, final_feature1, final_feature2, student_hidden_representation = student(
+                    batch_x)
+            else:
+                batch_out = student(
+                    batch_x)
+            student_io_dict = student_forward_hook_manager.pop_io_dict()
+            # teacher
+            _ = teacher(batch_x)
+            teacher_io_dict = teacher_forward_hook_manager.pop_io_dict()
+
+            # Check if key exists
+
+            if 'criterions' in config and 'criterion_weights' in config:
+
+                if len(config['criterions']) != len(config['criterion_weights']):
+                    raise ValueError(
+                        'Number of criterions and criterion_weights must be the same')
+
+                for loss, weight, criterion_key in zip(config['criterions'], config['criterion_weights'], criterion_key_list):
+                    weight = float(weight)
+
+                    loss_i = get_mid_level_loss(
+                        mid_level_criterion_config=loss)
+
+                    if config['train']['teacher']:
+                        tmp_loss = loss_i.forward(student_io_dict,
+                                                  teacher_io_dict, batch_y)
+                        loss_dict[criterion_key
+                                  ].update(tmp_loss.item(), batch_size)
+
+                        kd_loss += (tmp_loss * weight)
+                    total_loss += kd_loss
+
+            batch_y = batch_y.view(-1).type(torch.int64).to(device)
+
+            # Calculate loss (label loss)
+            batch_loss = criterion(batch_out, batch_y)
+
+            # val_loss += (batch_loss.item() * batch_size)
+
+            ce_loss_tmp = batch_loss  # CE loss
+            ce_loss += alpha * ce_loss_tmp  # CE loss * alpha
+            loss_dict['ce_loss'].update(ce_loss_tmp.item(), batch_size)
+            total_loss += ce_loss
+
+            running_loss += (ce_loss.item() + kd_loss.item()) * batch_size
+
+            # probabilities = F.softmax(batch_out, dim=1)
+            # predicted_labels = (probabilities[:, 0] >= 0.5).int()
+
+            # num_correct += (predicted_labels == batch_y).sum().item()
+            _, batch_pred = batch_out.max(dim=1)
+            num_correct += (batch_pred == batch_y).sum(dim=0).item()
+
+        # eer_cm, th = em.compute_eer(bona_scores, spoof_scores) * 100
+        # logger.info("EER: {}% - Threshold: {}".format(eer_cm , th))
+    accuracy = (num_correct / num_total) * 100
+    print("accuracy", accuracy)
+    running_loss /= num_total
+    print('[VALIDATION] eval_accuracy: ', accuracy)
+    return running_loss, accuracy, loss_dict
+
+
+def byot_kd_train_epoch(train_loader, model, optimizer, device, scaler, config, epoch, exp_lr_scheduler=None,  use_amp: bool = True):
+    logger.info('BYOT Training KD')
+
+    temperature = config['train'].get('byot_temperature', 3)
+    alpha = config['train'].get('byot_alpha', 0.1)
+    beta = config['train'].get('byot_beta', 1e-6)
+
+    losses = AverageMeter()
+    middle1_losses = AverageMeter()
+    middle2_losses = AverageMeter()
+    middle3_losses = AverageMeter()
+    middle4_losses = AverageMeter()
+
+    # KD losses
+    losses1_kd = AverageMeter()
+    losses2_kd = AverageMeter()
+    losses3_kd = AverageMeter()
+    losses4_kd = AverageMeter()
+
+    # Feature
+    feature_losses_1 = AverageMeter()
+    feature_losses_2 = AverageMeter()
+    feature_losses_3 = AverageMeter()
+    feature_losses_4 = AverageMeter()
+
+    top1 = AverageMeter()
+
+    # Middle layer loss monitoring
+    middle1_top1 = AverageMeter()
+    middle2_top1 = AverageMeter()
+    middle3_top1 = AverageMeter()
+    middle4_top1 = AverageMeter()
+
+    total_losses = AverageMeter()
+
+    model.train()
+
+    weight = torch.FloatTensor(config['train'].get(
+        'cross_entropy_loss_weight', [0.1, 0.9])).to(device)
+    criterion = nn.CrossEntropyLoss(weight=weight)
+
+    num_total = 0.0
+
+    if exp_lr_scheduler is not None and config['learning_rate_scheduler']['name'] != 'ReduceLROnPlateau':
+        logger.info("Current learning rate of scheduler {}: {}".format(config['learning_rate_scheduler']['name'],
+                                                                       exp_lr_scheduler.get_last_lr()[0]))
+    else:
+        logger.info("Current learning rate: {}".format(
+            optimizer.param_groups[0]['lr']))
+
+    iters = len(train_loader)
+    # Create a progress bar
+    pbar = tqdm(enumerate(train_loader), total=len(train_loader))
+    # loss list for monitoring
+    loss_dict = dict()
+    loss_dict['ce_loss'] = 0
+
+    for i, (batch_x, batch_y) in pbar:
+
+        # Mixed precision training
+        with torch.autocast(device_type=device, dtype=torch.float16, enabled=use_amp):
+            # Multiple loss
+
+            batch_size = batch_x.size(0)
+            batch_x = batch_x.to(device)
+            if len(batch_x.shape) == 3:
+                batch_x = batch_x.squeeze(0).transpose(0, 1)
+
+            # Label
+            target = batch_y.view(-1).type(torch.int64).to(device)
+
+            logits, features = model(batch_x)
+
+            output, middle_output1, middle_output2, middle_output3, middle_output4, \
+                final_fea, middle1_fea, middle2_fea, middle3_fea, middle4_fea = logits[-1], logits[0], logits[
+                    1], logits[2], logits[3], features[-1], features[0], features[1], features[2], features[3]
+
+            # Calculate loss (label loss)
+            loss = criterion(output, target)
+            losses.update(loss.item(), batch_size)
+
+            # Calculate middle loss for every layer's return loss except the last layer
+            middle1_loss = criterion(middle_output1, target)
+            middle1_losses.update(middle1_loss.item(), batch_size)
+            middle2_loss = criterion(middle_output2, target)
+            middle2_losses.update(middle2_loss.item(), batch_size)
+            middle3_loss = criterion(middle_output3, target)
+            middle3_losses.update(middle3_loss.item(), batch_size)
+            middle4_loss = criterion(middle_output4, target)
+            middle4_losses.update(middle4_loss.item(), batch_size)
+
+            ##
+
+            temp5 = output / temperature
+            temp5 = torch.softmax(temp5, dim=1)
+
+            # Calculate KD loss
+            loss1by4 = kd_loss_function(
+                middle_output1, temp5.detach(), temperature) * (temperature**2)
+            losses1_kd.update(loss1by4, batch_size)
+
+            loss2by4 = kd_loss_function(
+                middle_output2, temp5.detach(), temperature) * (temperature**2)
+            losses2_kd.update(loss2by4, batch_size)
+
+            loss3by4 = kd_loss_function(
+                middle_output3, temp5.detach(), temperature) * (temperature**2)
+            losses3_kd.update(loss3by4, batch_size)
+
+            loss4by4 = kd_loss_function(
+                middle_output4, temp5.detach(), temperature) * (temperature**2)
+            losses4_kd.update(loss4by4, batch_size)
+
+            # Calculate feature loss
+
+            feature_loss_1 = feature_loss_function(
+                middle1_fea, final_fea.detach())
+            feature_losses_1.update(feature_loss_1, batch_size)
+            feature_loss_2 = feature_loss_function(
+                middle2_fea, final_fea.detach())
+            feature_losses_2.update(feature_loss_2, batch_size)
+            feature_loss_3 = feature_loss_function(
+                middle3_fea, final_fea.detach())
+            feature_losses_3.update(feature_loss_3, batch_size)
+            feature_loss_4 = feature_loss_function(
+                middle4_fea, final_fea.detach())
+            feature_losses_4.update(feature_loss_4, batch_size)
+
+            # Total loss
+            # Total loss
+            total_loss = (1 - alpha) * (loss + middle1_loss + middle2_loss + middle3_loss + middle4_loss) + \
+                alpha * (loss1by4 + loss2by4 + loss3by4 + loss4by4) + \
+                beta * (feature_loss_1 + feature_loss_2 +
+                        feature_loss_3 + feature_loss_4)
+            # Total loss without feature_loss
+            # total_loss = (1 - alpha) * (loss + middle1_loss + middle2_loss + middle3_loss + middle4_loss) + \
+            #     alpha * (loss1by4 + loss2by4 + loss3by4 + loss4by4)
+
+            total_losses.update(total_loss.item(), batch_size)
+
+            prec1 = accuracy(output.data, target, topk=(1,))
+            top1.update(prec1[0], batch_size)
+
+            middle1_prec1 = accuracy(middle_output1.data, target, topk=(1,))
+            middle1_top1.update(middle1_prec1[0], batch_size)
+            middle2_prec1 = accuracy(middle_output2.data, target, topk=(1,))
+            middle2_top1.update(middle2_prec1[0], batch_size)
+            middle3_prec1 = accuracy(middle_output3.data, target, topk=(1,))
+            middle3_top1.update(middle3_prec1[0], batch_size)
+            middle4_prec1 = accuracy(middle_output4.data, target, topk=(1,))
+            middle4_top1.update(middle4_prec1[0], batch_size)
+
+        optimizer.zero_grad(set_to_none=True)
+        scaler.scale(total_loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
+
+        # Update LR
+        if exp_lr_scheduler is not None:
+            if config['learning_rate_scheduler']['name'] == 'CosineAnnealingWarmRestarts':
+                # logger.info("Updating learning rate in training")
+                exp_lr_scheduler.step(epoch + i / iters)
+            elif config['learning_rate_scheduler']['name'] in ['ReduceLROnPlateau', 'MultiStepLR', 'StepLR', 'CyclicLR']:
+                # Update learning rate scheduler in validation so do nothing here
+                pass
+            else:
+                exp_lr_scheduler.step()
+
+    logger.info("Epoch: [{0}]\t"
+                "Loss {loss.val:.3f} ({loss.avg:.3f})\t"
+                "Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t".format(
+                    epoch,
+                    loss=total_losses,
+                    top1=top1)
+                )
+    return losses, middle1_losses, middle2_losses, middle3_losses, middle4_losses, losses1_kd, losses2_kd, losses3_kd, losses4_kd, feature_losses_1, feature_losses_2, feature_losses_3, feature_losses_4, top1, middle1_top1, middle2_top1, middle3_top1, middle4_top1
+
+
+def byot_kd_val_epoch(dev_loader, model, device, config, epoch):
+    logger.info('BYOT Validation ----')
+    losses = AverageMeter()
+    middle1_losses = AverageMeter()
+    middle2_losses = AverageMeter()
+    middle3_losses = AverageMeter()
+    middle4_losses = AverageMeter()
+
+    # KD losses
+    losses1_kd = AverageMeter()
+    losses2_kd = AverageMeter()
+    losses3_kd = AverageMeter()
+    losses4_kd = AverageMeter()
+
+    # Feature
+    feature_losses_1 = AverageMeter()
+    feature_losses_2 = AverageMeter()
+    feature_losses_3 = AverageMeter()
+    feature_losses_4 = AverageMeter()
+
+    top1 = AverageMeter()
+
+    # Middle layer loss monitoring
+    middle1_top1 = AverageMeter()
+    middle2_top1 = AverageMeter()
+    middle3_top1 = AverageMeter()
+    middle4_top1 = AverageMeter()
+
+    total_losses = AverageMeter()
+
+    model.eval()
+    weight = torch.FloatTensor(config['train'].get(
+        'cross_entropy_loss_weight', [0.1, 0.9])).to(device)
+
+    criterion = nn.CrossEntropyLoss(weight=weight)
+    temperature = config['train'].get('byot_temperature', 3)
+    alpha = config['train'].get('byot_alpha', 0.1)
+    beta = config['train'].get('byot_beta', 1e-6)
+
+    with torch.inference_mode():
+        for batch_x, batch_y in tqdm(dev_loader):
+            # Multiple loss
+
+            batch_size = batch_x.size(0)
+            batch_x = batch_x.to(device)
+            if len(batch_x.shape) == 3:
+                batch_x = batch_x.squeeze(0).transpose(0, 1)
+
+            # Label
+            target = batch_y.view(-1).type(torch.int64).to(device)
+
+            logits, features = model(batch_x)
+
+            output, middle_output1, middle_output2, middle_output3, middle_output4, \
+                final_fea, middle1_fea, middle2_fea, middle3_fea, middle4_fea = logits[-1], logits[0], logits[
+                    1], logits[2], logits[3], features[-1], features[0], features[1], features[2], features[3]
+
+            # Calculate loss (label loss)
+            loss = criterion(output, target)
+            losses.update(loss.item(), batch_size)
+
+            # Calculate middle loss for every layer's return loss except the last layer
+            middle1_loss = criterion(middle_output1, target)
+            middle1_losses.update(middle1_loss.item(), batch_size)
+            middle2_loss = criterion(middle_output2, target)
+            middle2_losses.update(middle2_loss.item(), batch_size)
+            middle3_loss = criterion(middle_output3, target)
+            middle3_losses.update(middle3_loss.item(), batch_size)
+            middle4_loss = criterion(middle_output4, target)
+            middle4_losses.update(middle4_loss.item(), batch_size)
+
+            ##
+
+            temp5 = output / temperature
+            temp5 = torch.softmax(temp5, dim=1)
+
+            # Calculate KD loss
+            loss1by4 = kd_loss_function(
+                middle_output1, temp5, temperature) * (temperature**2)
+            losses1_kd.update(loss1by4, batch_size)
+
+            loss2by4 = kd_loss_function(
+                middle_output2, temp5, temperature) * (temperature**2)
+            losses2_kd.update(loss2by4, batch_size)
+
+            loss3by4 = kd_loss_function(
+                middle_output3, temp5, temperature) * (temperature**2)
+            losses3_kd.update(loss3by4, batch_size)
+
+            loss4by4 = kd_loss_function(
+                middle_output4, temp5, temperature) * (temperature**2)
+            losses4_kd.update(loss4by4, batch_size)
+
+            # Calculate feature loss
+
+            feature_loss_1 = feature_loss_function(
+                middle1_fea, final_fea.detach())
+            feature_losses_1.update(feature_loss_1, batch_size)
+            feature_loss_2 = feature_loss_function(
+                middle2_fea, final_fea.detach())
+            feature_losses_2.update(feature_loss_2, batch_size)
+            feature_loss_3 = feature_loss_function(
+                middle3_fea, final_fea.detach())
+            feature_losses_3.update(feature_loss_3, batch_size)
+            feature_loss_4 = feature_loss_function(
+                middle4_fea, final_fea.detach())
+            feature_losses_4.update(feature_loss_4, batch_size)
+
+            # Total loss
+            total_loss = (1 - alpha) * (loss + middle1_loss + middle2_loss + middle3_loss + middle4_loss) + \
+                alpha * (loss1by4 + loss2by4 + loss3by4 + loss4by4) + \
+                beta * (feature_loss_1 + feature_loss_2 +
+                        feature_loss_3 + feature_loss_4)
+            # Total loss without feature_loss
+            # total_loss = (1 - alpha) * (loss + middle1_loss + middle2_loss + middle3_loss + middle4_loss) + \
+            #     alpha * (loss1by4 + loss2by4 + loss3by4 + loss4by4)
+
+            total_losses.update(total_loss.item(), batch_size)
+
+            prec1 = accuracy(output.data, target, topk=(1,))
+            top1.update(prec1[0], batch_size)
+
+            middle1_prec1 = accuracy(middle_output1.data, target, topk=(1,))
+            middle1_top1.update(middle1_prec1[0], batch_size)
+            middle2_prec1 = accuracy(middle_output2.data, target, topk=(1,))
+            middle2_top1.update(middle2_prec1[0], batch_size)
+            middle3_prec1 = accuracy(middle_output3.data, target, topk=(1,))
+            middle3_top1.update(middle3_prec1[0], batch_size)
+            middle4_prec1 = accuracy(middle_output4.data, target, topk=(1,))
+            middle4_top1.update(middle4_prec1[0], batch_size)
+
+    logger.info("Epoch: [{0}]\t"
+                "Loss {loss.val:.3f} ({loss.avg:.3f})\t"
+                "Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t".format(
+                    epoch,
+                    loss=total_losses,
+                    top1=top1))
+    return losses, middle1_losses, middle2_losses, middle3_losses, middle4_losses, losses1_kd, losses2_kd, losses3_kd, losses4_kd, feature_losses_1, feature_losses_2, feature_losses_3, feature_losses_4, top1, middle1_top1, middle2_top1, middle3_top1, middle4_top1
+
+
+def accuracy(output, target, topk=(1,)):
+    maxk = max(topk)
+    batch_size = target.size(0)
+    _, pred = output.topk(maxk, 1, True, True)
+    pred = pred.t()
+    correct = pred.eq(target.view(1, -1).expand_as(pred))
+
+    res = []
+    for k in topk:
+        correct_k = correct[:k].view(-1).float().sum(0)
+        res.append(correct_k.mul(100.0 / batch_size))
+
+    return res
+
+
+def adaptive_kd_train_epoch(train_loader, adaptive_losses, student, teacher, optimizer, device, scaler, config, student_forward_hook_manager, teacher_forward_hook_manager,  epoch, exp_lr_scheduler=None,  use_amp: bool = True):
+    logger.info('Adaptive Training KD')
+    running_loss = 0
+
+    student.train()
+    teacher.eval()
+
+    num_correct = 0.0
+
+    forward_target = "alpha" not in config['train']
+    alpha = float(config['train'].get('alpha', 1))
+
+    weight = torch.FloatTensor(config['train'].get(
+        'cross_entropy_loss_weight', [0.1, 0.9])).to(device)
+    criterion = nn.CrossEntropyLoss(weight=weight)
+
+    num_total = 0.0
+
+    if not config['train']['teacher']:
+        logger.info('No teacher')
+        del teacher
+
+    if exp_lr_scheduler is not None and config['learning_rate_scheduler']['name'] != 'ReduceLROnPlateau':
+        logger.info("Current learning rate of scheduler {}: {}".format(config['learning_rate_scheduler']['name'],
+                                                                       exp_lr_scheduler.get_last_lr()[0]))
+    else:
+        logger.info("Current learning rate: {}".format(
+            optimizer.param_groups[0]['lr']))
+
+    iters = len(train_loader)
+    # Create a progress bar
+    pbar = tqdm(enumerate(train_loader), total=len(train_loader))
+    # loss list for monitoring
+    loss_dict = dict()
+    loss_dict['ce_loss'] = AverageMeter()
+
+    criterions = config.get('criterions', [])
+    criterion_key_list = []
+
+    for loss in criterions:
+        # loss_dict[f"{loss['key']}_{loss['kwargs']['student_module_path']}_{loss['kwargs']['teacher_module_path']}"] = 0
+
+        student_module_path = loss.get('kwargs', {}).get(
+            'student_module_path', 'default_student_module_path')
+        teacher_module_path = loss.get('kwargs', {}).get(
+            'teacher_module_path', 'default_teacher_module_path')
+        key = loss.get('key', 'default_key')
+        criterion_key = f"{key}_{student_module_path}_{teacher_module_path}"
+        criterion_key_list.append(criterion_key)
+        loss_dict[criterion_key] = AverageMeter()
+
+    for i, (batch_x, batch_y) in pbar:
+
+        # Mixed precision training
+        with torch.autocast(device_type=device, dtype=torch.float16, enabled=use_amp):
+            # Multiple loss
+            total_loss = torch.tensor(0.).to(device)
+            kd_loss = torch.tensor(0.).to(device)
+            ce_loss = torch.tensor(0.).to(device)
+            recon_loss = torch.tensor(0.).to(device)
+            kl_loss = torch.tensor(0.).to(device)
+            batch_size = batch_x.size(0)
+            batch_x = batch_x.to(device)
+            if len(batch_x.shape) == 3:
+                batch_x = batch_x.squeeze(0).transpose(0, 1)
+
+            batch_y = batch_y.view(-1).type(torch.int64).to(device)
+
+            num_total += batch_size
+            batch_x = batch_x.to(device)
+
+            batch_out = student(
+                batch_x)
+
+            student_io_dict = student_forward_hook_manager.pop_io_dict()
+
+            # Get teacher output
+            if config['train']['teacher']:
+                with torch.no_grad():
+                    _ = teacher(batch_x)
+                    teacher_io_dict = teacher_forward_hook_manager.pop_io_dict()
+
+            # Check if key exists
+
+            if 'criterions' in config and 'criterion_weights' in config:
+
+                if len(config['criterions']) != len(config['criterion_weights']):
+                    raise ValueError(
+                        'Number of criterions and criterion_weights must be the same')
+
+                for loss, weight, criterion_key, adap_loss in zip(config['criterions'], config['criterion_weights'], criterion_key_list, adaptive_losses):
+                    weight = float(weight)
+
+                    if config['train']['teacher']:
+
+                        student_emb = student_io_dict[loss['kwargs']
+                                                      ['student_module_path']][loss['kwargs']
+                                                                               ['teacher_module_io']]
+                        teacher_emb = teacher_io_dict[loss['kwargs']
+                                                      ['teacher_module_path']][loss['kwargs']
+                                                                               ['teacher_module_io']]
+
+                        tmp_loss = (adap_loss.forward(student_emb,
+                                                      teacher_emb) * weight)
+
+                        tmp_loss_weight = tmp_loss * weight
+                        loss_dict[criterion_key
+                                  ].update(tmp_loss_weight.item(), batch_size)
+                        kd_loss += tmp_loss_weight
+
+                    total_loss += kd_loss
+
+            ce_loss_tmp = criterion(batch_out, batch_y)  # CE loss
+            ce_loss += alpha * ce_loss_tmp  # CE loss * alpha
+            loss_dict['ce_loss'].update(ce_loss_tmp.item(), batch_size)
+            total_loss += ce_loss
+
+        # Scaler
+        optimizer.zero_grad(set_to_none=True)
+        scaler.scale(total_loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
+
+        # Update LR
+        if exp_lr_scheduler is not None:
+            if config['learning_rate_scheduler']['name'] == 'CosineAnnealingWarmRestarts':
+                # logger.info("Updating learning rate in training")
+                exp_lr_scheduler.step(epoch + i / iters)
+            elif config['learning_rate_scheduler']['name'] in ['ReduceLROnPlateau', 'MultiStepLR', 'StepLR', 'CyclicLR']:
+                # Update learning rate scheduler in validation so do nothing here
+                pass
+            else:
+                exp_lr_scheduler.step()
+
+        running_loss += (total_loss.item() * batch_size)
+
+        # Calculate accuracy
+        _, batch_pred = batch_out.max(dim=1)
+        # batch_y = batch_y.view(-1)
+        num_correct += (batch_pred == batch_y).sum(dim=0).item()
+
+    running_loss /= num_total
+    train_acc = (num_correct / num_total) * 100
+    logger.info("Accuracy: {}".format(train_acc))
+    return running_loss, train_acc, loss_dict

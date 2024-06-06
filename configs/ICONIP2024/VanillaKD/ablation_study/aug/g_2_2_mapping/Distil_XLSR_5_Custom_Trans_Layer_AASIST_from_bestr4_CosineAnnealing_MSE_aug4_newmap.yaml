@@ -1,0 +1,122 @@
+name: 'Distil_XLSR_5_Custom_Trans_Layer_AASIST_from_bestr4_CosineAnnealing_MSE_aug4_newmap_g_2' # G(i) = 2i
+model:
+  teacher:
+    name: 'W2V2_AASIST'
+    teacher_module_paths:
+      - 'ssl_model.model.encoder.layers.1.final_layer_norm' # 2nd layer
+      - 'ssl_model.model.encoder.layers.3.final_layer_norm' # 4th layer
+      - 'ssl_model.model.encoder.layers.5.final_layer_norm' # 6th layer
+      - 'ssl_model.model.encoder.layers.7.final_layer_norm' # 8th layer
+      - 'ssl_model.model.encoder.layers.9.final_layer_norm' # 10th layer
+      
+    teacher_module_ios:
+      - 'False:True'
+      - 'False:True'
+      - 'False:True'
+      - 'False:True'
+      - 'False:True'
+      
+    pretrained_path: '/datad/hungdx/Towards-Real-Time-Deepfake-Speech-Detection-in-Resource-Limited-Scenarios/runs/aasist_runs/XLSR_AASIST_RawBoost4/best_LA_epoch32_0.004826_99.6229.pt'
+
+    is_parallel: True
+
+  student:
+    name: 'Distil_XLSR_N_Trans_Layer_AASIST'
+    student_module_paths:
+
+      - 'ssl_model.model.encoder.layers.0.final_layer_norm' # 1st layer
+      - 'ssl_model.model.encoder.layers.1.final_layer_norm' # 2nd layer
+      - 'ssl_model.model.encoder.layers.2.final_layer_norm' # 3rd layer
+      - 'ssl_model.model.encoder.layers.3.final_layer_norm' # 4th layer
+      - 'ssl_model.model.encoder.layers.4.final_layer_norm' # 5th layer
+      
+    student_module_ios:
+
+      - 'False:True' # input:output
+      - 'False:True'      
+      - 'False:True'      
+      - 'False:True'      
+      - 'False:True'      
+
+    kwargs:
+      num_layers: 5 # 
+      order: 'custom' # 'middle' for middle layers, 'first' for first layers, 'last' for last layers, "custom" for custom layers
+      custom_order: [1, 2, 3, 4, 5] # 2, 3, 4, 5th layer
+
+is_learning_rate_scheduler: True
+
+learning_rate_scheduler:
+  name: 'CosineAnnealingWarmRestarts'
+  params:
+    T_0: 2 # number of epochs for the first restart
+    T_mult: 2 # factor to increase T_0 after each restart
+    eta_min: 0.000001
+    verbose: False
+
+train:
+  padding_size: 16000  # 1s for LA19_1s
+  learning_rate: 0.00001
+  weight_decay: 0.00001
+  batch_size: 32
+  num_epochs: 200
+  num_workers: 4
+  amp: True
+  teacher: True 
+  patience: 20
+  alpha: 1
+  seed: 1234
+  freeze_ssl_num_epoch: 0 # 0 for no freeze
+  dataset: 'LA19_1s'
+  augment_mode: 'rawboost' # 'rawboost' for rawboost, 'audiomentations' for audiomentations
+  algo: 4 
+  student_resume: '' # Stateless training
+  cross_entropy_loss_weight: [0.9, 0.1]
+  is_kl_loss: False
+  copy_weights: True # Copy weights from teacher to student
+  wandb_project_name: 'iconip2024_mewmap_g2'
+  model_to_save: 'iconip2024_runs_newmap_g2'
+
+criterion_weights: [1, 1, 1, 1, 1]
+
+criterions:
+
+  
+  - key: 'MSELoss'
+    kwargs:
+      student_module_path: 'ssl_model.model.encoder.layers.0.final_layer_norm'
+      student_module_io: 'output'
+      teacher_module_path: 'ssl_model.model.encoder.layers.1.final_layer_norm'
+      teacher_module_io: 'output'
+
+  
+  - key: 'MSELoss'
+    kwargs:
+      student_module_path: 'ssl_model.model.encoder.layers.1.final_layer_norm'
+      student_module_io: 'output'
+      teacher_module_path: 'ssl_model.model.encoder.layers.3.final_layer_norm'
+      teacher_module_io: 'output'
+
+  
+  - key: 'MSELoss'
+    kwargs:
+      student_module_path: 'ssl_model.model.encoder.layers.2.final_layer_norm'
+      student_module_io: 'output'
+      teacher_module_path: 'ssl_model.model.encoder.layers.5.final_layer_norm'
+      teacher_module_io: 'output'
+
+  - key: 'MSELoss'
+    kwargs:
+      student_module_path: 'ssl_model.model.encoder.layers.3.final_layer_norm'
+      student_module_io: 'output'
+      teacher_module_path: 'ssl_model.model.encoder.layers.7.final_layer_norm'
+      teacher_module_io: 'output'
+
+  
+  - key: 'MSELoss'
+    kwargs:
+      student_module_path: 'ssl_model.model.encoder.layers.4.final_layer_norm'
+      student_module_io: 'output'
+      teacher_module_path: 'ssl_model.model.encoder.layers.9.final_layer_norm'
+      teacher_module_io: 'output'
+ 
+  

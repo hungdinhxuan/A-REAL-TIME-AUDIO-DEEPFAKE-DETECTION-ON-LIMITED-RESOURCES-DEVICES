@@ -15,7 +15,7 @@ def eval_to_score_file(score_file, cm_key_file, phase):
         score_file, sep=' ', header=None, skipinitialspace=True)
     # check here for progress vs eval set
     cm_scores = submission_scores.merge(
-        cm_data[cm_data[1] == phase], left_on=0, right_on=0, how='inner')
+        cm_data[cm_data[1] == phase] if phase != 'all'  else cm_data, left_on=0, right_on=0, how='inner')
     # cm_scores.head()
     #  0       1_x   1_y      2      3
     #  a.wav  1.234   eval   Music   spoof

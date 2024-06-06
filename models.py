@@ -7,7 +7,7 @@ import torch.nn.functional as F
 from torch import Tensor
 import fairseq
 import logging
-from fairseq.models.distilXLSR import DistilXLSR, DistilXLSRConfig
+# from fairseq.models.distilXLSR import DistilXLSR, DistilXLSRConfig
 from transformers import Wav2Vec2ForCTC, Wav2Vec2Config
 from transformers import AutoProcessor, AutoModelForPreTraining, Wav2Vec2Processor, Wav2Vec2Model, Wav2Vec2PreTrainedModel, AutoConfig
 from torchaudio.models.wav2vec2.utils.import_huggingface import import_huggingface_model
@@ -16,6 +16,7 @@ from torchaudio.models.wav2vec2.utils import import_fairseq_model
 from transformers.models.wav2vec2.convert_wav2vec2_original_pytorch_checkpoint_to_pytorch import recursively_load_weights
 from typing import Optional
 from torchaudio.models import wav2vec2_model
+from torchdistill.models.registry import register_model
 # class Wav2Vec2Model(nn.Module):
 
 #     def __init__(self, cp_path, device, model_type='base'):
@@ -679,6 +680,7 @@ def middle_indices(array_length, number_of_middle_elements):
     return middle_indices
 
 
+@register_model(key='My_XLSR_FE')
 class My_XLSR_FE(nn.Module):
 
     def __init__(self, device, **kwargs):
@@ -722,53 +724,59 @@ class My_XLSR_FE(nn.Module):
                 self.model.encoder.layers[i] for i in self.custom_order])
 
     def forward(self, x):
+        return self.extract_feat(x)
+
+    def extract_feat(self, x):
         input_tmp = x[:, :, 0] if x.ndim == 3 else x
         emb = self.model(input_tmp, mask=False, features_only=True)[
             'x']
-
         return emb
 
-    def extract_feat(self, x):
-        return self.forward(x)
+    def extract_layer_results(self, x):
+        input_tmp = x[:, :, 0] if x.ndim == 3 else x
+        layer_results = self.model(input_tmp, mask=False, features_only=True)[
+            'layer_results']
+        return layer_results
 
 
+@register_model(key='Custom_Wav2Vec2_Fe')
 class Custom_Wav2Vec2_Fe(nn.Module):
     def __init__(self, device, **kwargs):
         super().__init__()
-        extractor_conv_layer_config = [
-            (256, 10, 5),
-            (256, 3, 2),
-            (512, 3, 2),
-            (512, 3, 2),
-            (512, 3, 2),
-            (512, 2, 2),
-            (512, 2, 2),
-        ]
-        self.out_dim = 384
+
+        self.out_dim = kwargs.get('out_dim', 256)
+        encoder_layer_drop = kwargs.get('encoder_layer_drop', 0.0)
+        encoder_dropout = kwargs.get('encoder_dropout', 0.0)
+        encoder_ff_interm_dropout = kwargs.get(
+            'encoder_ff_interm_dropout', 0.0)
+        encoder_attention_dropout = kwargs.get(
+            'encoder_attention_dropout', 0.0)
+        encoder_projection_dropout = kwargs.get(
+            'encoder_projection_dropout', 0.0)
+        encoder_num_layers = kwargs.get('encoder_num_layers', 12)
 
         self.model = wav2vec2_model(
             extractor_mode="layer_norm",
             extractor_conv_bias=True,
-            encoder_embed_dim=384,
-            encoder_projection_dropout=0.0,
+            encoder_embed_dim=self.out_dim,
+            encoder_projection_dropout=encoder_projection_dropout,
             encoder_pos_conv_kernel=128,
             encoder_pos_conv_groups=16,
-            encoder_num_layers=12,
+            encoder_num_layers=encoder_num_layers,  # Number of transformer layers
             encoder_num_heads=16,
-            encoder_attention_dropout=0.0,
-            encoder_ff_interm_features=1536,
-            encoder_ff_interm_dropout=0.0,
-            encoder_dropout=0.0,
+            encoder_attention_dropout=encoder_attention_dropout,
+            encoder_ff_interm_features=4096,
+            encoder_ff_interm_dropout=encoder_ff_interm_dropout,
+            encoder_dropout=encoder_dropout,
             encoder_layer_norm_first=True,
-            encoder_layer_drop=0.0,
-            extractor_conv_layer_config=extractor_conv_layer_config,
+            encoder_layer_drop=encoder_layer_drop,
+            extractor_conv_layer_config=None,  # Default to match the wav2vec2_xlsr_300m model
             aux_num_out=None,
         ).to(device)
 
     def forward(self, x):
         input_tmp = x[:, :, 0] if x.ndim == 3 else x
         feat, _ = self.model(input_tmp)
-
         return feat
 
     def extract_feat(self, x):
