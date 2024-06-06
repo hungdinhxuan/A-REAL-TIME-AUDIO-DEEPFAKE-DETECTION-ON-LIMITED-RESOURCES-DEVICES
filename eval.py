@@ -423,10 +423,13 @@ elif args.dataset == 'in_the_wild':
 else:
     kd_method = 'self_KD_Teacher' if args.student_model_type == 'SelfDistil_W2V2BASE_AASISTL' else 'NaN'
     print(kd_method)
-    if args.dataset == 'moreko':
-        print('Eval moreko')
+
+    special_datasets = ['moreko', 'largecorpus']
+    
+    print(f'Eval {args.dataset}')
+    
     file_eval = genSpoof_list_v2(dir_meta=os.path.join(args.database_path, args.protocols_path),
-                                 is_train=False, is_dev=False, is_eval=True, special=True if args.dataset == 'moreko' else False)
+                                 is_train=False, is_dev=False, is_eval=True, special=True if args.dataset in special_datasets else False)
     logger.info(f'no. of eval trials {len(file_eval)}')
 
     eval_set = Dataset_cnsl_eval(

@@ -231,6 +231,12 @@ CUDA_VISIBLE_DEVICES=3 OMP_NUM_THREADS=5 PYTHONPATH=$PYTHONPATH:/datab/hungdx/KD
 CUDA_VISIBLE_DEVICES=3 OMP_NUM_THREADS=5 PYTHONPATH=$PYTHONPATH:/home/hungdx/code/fairseq python torchdistill_main.py --yaml 'configs/best_conf_on_large_corpus_2s-v1.yaml' --padding_size=32000 --database_path='/datab/Dataset/cnsl_real_fake_audio/0_large-corpus/' --protocols_path='protocol.txt'
 ```
 
+## Eval with large corpus
+
+```
+CUDA_VISIBLE_DEVICES=3 OMP_NUM_THREADS=5 PYTHONPATH=$PYTHONPATH:/datab/hungdx/KDW2V-AASISTL/fairseq python eval.py --student_model_path "runs/Distil_XLSR_5_Custom_Trans_Layer_VIB_noaudioaug_randomstart_large_corpus_on_2s/best_checkpoint_124.pth" --eval_output="./Distil_XLSR_5_Custom_Trans_Layer_VIB_noaudioaug_randomstart_large_corpus_on_2s_best124_eval_largecopus.txt" --batch_size_eval=400 --wrapper_ssl --database_path='/datab/Dataset/cnsl_real_fake_audio/0_large-corpus' --protocols_path='protocol.txt' --yaml='configs/best_conf_on_large_corpus_2s.yaml' --dataset='largecorpus' --student_model_type='Distil_W2V2BASE_VIB'
+```
+
 # Export models
 
 ```
