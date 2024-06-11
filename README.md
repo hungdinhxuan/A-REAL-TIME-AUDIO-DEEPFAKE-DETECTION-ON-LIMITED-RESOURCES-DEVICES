@@ -234,7 +234,7 @@ CUDA_VISIBLE_DEVICES=3 OMP_NUM_THREADS=5 PYTHONPATH=$PYTHONPATH:/home/hungdx/cod
 ## Eval with large corpus
 
 ```
-CUDA_VISIBLE_DEVICES=3 OMP_NUM_THREADS=5 PYTHONPATH=$PYTHONPATH:/datab/hungdx/KDW2V-AASISTL/fairseq python eval.py --student_model_path "runs/Distil_XLSR_5_Custom_Trans_Layer_VIB_noaudioaug_randomstart_large_corpus_on_2s/best_checkpoint_124.pth" --eval_output="./Distil_XLSR_5_Custom_Trans_Layer_VIB_noaudioaug_randomstart_large_corpus_on_2s_best124_eval_largecopus.txt" --batch_size_eval=400 --wrapper_ssl --database_path='/datab/Dataset/cnsl_real_fake_audio/0_large-corpus' --protocols_path='protocol.txt' --yaml='configs/best_conf_on_large_corpus_2s.yaml' --dataset='largecorpus' --student_model_type='Distil_W2V2BASE_VIB'
+CUDA_VISIBLE_DEVICES=3 OMP_NUM_THREADS=5 PYTHONPATH=$PYTHONPATH:/datab/hungdx/KDW2V-AASISTL/fairseq python eval.py --student_model_path "/datad/pretrained/best_checkpoint_124.pth" --eval_output="./results/Distil_XLSR_5_Custom_Trans_Layer_VIB_noaudioaug_randomstart_large_corpus_on_2s_best124_eval_largecopus_detail.txt" --batch_size_eval=400 --wrapper_ssl --database_path='/datab/Dataset/cnsl_real_fake_audio/0_large-corpus' --protocols_path='protocol.txt' --yaml='configs/best_conf_on_large_corpus_2s.yaml' --dataset='largecorpus' --student_model_type='Distil_W2V2BASE_VIB' --padding_size=32000
 ```
 
 # Export models
@@ -254,5 +254,5 @@ CUDA_VISIBLE_DEVICES=3 OMP_NUM_THREADS=1 PYTHONPATH=$PYTHONPATH:/datab/hungdx/KD
 ### Eval again teacher
 
 ```
-CUDA_VISIBLE_DEVICES=1 OMP_NUM_THREADS=5 PYTHONPATH=$PYTHONPATH:/datab/hungdx/KDW2V-AASISTL/fairseq python eval.py --student_model_path "/home/hungdx/code/KDW2V-AASISTL/pretrained/vib_conf-5_gelu_2s_may27_epoch6.pth" --eval_output="./results/vib_conf-5_gelu_2s_may27_epoch6_eval_1s.txt" --batch_size_eval=400 --database_path='/datab/Dataset/intern_2024_jan31' --protocols_path='protocol.txt' --dataset='feb07' --student_model_type='Distil_W2V2BASE_VIB' --is_eval_teacher --padding_size=16000
+CUDA_VISIBLE_DEVICES=2 OMP_NUM_THREADS=5 PYTHONPATH=$PYTHONPATH:/datab/hungdx/KDW2V-AASISTL/fairseq python eval.py --student_model_path "/datad/pretrained/vib_conf-5_gelu_2s_may27_epoch6.pth" --eval_output="./results/vib_conf-5_gelu_2s_may27_epoch6_eval_2s_detail.txt" --batch_size_eval=400 --database_path='/datab/Dataset/cnsl_real_fake_audio/0_large-corpus/' --protocols_path='protocol.txt' --dataset='largecorpus' --student_model_type='Distil_W2V2BASE_VIB' --is_eval_teacher --padding_size=32000
 ```

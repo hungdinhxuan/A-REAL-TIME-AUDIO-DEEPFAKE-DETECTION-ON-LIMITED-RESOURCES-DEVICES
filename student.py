@@ -11,6 +11,32 @@ from conformer import ConformerBlock
 from torch.nn.modules.transformer import _get_clones
 from torchaudio.models import wav2vec2_model
 from models import Custom_Wav2Vec2_Fe
+from torch.nn.modules.transformer import _get_clones
+
+
+
+class MyConformer(nn.Module):
+    def __init__(self, emb_size=128, heads=4, ffmult=4, exp_fac=2, kernel_size=16, n_encoders=1):
+        super(MyConformer, self).__init__()
+        self.dim_head = int(emb_size/heads)
+        self.dim = emb_size
+        self.heads = heads
+        self.kernel_size = kernel_size
+        self.n_encoders = n_encoders
+        self.encoder_blocks = _get_clones(ConformerBlock(dim=emb_size, dim_head=self.dim_head, heads=heads,
+                                                         ff_mult=ffmult, conv_expansion_factor=exp_fac, conv_kernel_size=kernel_size),
+                                          n_encoders)
+        self.class_token = nn.Parameter(torch.rand(1, emb_size))
+        self.fc5 = nn.Linear(emb_size, 2)
+
+    def forward(self, x, device):  # x shape [bs, tiempo, frecuencia]
+        x = torch.stack([torch.vstack((self.class_token, x[i]))
+                        for i in range(len(x))])  # [bs,1+tiempo,emb_size]
+        for layer in self.encoder_blocks:
+            x = layer(x)  # [bs,1+tiempo,emb_size]
+        embedding = x[:, 0, :]  # [bs, emb_size]
+        out = self.fc5(embedding)  # [bs,2]
+        return out, embedding
 
 
 @register_model(key='Custom_Wav2Vec2_Fe_AASIST')
@@ -1137,6 +1163,43 @@ class Distil_XLSR_N_Trans_Layer_AASIST(nn.Module):
         output = self.out_layer(last_hidden)
 
         return output
+
+@register_model(key='Distil_XLSR_N_Trans_Layer_Conformer')
+class Distil_XLSR_N_Trans_Layer_Conformer(nn.Module):
+    def __init__(self, device, ssl_cpkt_path=None, **kwargs):
+        super().__init__()
+        ##
+        # Default config from conformer
+        ##
+        emb_size = kwargs.get('emb_size', 144)
+        heads = kwargs.get('heads', 4)
+        kernel_size = kwargs.get('kernel_size', 31)
+        n_encoders = kwargs.get('n_encoders', 4)
+
+        ####
+        # create network wav2vec 2.0
+        ####
+        self.ssl_model = My_XLSR_FE(device, **kwargs).to(device)
+        # self.ssl_model = SSLModel(device, ssl_cpkt_path, 1024).to(device)
+        self.LL = nn.Linear(self.ssl_model.out_dim, emb_size)
+
+        print('W2V + Conformer')
+        self.first_bn = nn.BatchNorm2d(num_features=1)
+        self.selu = nn.SELU(inplace=True)
+
+        self.conformer = MyConformer(emb_size=emb_size, n_encoders=n_encoders,
+                                     heads=heads, kernel_size=kernel_size)
+    def forward(self, x):
+        # -------pre-trained Wav2vec model fine tunning ------------------------##
+        x_ssl_feat = self.ssl_model.extract_feat(x.squeeze(-1))
+        # (bs,frame_number,feat_out_dim) (bs, 208, 256)
+        x = self.LL(x_ssl_feat)
+        x = x.unsqueeze(dim=1)  # add channel #(bs, 1, frame_number, 256)
+        x = self.first_bn(x)
+        x = self.selu(x)
+        x = x.squeeze(dim=1)
+        out, _ = self.conformer(x, self.device)
+        return out
 
 
 @register_model(key='Self_Distil_XLSR_N_Trans_Layer_VIB')

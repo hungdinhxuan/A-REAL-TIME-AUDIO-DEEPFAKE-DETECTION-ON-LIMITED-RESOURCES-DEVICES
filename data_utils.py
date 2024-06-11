@@ -186,7 +186,7 @@ def genSpoof_list_v2(dir_meta, is_train=False, is_dev=False, is_eval=False, spec
             if not special:
                 key, subset, _, label = line.strip().split()
             else:
-                key, label, subset = line.strip().split()
+                key, subset, label = line.strip().split()
             if subset == "eval":
                 file_list.append(key)
         return file_list

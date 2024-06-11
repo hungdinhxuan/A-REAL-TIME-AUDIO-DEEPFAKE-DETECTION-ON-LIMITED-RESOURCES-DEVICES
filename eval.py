@@ -318,10 +318,12 @@ if args.is_eval_teacher:
         produce_evaluation_file(eval_set, teacher, device, args.eval_output,
                                 batch_size=args.batch_size_eval, kd_method=kd_method, is_half=args.half)
     else:
-        if args.dataset == 'moreko':
-            print('Eval moreko')
+        special_datasets = ['moreko', 'largecorpus']
+    
+        print(f'Eval {args.dataset}')
+        
         file_eval = genSpoof_list_v2(dir_meta=os.path.join(args.database_path, args.protocols_path),
-                                     is_train=False, is_dev=False, is_eval=True, special=True if args.dataset == 'moreko' else False)
+                                    is_train=False, is_dev=False, is_eval=True, special=True if args.dataset in special_datasets else False)
         logger.info(f'no. of eval trials {len(file_eval)}')
         eval_set = Dataset_cnsl_eval(
             list_IDs=file_eval, base_dir=os.path.join(args.database_path), padding_size=args.padding_size)

@@ -98,17 +98,21 @@ def produce_evaluation_file(dataset, model, device, save_path, kd_method=None, b
                 batch_score = batch_out[:, 1].cpu().detach()
 
             else:
-                batch_score = (batch_out[:, 1]
-                               ).data.cpu().numpy(force=True).ravel()
+                # batch_score = (batch_out[:, 1]
+                #                ).data.cpu().numpy(force=True).ravel()
+                batch_score = batch_out.data.cpu().numpy().tolist()
             # add outputs
             fname_list.extend(utt_id)
-            score_list.extend(batch_score.tolist())
+            score_list.extend(batch_score)
 
+            # with open(save_path, 'a+') as fh:
+
+            #     for f, cm in zip(fname_list, score_list):
+            #         fh.write('{} {}\n'.format(f, cm))
             with open(save_path, 'a+') as fh:
-
                 for f, cm in zip(fname_list, score_list):
-                    fh.write('{} {}\n'.format(f, cm))
-            fh.close()
+                    fh.write('{} {} {}\n'.format(f, cm[0], cm[1]))
+            # fh.close()
     print('Scores saved to {}'.format(save_path))
 # use train
 
