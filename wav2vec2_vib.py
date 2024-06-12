@@ -167,6 +167,7 @@ class Model(nn.Module):
         self.loss_CE = nn.CrossEntropyLoss()
         self.VIB = VIB(128, 128, 64)
         self.backend = BackEnd(64, 64, 2, 0.5, False)
+        self.gelu = nn.GELU()
 
         self.sim_metric_seq = lambda mat1, mat2: torch.bmm(
             mat1.permute(1, 0, 2), mat2.permute(1, 2, 0)).mean(0)
@@ -185,7 +186,7 @@ class Model(nn.Module):
 
         x = self.LL(x_ssl_feat)  # (bs,frame_number,feat_out_dim)
         feats = x
-        x = nn.GELU()(x)
+        x = self.gelu(x)
 
         # VIB
         # x [batch, frame_number, 64]

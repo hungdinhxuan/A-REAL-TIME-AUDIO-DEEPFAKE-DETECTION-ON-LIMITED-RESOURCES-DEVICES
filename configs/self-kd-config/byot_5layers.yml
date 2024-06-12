@@ -1,0 +1,57 @@
+name: 'Distil_XLSR_5_Custom_Trans_Layer_VIB_aug3_b16_randomstart_feb07_byot_from_best_checkpoint'
+model:
+  teacher:
+    name: 'W2V2_VIB'
+    teacher_module_paths: []
+      
+    teacher_module_ios: []
+  
+    pretrained_path: '/datad/hungdx/KDW2V-AASISTL/pretrained/vib_conf-5_gelu_acmccs_apr3_moreko_telephone_epoch22.pth'
+    is_parallel: False
+
+  student:
+    name: 'Self_Distil_XLSR_N_Trans_Layer_VIB'
+    student_module_paths: []
+      
+    student_module_ios: []   
+
+    kwargs:
+      num_layers: 5 # 
+      order: 'custom' # 'middle' for middle layers, 'first' for first layers, 'last' for last layers, "custom" for custom layers
+      custom_order: [1, 2, 3, 4, 5] # 2, 3, 4, 5th layer
+
+is_learning_rate_scheduler: True
+
+learning_rate_scheduler:
+  name: "MultiStepLR"
+  params:
+    milestones: [50, 70]
+    gamma: 0.5
+    verbose: True
+
+train:
+
+  learning_rate: 0.00001
+  weight_decay: 0.00001
+  batch_size: 16
+  num_epochs: 300
+  num_workers: 4
+  amp: True
+  teacher: True
+  patience: 30
+  seed: 12442
+  freeze_ssl_num_epoch: 0 # 0 for no freeze
+  dataset: 'supcon_feb07'
+  augment_mode: 'rawboost' # 'rawboost' for rawboost, 'audiomentations' for audiomentations
+  algo: -1 # No augmentation
+  student_resume: '/datad/hungdx/KDW2V-AASISTL/runs/Distil_XLSR_5_Custom_Trans_Layer_VIB_DKDLoss_MSE_noaudioaug_b16_randomstart_feb07_1_2_3_4_5th_new_hyp_copy_weights_tuning_MSE/best_checkpoint_19.pth' # Using the best checkpoint from the previous run
+  cross_entropy_loss_weight: [0.21, 0.79]
+  is_kl_loss: False
+  copy_weights: False
+  wandb_project_name: 'BYOT'
+  model_to_save: 'byot_runs'
+  byot_kd_train: True
+  byot_temperature: 3
+  byot_alpha: 0.1
+  byot_beta: 0.000001
+

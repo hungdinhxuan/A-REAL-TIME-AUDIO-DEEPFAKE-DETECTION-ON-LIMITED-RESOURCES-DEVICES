@@ -22,6 +22,79 @@ SAMPLE_RATE = 16000
 PADDING_SIZE = 64600  # 2.5 seconds of audio
 
 
+def random_pad(x, duration=PADDING_SIZE):
+
+    if len(x.shape) == 2:
+        x = x.squeeze()
+
+    x_len = len(x)
+    if x_len < duration:
+        tmp = [x for _ in range(0, (duration // x_len))]
+
+        residue = duration % x_len
+        if residue > 0:
+            tmp.append(x[0:residue])
+
+        x = torch.cat(tmp, dim=0)
+
+    x_len = len(x)
+    start_seg = random.randint(0, x_len - duration)
+
+    return x[start_seg: start_seg + duration]
+
+
+def genSpoof_list_1s(dir_meta, is_train=False, is_eval=False, num_eval_samples=60000, include_non_speech=False, include_residual=True):
+
+    d_meta = {}
+    file_list = []
+    with open(dir_meta, 'r') as f:
+        l_meta = f.readlines()
+
+    if (is_train):
+        for line in l_meta:
+            _, key, _, _, label = line.strip().split()
+
+            if 'no_speech' in key and not include_non_speech:
+                continue
+
+            # Not include residual
+            if 'residual' in key and not include_residual:
+                continue
+
+            file_list.append(key)
+            d_meta[key] = 1 if label == 'bonafide' else 0
+        return d_meta, file_list
+
+    elif (is_eval):
+        # Randomly num_eval_samples  samples from eval set
+
+        if num_eval_samples > len(l_meta) or num_eval_samples < 0:
+            num_eval_samples = len(l_meta)
+
+        np.random.seed(0)
+        np.random.shuffle(l_meta)
+        l_meta = l_meta[:num_eval_samples]
+
+        for line in l_meta:
+            key = line.strip()
+            # _,key,_,_,label = line.strip().split()
+            file_list.append(key)
+            # d_meta[key] = 1 if label == 'bonafide' else 0
+        return None, file_list
+    else:
+        for line in l_meta:
+            _, key, _, _, label = line.strip().split()
+            if 'no_speech' in key and not include_non_speech:
+                continue
+
+            # Not include residual
+            if 'residual' in key and not include_residual:
+                continue
+            file_list.append(key)
+            d_meta[key] = 1 if label == 'bonafide' else 0
+        return d_meta, file_list
+
+
 def genSpoof_list(dir_meta, is_train=False, is_eval=False, num_eval_samples=60000):
 
     d_meta = {}
@@ -80,14 +153,19 @@ def genSpoof_list_v2(dir_meta, is_train=False, is_dev=False, is_eval=False, spec
     file_list = []
     with open(dir_meta, 'r') as f:
         l_meta = f.readlines()
+    # print("Special: ", special)
+    # print("Number of samples in the list: ", len(l_meta))
 
     if (is_train):
         for line in l_meta:
             if not special:
                 key, subset, _, label = line.strip().split()
             else:
-                key, label, subset = line.strip().split()
+                # key, label, subset = line.strip().split()
+                key, subset, label = line.strip().split()
+
             if subset == "train":
+
                 file_list.append(key)
                 d_meta[key] = 1 if label == 'bonafide' else 0
         return d_meta, file_list
@@ -96,7 +174,8 @@ def genSpoof_list_v2(dir_meta, is_train=False, is_dev=False, is_eval=False, spec
             if not special:
                 key, subset, _, label = line.strip().split()
             else:
-                key, label, subset = line.strip().split()
+                # key, label, subset = line.strip().split()
+                key, subset, label = line.strip().split()
             if subset == "dev":
                 file_list.append(key)
                 d_meta[key] = 1 if label == 'bonafide' else 0
@@ -107,7 +186,7 @@ def genSpoof_list_v2(dir_meta, is_train=False, is_dev=False, is_eval=False, spec
             if not special:
                 key, subset, _, label = line.strip().split()
             else:
-                key, label, subset = line.strip().split()
+                key, subset, label = line.strip().split()
             if subset == "eval":
                 file_list.append(key)
         return file_list
@@ -171,7 +250,7 @@ def pad(x, max_len=PADDING_SIZE):
 
 
 class Dataset_ASVspoof2019_train(Dataset):
-    def __init__(self, args, list_IDs, labels, base_dir, algo):
+    def __init__(self, args, list_IDs, labels, base_dir, algo, padding_size=PADDING_SIZE):
         '''self.list_IDs	: list of strings (each string: utt key),
            self.labels      : dictionary (key: utt key, value: label integer)'''
 
@@ -180,7 +259,9 @@ class Dataset_ASVspoof2019_train(Dataset):
         self.base_dir = base_dir
         self.algo = algo
         self.args = args
-        self.cut = PADDING_SIZE  # take ~4 sec audio (PADDING_SIZE samples)
+        self.cut = padding_size  # take ~4 sec audio (PADDING_SIZE samples)
+
+        print("Current padding size: ", self.cut)
 
     def __len__(self):
         return len(self.list_IDs)
@@ -188,10 +269,25 @@ class Dataset_ASVspoof2019_train(Dataset):
     def __getitem__(self, index):
 
         utt_id = self.list_IDs[index]
-        X, fs = librosa.load(self.base_dir+utt_id+'.flac', sr=SAMPLE_RATE)
+
+        # DEPRECATED
+        # X, fs = librosa.load(self.base_dir+utt_id+'.flac', sr=SAMPLE_RATE)
+        X, fs = torchaudio.load(
+            os.path.join(self.base_dir, utt_id+'.flac')
+        )
+
+        # Squeeze and convert to numpy
+        X = X.squeeze()
+        X = X.numpy()
+
         Y = process_Rawboost_feature(X, fs, self.args, self.algo)
-        X_pad = pad(Y, self.cut)
-        x_inp = Tensor(X_pad)
+
+        # [DEPRECATED]
+        # X_pad = pad(Y, self.cut)
+        # x_inp = Tensor(X_pad)
+        # Randomly select a segment of duration cut
+        x_inp = random_pad(Tensor(Y), self.cut)
+
         target = self.labels[utt_id]
 
         return x_inp, target
@@ -335,7 +431,7 @@ def pad_v2(x, utt_id, max_len=PADDING_SIZE):
 
 
 class Dataset_cnsl(Dataset):
-    def __init__(self, args, list_IDs, labels, base_dir, algo):
+    def __init__(self, args, list_IDs, labels, base_dir, algo, padding_size=PADDING_SIZE):
         '''self.list_IDs	: list of strings (each string: utt key),
             self.labels      : dictionary (key: utt key, value: label integer)'''
 
@@ -345,7 +441,9 @@ class Dataset_cnsl(Dataset):
         self.algo = algo
         self.args = args
         # take ~4 sec audio (PADDING_SIZE samples)
-        self.duration = PADDING_SIZE
+        self.duration = padding_size
+
+        print("Current padding size: ", self.duration)
 
     def __len__(self):
         return len(self.list_IDs)
@@ -496,8 +594,9 @@ class Dataset_cnsl_eval(Dataset):
 
     def adjustDuration(self, x):
         if len(x.shape) == 2:
+            # print("squeeze")
             x = x.squeeze()
-
+        # print(x.shape)
         x_len = len(x)
         if x_len < self.duration:
             tmp = [x for i in range(0, (self.duration // x_len))]
@@ -516,11 +615,14 @@ class Dataset_cnsl_eval(Dataset):
     def __getitem__(self, index):
 
         utt_id = self.list_IDs[index]
+
         X, fs = librosa.load(self.base_dir + "/" + utt_id, sr=16000)
+
+        # print(X.shape)
         # X_pad = pad_v2(X, utt_id, self.cut)
 
-        # x_inp = Tensor(X_pad)
-        x_inp = self.adjustDuration(Tensor(X))
+        X = Tensor(X)
+        x_inp = self.adjustDuration(X)
         return x_inp, utt_id
 
 
@@ -588,7 +690,7 @@ class Dataset_cnsl_augment_contrastive(Dataset):
 
 
 def process_audiomentations(feature, sr):
-    """ DA using audiomentations library    
+    """ DA using audiomentations library
     """
     # aa.ApplyImpulseResponse(ir_path="/path/to/sound_folder", p=1.0)
 
@@ -631,7 +733,7 @@ def process_audiomentations(feature, sr):
 
 
 def process_audiomentations_v2(feature, sr):
-    """ DA using audiomentations library    
+    """ DA using audiomentations library
     """
     # aa.ApplyImpulseResponse(ir_path="/path/to/sound_folder", p=1.0)
     augment = aa.Compose([
@@ -764,7 +866,7 @@ def get_train_dev_dataloader_v2(args):
     return train_loader, dev_loader
 
 
-def get_train_dev_dataloader(args, augment='rawboost', dataset='LA19'):
+def get_train_dev_dataloader(args, augment='rawboost', dataset='LA19', padding_size=64600):
 
     # define train dataloader
     if dataset == 'LA19':
@@ -802,8 +904,47 @@ def get_train_dev_dataloader(args, augment='rawboost', dataset='LA19'):
         del dev_set, d_label_dev
 
         return train_loader, dev_loader
-    elif dataset == 'moreko':
-        logging.info("Using More Korean dataset")
+    elif dataset == 'LA19_1s':
+        logging.info("Using My LA19 1s dataset")
+        d_label_trn, file_train = genSpoof_list_1s(
+            dir_meta='/AISRC3/hungdx/Datasets/prototcols/LA19.cm.train.trn_1s.txt', is_train=True, is_eval=False)
+
+        print('no. of training trials', len(file_train))
+
+        if augment == 'rawboost':
+            train_set = Dataset_ASVspoof2019_train(args, list_IDs=file_train, labels=d_label_trn,
+                                                   base_dir='/AISRC3/hungdx/Datasets/LA19_train_1s',
+                                                   algo=args.algo,
+                                                   padding_size=padding_size
+                                                   )
+        elif augment == 'audiomentations':
+            train_set = Dataset_ASVspoof2019_train_augment2(
+                list_IDs=file_train, labels=d_label_trn, base_dir='/AISRC3/hungdx/Datasets/LA19_train_1s',
+                padding_size=padding_size)
+
+        train_loader = DataLoader(train_set, batch_size=args.batch_size,
+                                  num_workers=args.workers, shuffle=True, drop_last=True)
+
+        del train_set, d_label_trn
+
+        # define dev (validation) dataloader
+
+        d_label_dev, file_dev = genSpoof_list_1s(
+            dir_meta='/AISRC3/hungdx/Datasets/prototcols/ASVspoof2019.LA.cm.dev.trl1s.txt', is_train=False, is_eval=False)
+
+        print('no. of validation trials', len(file_dev))
+
+        dev_set = Dataset_ASVspoof2019_train(args, list_IDs=file_dev, labels=d_label_dev,
+                                             base_dir='/AISRC3/hungdx/Datasets/ASVspoof2019_LA_dev_1s', algo=args.algo, padding_size=padding_size)
+
+        dev_loader = DataLoader(
+            dev_set, batch_size=args.batch_size if padding_size == 64600 else args.batch_size * 16, num_workers=args.workers, shuffle=False)
+
+        del dev_set, d_label_dev
+
+        return train_loader, dev_loader
+    elif dataset == 'moreko' or dataset == 'large_corpus':
+        logging.info(f"Using {dataset} dataset")
         d_label_trn, file_train = genSpoof_list_v2(dir_meta=os.path.join(args.database_path, args.protocols_path),
                                                    is_train=True, is_dev=False, is_eval=False, special=True)
 
@@ -813,13 +954,13 @@ def get_train_dev_dataloader(args, augment='rawboost', dataset='LA19'):
             logging.info(
                 "Using Rawboost for data augmentation with algo: {}".format(args.algo))
             train_set = Dataset_cnsl(
-                args, list_IDs=file_train, labels=d_label_trn, base_dir=args.database_path+'/', algo=args.algo)
+                args, list_IDs=file_train, labels=d_label_trn, base_dir=args.database_path+'/', algo=args.algo, padding_size=padding_size)
         elif augment == 'audiomentations':
             train_set = Dataset_cnsl_augment(
-                args, list_IDs=file_train, labels=d_label_trn, base_dir=args.database_path+'/')
+                args, list_IDs=file_train, labels=d_label_trn, base_dir=args.database_path+'/', padding_size=padding_size)
         elif augment == 'audiomentations_v2':
             train_set = Dataset_cnsl_augment_v2(
-                args, list_IDs=file_train, labels=d_label_trn, base_dir=args.database_path+'/')
+                args, list_IDs=file_train, labels=d_label_trn, base_dir=args.database_path+'/', padding_size=padding_size)
         else:
             logging.error("Invalid augment type: {}".format(augment))
             exit(0)
@@ -836,8 +977,9 @@ def get_train_dev_dataloader(args, augment='rawboost', dataset='LA19'):
         print('no. of validation trials', len(file_dev))
 
         dev_set = Dataset_cnsl(args, list_IDs=file_dev, labels=d_label_dev,
-                               base_dir=args.database_path+'/', algo=args.algo)
-        dev_loader = DataLoader(dev_set, batch_size=100,
+                               base_dir=args.database_path+'/', algo=args.algo, padding_size=padding_size)
+        # Batch size
+        dev_loader = DataLoader(dev_set, batch_size=100 if padding_size == 64600 else 200,
                                 num_workers=args.workers, shuffle=False)
         del dev_set, d_label_dev
         return train_loader, dev_loader

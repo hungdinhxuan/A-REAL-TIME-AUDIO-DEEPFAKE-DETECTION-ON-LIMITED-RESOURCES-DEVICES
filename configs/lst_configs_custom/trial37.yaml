@@ -1,0 +1,73 @@
+name: 'Distil_Wav2vec2_Custom_12layers_VIB'
+model:
+  teacher:
+    name: 'W2V2_VIB'
+    teacher_module_paths:
+      
+      - 'backend'
+
+    teacher_module_ios:
+      - 'False:True'
+
+
+    pretrained_path: '/datad/hungdx/KDW2V-AASISTL/pretrained/vib_conf-5_gelu_acmccs_apr3_moreko_telephone_epoch22.pth'
+
+    is_parallel: False
+
+  student:
+    name: 'Distil_Wav2vec2_Custom_VIB'
+    student_module_paths:
+      
+      - 'backend' 
+      
+    student_module_ios:
+      - 'False:True'
+
+
+
+is_learning_rate_scheduler: True
+
+learning_rate_scheduler:
+  name: "MultiStepLR"
+  params:
+    milestones: [50, 70]
+    gamma: 0.5
+    verbose: True
+
+train:
+
+  learning_rate: 0.00001
+  weight_decay: 0.00001
+  batch_size: 16
+  num_epochs: 300
+  num_workers: 4
+  amp: True
+  teacher: True
+  patience: 30
+  seed: 21122
+  freeze_ssl_num_epoch: 0 # 0 for no freeze
+  dataset: 'supcon_feb07'
+  augment_mode: 'rawboost' # 'rawboost' for rawboost, 'audiomentations' for audiomentations
+  algo: -1 # No augmentation
+  student_resume: '' # Stateless training
+  cross_entropy_loss_weight: [0.21, 0.79]
+  is_kl_loss: False
+ 
+
+
+criterion_weights: [1]
+
+criterions:
+
+  - key: 'DKDLoss'
+    kwargs:
+      student_module_path: 'backend'
+      student_module_io: 'output'
+      teacher_module_path: 'backend'
+      teacher_module_io: 'output'
+      alpha: 1
+      beta: 8
+      T: 4
+
+ 
+  

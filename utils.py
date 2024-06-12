@@ -22,62 +22,146 @@ def pad(x, max_len: int = 64600) -> Tensor:
     return padded_x
 
 
+# class EarlyStopping_new:
+#     def __init__(self, patience=7, verbose=False, delta=0):
+#         # how many times will you tolerate for loss not being on decrease
+#         self.patience = patience
+#         self.verbose = verbose  # whether to print tip info
+#         self.counter = 0  # now how many times loss not on decrease
+#         self.best_score = None
+#         self.early_stop = False
+#         self.val_loss_min = np.Inf
+#         self.delta = delta
+
+#     def __call__(self, val_loss, model, path):
+#         score = -val_loss
+#         if self.best_score is None:
+#             self.best_score = score
+#             self.save_checkpoint(val_loss, model, path)
+
+#         # meaning: current score is not 'delta' better than best_score, representing that
+#         # further training may not bring remarkable improvement in loss.
+#         elif score < self.best_score + self.delta:
+#             self.counter += 1
+#             print(
+#                 f'EarlyStopping counter: {self.counter} out of {self.patience}')
+#             # 'No Improvement' times become higher than patience --> Stop Further Training
+#             if self.counter >= self.patience:
+#                 self.early_stop = True
+
+#         else:  # model's loss is still on decrease, save the now best model and go on training
+#             self.best_score = score
+#             self.save_checkpoint(val_loss, model, path)
+#             self.counter = 0
+
+#     def save_checkpoint(self, val_loss, model, path):
+#         # used for saving the current best model
+#         if self.verbose:
+#             print(
+#                 f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).  Saving model ...')
+#         torch.save(model.state_dict(), path + '/' + 'checkpoint.pth')
+#         self.val_loss_min = val_loss
+
+
+# class EarlyStopping:
+#     def __init__(self, patience=7, verbose=False, delta=0, model_save_path=None):
+#         self.patience = patience
+#         self.verbose = verbose
+#         self.counter = 0
+#         self.best_score = None
+#         self.early_stop = False
+#         self.val_loss_min = np.Inf
+#         self.accuracy_max = 0
+#         self.delta = delta
+#         self.model_save_path = model_save_path
+#         self.best_epoch = None
+#         self.best_acc = None
+
+#     def __call__(self, val_loss, accuracy, model, epoch):
+
+#         score = -val_loss
+
+#         if self.best_score is None:
+#             self.best_score = score
+#             self.best_acc = accuracy
+#             self.save_checkpoint(val_loss, accuracy, model, epoch)
+#         elif score < self.best_score + self.delta and accuracy < self.best_acc:
+#             self.counter += 1
+#             logger.info('EarlyStopping counter: %s out of %s - Current best val loss: %s - Current best val acc: %s',
+#                         self.counter, self.patience, self.best_score, self.best_acc)
+#             if self.counter >= self.patience:
+#                 self.early_stop = True
+#         else:
+#             self.best_score = score
+#             self.best_acc = accuracy
+#             self.save_checkpoint(val_loss, accuracy, model, epoch)
+#             self.counter = 0
+
+#     def save_checkpoint(self, val_loss, accuracy, model, epoch):
+#         '''Saves model when validation loss decrease.'''
+#         if self.verbose:
+#             logger.info(
+#                 f'Validation loss decreased({self.val_loss_min: .6f} - -> {val_loss: .6f}), (Accuracy: {self.accuracy_max: .6f} - -> {accuracy: .6f}).Saving model ...')
+
+#         path_save = os.path.join(
+#             self.model_save_path, 'best_checkpoint_{}.pth'.format(epoch))
+#         torch.save(model.state_dict(), path_save)
+
+#         self.val_loss_min = val_loss
+#         self.accuracy_max = accuracy
+
 class EarlyStopping:
     def __init__(self, patience=7, verbose=False, delta=0, model_save_path=None):
         self.patience = patience
         self.verbose = verbose
         self.counter = 0
-        self.best_score = None
+        self.best_loss_score = None
+        self.best_acc_score = None
         self.early_stop = False
         self.val_loss_min = np.Inf
+        self.accuracy_max = 0
         self.delta = delta
         self.model_save_path = model_save_path
         self.best_epoch = None
 
-    def __call__(self, val_loss, model, epoch):
+    def __call__(self, val_loss, accuracy, model, epoch):
+        # Score for validation loss (we want to minimize this)
+        loss_score = -val_loss
+        # Score for accuracy (we want to maximize this)
+        acc_score = accuracy
 
-        score = -val_loss
-
-        if self.best_score is None:
-            self.best_score = score
-            self.save_checkpoint(val_loss, model, epoch)
-        elif score < self.best_score + self.delta:
+        if self.best_loss_score is None and self.best_acc_score is None:  # This is the first epoch
+            self.best_loss_score = loss_score
+            self.best_acc_score = acc_score
+            self.save_checkpoint(val_loss, accuracy, model, epoch)
+        elif loss_score < self.best_loss_score + self.delta and acc_score <= self.best_acc_score:
             self.counter += 1
-            logger.info('EarlyStopping counter: %s out of %s - Current best score: %s',
-                        self.counter, self.patience, self.best_score)
+            logger.info(f'EarlyStopping counter: {self.counter} out of {self.patience} - '
+                        f'Current best val loss: {self.val_loss_min:.6f} - Current best val acc: {self.accuracy_max:.6f}')
             if self.counter >= self.patience:
                 self.early_stop = True
         else:
-            self.best_score = score
-            self.save_checkpoint(val_loss, model, epoch)
+            if loss_score >= self.best_loss_score + self.delta:
+                self.best_loss_score = loss_score
+                # self.val_loss_min = val_loss
+            if acc_score > self.best_acc_score:
+                self.best_acc_score = acc_score
+                # self.accuracy_max = accuracy
+            self.save_checkpoint(val_loss, accuracy, model, epoch)
             self.counter = 0
 
-    def save_checkpoint(self, val_loss, model, epoch):
-        '''Saves model when validation loss decrease.'''
+    def save_checkpoint(self, val_loss, accuracy, model, epoch):
+        '''Saves model when validation loss decreases or accuracy increases.'''
         if self.verbose:
-            logger.info(
-                f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).  Saving model ...')
+            logger.info(f'Validation loss decreased ({self.val_loss_min:.6f} -> {val_loss:.6f}), '
+                        f'Accuracy increased ({self.accuracy_max:.6f} -> {accuracy:.6f}). Saving model ...')
 
-        path_save = os.path.join(
-            self.model_save_path, 'best_checkpoint_{}.pth'.format(epoch))
+        path_save = os.path.join(self.model_save_path,
+                                 f'best_checkpoint_{epoch}.pth')
         torch.save(model.state_dict(), path_save)
 
-        command = f"""
-        CUDA_VISIBLE_DEVICES=2 OMP_NUM_THREADS=5 PYTHONPATH=$PYTHONPATH:/datab/hungdx/KDW2V-AASISTL/fairseq python eval.py --student_model_path "{path_save}" --eval_output="./Distil_XLSR_N_Trans_Layer_Linear_DKDLoss_noaudioaug_b16_randomstart_MultiStepLR_feb07_best1_feb07Distil_XLSR_N_Trans_Layer_Linear_DKDLoss_noaudioaug_b16_randomstart_MultiStepLR_feb07_best1_feb07_{path_save}.txt" --batch_size_eval=200 --wrapper_ssl --dataset='cnsl' --database_path='/home/hungdx/Datasets/supcon_cnsl_feb07' --protocols_path='protocol.txt' --student_model_type Distil_XLSR_N_Trans_Layer_Linear --yaml /datad/hungdx/KDW2V-AASISTL/distill-config/trial128.yaml
-        """
-
-        # subprocess.Popen(command, shell=True)
-        with open(os.devnull, 'w') as devnull:
-            subprocess.Popen(command, shell=True, stdin=devnull,
-                             stdout=devnull, stderr=devnull)
-        # Remove previous best model to save memory
-        # if epoch > 0:
-        #     previous_best_model_path = os.path.join(self.model_save_path, 'best_checkpoint_{}.pth'.format(epoch-1))
-        #     if os.path.exists(previous_best_model_path):
-        #         os.remove(previous_best_model_path)
-        #         logger.debug(f'Removed previous best model at {previous_best_model_path}')
-
         self.val_loss_min = val_loss
+        self.accuracy_max = accuracy
 
 
 class AverageMeter(object):
@@ -166,3 +250,52 @@ def get_flops_hook(model, input_shape=(1, 64600)):
     total_flops = sum(sum(i) for i in [list_conv, list_linear])
     model.train(is_training)
     return total_flops
+
+
+def kd_loss_function(output, target_output, temperature):
+    """Compute kd loss"""
+    """
+    para: output: middle ouptput logits.
+    para: target_output: final output has divided by temperature and softmax.
+    """
+
+    output = output / temperature
+    output_log_softmax = torch.log_softmax(output, dim=1)
+    loss_kd = -torch.mean(torch.sum(output_log_softmax * target_output, dim=1))
+    return loss_kd
+
+
+def feature_loss_function(fea, target_fea):
+    loss = (fea - target_fea)**2 * ((fea > 0) | (target_fea > 0)).float()
+    return torch.abs(loss).sum()
+
+
+# def byot(logits, features, labels, criterion, alpha, beta, temperature):
+#     output = logits[-1]
+#     loss = criterion(logits, labels)
+
+#     # Calculate middle loss for every layer's return loss except the last layer
+#     mid_loss = 0
+#     for i in range(len(logits) - 1):
+#         mid_loss += criterion(logits[i], labels)
+
+#     temp5 = output / temperature
+#     temp5 = torch.softmax(temp5, dim=1)
+
+#     # Calculate every layer's return kd_loss_function except the last layer
+#     kd_loss = 0
+#     for i in range(len(logits) - 1):
+#         temp = logits[i] / temperature
+#         temp = torch.softmax(temp, dim=1)
+#         kd_loss += kd_loss_function(logits[i], temp5.detach(), temperature)
+
+#     # Calculate every layer's return feature_loss_function except the last layer
+#     feature_loss = 0
+#     for i in range(len(features) - 1):
+#         feature_loss += feature_loss_function(
+#             features[i], features[-1].detach())
+
+#     total_loss = (1 - alpha) * (loss + mid_loss) + \
+#         alpha * kd_loss + beta * feature_loss
+
+#     return loss, mid_loss,  total_loss

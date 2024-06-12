@@ -30,6 +30,10 @@ data
 code
 test_samples
 *.zip
-*.txt
 *.wav
 *.flac
+models/*
+runs/*
+results/*
+
+*runs
