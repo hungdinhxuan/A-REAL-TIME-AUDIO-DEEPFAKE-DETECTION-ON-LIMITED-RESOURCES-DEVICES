@@ -286,25 +286,19 @@ def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, co
 
     num_correct = 0.0
 
-    mixup = config["train"].get("mixup", False)
-    is_kl_loss = config["train"].get("is_kl_loss", False)
-    is_l1_loss = config["train"].get("is_l1_loss", False)
     forward_target = "alpha" not in config['train']
     alpha = float(config['train'].get('alpha', 1))
     beta = float(config['train'].get('beta', 0.5))
     weight = torch.FloatTensor(config['train'].get(
         'cross_entropy_loss_weight', [0.1, 0.9])).to(device)
     criterion = nn.CrossEntropyLoss(weight=weight)
-    dot = config['train'].get('dot', False)
     is_recon_loss = config['train'].get('is_recon_loss', False)
     num_total = 0.0
 
     if not config['train']['teacher']:
         logger.info('No teacher')
         del teacher
-    # print("exp_lr_scheduler", exp_lr_scheduler)
-    # import sys
-    # sys.exit(1)
+
     if exp_lr_scheduler is not None and config['learning_rate_scheduler']['name'] != 'ReduceLROnPlateau':
         logger.info("Current learning rate of scheduler {}: {}".format(config['learning_rate_scheduler']['name'],
                                                                        exp_lr_scheduler.get_last_lr()[0]))
@@ -356,15 +350,6 @@ def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, co
 
             batch_y = batch_y.view(-1).type(torch.int64).to(device)
 
-            # Mixup data
-            if mixup:
-                alpha = 0.1
-                lam = np.random.beta(alpha, alpha)
-                lam = torch.tensor(lam, requires_grad=False)
-                index = torch.randperm(len(batch_y))
-                batch_x = lam*batch_x + (1-lam)*batch_x[index, :]
-                batch_y_b = batch_y[index]
-
             num_total += batch_size
             batch_x = batch_x.to(device)
 
@@ -395,21 +380,16 @@ def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, co
                     weight = float(weight)
 
                     loss_i = get_mid_level_loss(
-                        mid_level_criterion_config=loss)
+                        mid_level_criterion_config=loss) # try to find the class match with name defined in config
 
                     if config['train']['teacher']:
                         tmp_loss = loss_i.forward(student_io_dict,
-                                                  teacher_io_dict, batch_y)
+                                                  teacher_io_dict, size=batch_size)
                         loss_dict[criterion_key
                                   ].update(tmp_loss.item(), batch_size)
 
                         kd_loss += (tmp_loss * weight)
-                    total_loss += kd_loss
-                    # else:
-
-                    #     kd_loss += (loss_i.forward(student_io_dict,
-                    #                 teacher_io_dict) * weight)
-                    #     total_loss += kd_loss
+                total_loss += kd_loss
 
             # Current loss function
             # Loss = alpha * CE + beta * KL + gamma * KDs
@@ -433,24 +413,11 @@ def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, co
                 recon_loss = 0.000001*KLD
                 loss_dict['recon_loss'].update(recon_loss.item(), batch_size)
 
-            if is_l1_loss:
-                l1_loss = nn.L1Loss()
-                total_loss += l1_loss(batch_out,
-                                      batch_y)
+        optimizer.zero_grad(set_to_none=True)
+        scaler.scale(total_loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
 
-        # Scaler
-        if not dot:
-            optimizer.zero_grad(set_to_none=True)
-            scaler.scale(total_loss).backward()
-            scaler.step(optimizer)
-            scaler.update()
-        else:  # Dot Optimizer
-            optimizer.zero_grad(set_to_none=True)
-            kd_loss.backward(retain_graph=True)
-            optimizer.step_kd()
-            optimizer.zero_grad(set_to_none=True)
-            ce_loss.backward()
-            optimizer.step()
         # Update LR
         if exp_lr_scheduler is not None:
             if config['learning_rate_scheduler']['name'] == 'CosineAnnealingWarmRestarts':
@@ -461,17 +428,8 @@ def kd_train_epoch(train_loader, student, teacher, optimizer, device, scaler, co
                 pass
             else:
                 exp_lr_scheduler.step()
-        if not dot:
-            running_loss += (total_loss.item() * batch_size)
-            # if is_kl_loss:
-            #     logger.info(
-            #         "KD loss: {} - CE loss: {} - KL loss {}".format(kd_loss.item(), ce_loss.item(), kl_loss.item()))
-            # else:
-            #     logger.info("KD loss: {} - CE loss: {}".format(
-            #         kd_loss.item(), ce_loss.item()))
-        else:
-            # logger.info("KD loss: {} - CE loss: {}".format(kd_loss.item(), ce_loss.item()))
-            running_loss += (ce_loss.item() + kd_loss.item()) * batch_size
+        
+        running_loss += (total_loss.item() * batch_size)
 
         # Calculate accuracy
         _, batch_pred = batch_out.max(dim=1)
@@ -631,7 +589,7 @@ def kd_val_epoch_advanced(dev_loader, student, teacher, device,  config, student
                                   ].update(tmp_loss.item(), batch_size)
 
                         kd_loss += (tmp_loss * weight)
-                    total_loss += kd_loss
+                total_loss += kd_loss
 
             batch_y = batch_y.view(-1).type(torch.int64).to(device)
 
@@ -647,15 +605,9 @@ def kd_val_epoch_advanced(dev_loader, student, teacher, device,  config, student
 
             running_loss += (ce_loss.item() + kd_loss.item()) * batch_size
 
-            # probabilities = F.softmax(batch_out, dim=1)
-            # predicted_labels = (probabilities[:, 0] >= 0.5).int()
-
-            # num_correct += (predicted_labels == batch_y).sum().item()
             _, batch_pred = batch_out.max(dim=1)
             num_correct += (batch_pred == batch_y).sum(dim=0).item()
 
-        # eer_cm, th = em.compute_eer(bona_scores, spoof_scores) * 100
-        # logger.info("EER: {}% - Threshold: {}".format(eer_cm , th))
     accuracy = (num_correct / num_total) * 100
     print("accuracy", accuracy)
     running_loss /= num_total
