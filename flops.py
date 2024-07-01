@@ -8,22 +8,21 @@ from wav2vec2_vib import Model as W2V2_VIB
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 # Teacher
-t_model = W2V2_VIB(
-    device, '/datad/hungdx/KDW2V-AASISTL/pretrained/xlsr2_300m.pt')
+t_model = Distil_XLSR_N_Trans_Layer_Conformer(
+    device, '/datad/hungdx/KDW2V-AASISTL/pretrained/xlsr2_300m.pt', num_layers=24)
 batch_size = 1
-input_shape = (batch_size, 64600)  # 4s audio
+input_shape = (batch_size, 16000)  # 1s audio
 flops, macs, params = calculate_flops(model=t_model,
                                       input_shape=input_shape,
                                       output_as_string=True,
-                                      output_precision=4)
-print("Teacher(W2V2_VIB): FLOPs:%s   MACs:%s   Params:%s \n" %
+                                      output_precision=2)
+print("Teacher(Distil_XLSR_N_Trans_Layer_Conformer): FLOPs:%s   MACs:%s   Params:%s \n" %
       (flops, macs, params))
 
 # Students
 student_models_dict = {
-    "XLSR_6_VIB": Distil_XLSR_N_Trans_Layer_VIB(device, num_layers=6),
-    "XLSR_5_VIB":  Distil_XLSR_N_Trans_Layer_VIB(device, num_layers=5),
-    "XLSR_4_VIB":  Distil_XLSR_N_Trans_Layer_VIB(device, num_layers=4),
+    "XLSR_6_AASIST": Distil_XLSR_N_Trans_Layer_Conformer(device, num_layers=6),
+    
 }
 
 
@@ -31,7 +30,7 @@ for k, v in student_models_dict.items():
     flops, macs, params = calculate_flops(model=v,
                                           input_shape=input_shape,
                                           output_as_string=True,
-                                          output_precision=4)
+                                          output_precision=2)
     print(f"Student({k}): FLOPs:{flops}   MACs:{macs}   Params:{params} \n")
 
 
