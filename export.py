@@ -124,6 +124,18 @@ class WrapperModel(nn.Module):
         return self.softmax(output)[0][0]
 
 
+        # Update for kaist
+        output = torch.argmax(output, dim=1)
+        # If output is 1, then it is bonafide (real) else it is spoofed
+        # Swap the output
+        if output == 0:
+            return 1
+        else:
+            return 0
+        
+        
+
+
 class WrapperFusionModel(nn.Module):
     def __init__(self, models: nn.ModuleList):
         super().__init__()
@@ -258,9 +270,20 @@ comment = args.comment
 if comment is None:
     comment = ""
 
+if args.qat:
+    print("Quantizing model")
+    comment += "_qat"
+    torch.backends.quantized.engine = 'qnnpack'
+    model_fp32 = torch.quantization.quantize_dynamic(
+        model_fp32, {nn.Linear}, dtype=torch.qint8)
+    print("Done quantizing")
+
+
 SAVE_MODEL_PATH = f"{second_last}_{os.path.basename(checkpoint).split('.')[0]}_{comment}%s.pt"
+    
 os.makedirs("./exports", exist_ok=True)
 SAVE_MODEL_PATH = os.path.join("./exports", SAVE_MODEL_PATH)
+
 
 if args.bf16:
     SAVE_MODEL_PATH_LAPTOP_BF16 = SAVE_MODEL_PATH % "bf16"
@@ -338,5 +361,5 @@ print("Saved model to ", SAVE_MODEL_PATH_MOBILE)
 
 
 # Save
-# opt_model._save_for_lite_interpreter("W2V2BASE_AASISTL_SelfKD_KDLoss_Without_teacher_best_checkpoint_126.ptl")
+opt_model._save_for_lite_interpreter(SAVE_MODEL_PATH_MOBILE.split(".pt")[0] + "_lite.ptl")
 print("Done~")

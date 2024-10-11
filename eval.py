@@ -15,6 +15,7 @@ import yaml
 import os
 from torchdistill.models.registry import get_model
 from wav2vec2_vib import Model as W2V2_VIB
+from wav2vec2_linear_nll_multi import Model as W2V2_Linear
 from tqdm import tqdm
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -292,8 +293,10 @@ def produce_evaluation_file_for_self_KD(dataset, model, device, save_path, kd_me
 
 if args.is_eval_teacher:
     logger.info("Evaluating teacher model")
-    teacher = W2V2_VIB(
-        device, ssl_cpkt_path="/datab/hungdx/KDW2V-AASISTL/xlsr2_300m.pt").to(device)
+    teacher = W2V2_Linear(
+        device, ssl_cpkt_path="/datad/hungdx/KDW2V-AASISTL/pretrained/xlsr2_300m.pt").to(device)
+    
+    teacher = torch.nn.DataParallel(teacher).to(device)
 
     teacher.load_state_dict(torch.load(
         args.student_model_path))
@@ -374,11 +377,32 @@ student_model.load_state_dict(torch.load(
     args.student_model_path, map_location=device))
 logger.info("Loaded student model from {}".format(args.student_model_path))
 
+def print_size_of_model(model):
+    torch.save(model.state_dict(), "temp.p")
+    print('Size (MB):', os.path.getsize("temp.p")/1e6)
+    os.remove('temp.p')
+    
+if not args.student_model_type == 'AASIST':
+    logger.info("Wrapped ssl model to torchaudio")
+    student_model.module.ssl_model = W2V2_TA(import_fairseq_model(
+        student_model.module.ssl_model.model)).to(device)
 
-# if not args.student_model_type == 'AASIST':
-#     logger.info("Wrapped ssl model to torchaudio")
-#     student_model.module.ssl_model = W2V2_TA(import_fairseq_model(
-#         student_model.module.ssl_model.model)).to(device)
+    
+    # Try to quantize the model
+    print("Quantizing model")
+    student_model = student_model.module
+    # Count parameters before quantization
+    # num_params_before = sum(p.numel() for p in student_model.parameters())
+    # print("Number of parameters before quantization: {}".format(num_params_before))
+    student_model = torch.quantization.quantize_dynamic(
+        student_model, {torch.nn.Linear}, dtype=torch.qint8)
+
+    # Count parameters after quantization
+    # num_params_after = sum(p.numel() for p in student_model.parameters())
+    # print("Number of parameters after quantization: {}".format(num_params_after))
+    # import sys
+    # print("Quantization done")
+    # sys.exit(0)
 
 print("Number of parameters in student model: {}".format(
     sum(p.numel() for p in student_model.parameters())))

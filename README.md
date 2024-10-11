@@ -201,6 +201,10 @@ CUDA_VISIBLE_DEVICES=2 OMP_NUM_THREADS=5 PYTHONPATH=$PYTHONPATH:/datab/hungdx/KD
 CUDA_VISIBLE_DEVICES=2 OMP_NUM_THREADS=5 PYTHONPATH=$PYTHONPATH:/datab/hungdx/KDW2V-AASISTL/fairseq python eval.py --student_model_path "/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_5/best_checkpoint_11.pth" --eval_output="./W2V2BASE_AASISTL_DKDLoss_cnsl_audiomentations_5_best11_in_the_wild.txt" --batch_size_eval=300 --wrapper_ssl --dataset='in_the_wild' --database_path='/datab/Dataset/cnsl_real_fake_audio' --protocols_path='in_the_wild.txt'
 ```
 
+```
+CUDA_VISIBLE_DEVICES=3 OMP_NUM_THREADS=5 python eval.py --student_model_path "/datad/pretrained/best_checkpoint_124.pth" --eval_output="./results/Distil_XLSR_5_Custom_Trans_Layer_VIB_noaudioaug_randomstart_large_corpus_on_2s_best124_eval_itw.txt" --batch_size_eval=400 --wrapper_ssl --database_path='/datab/Dataset/cnsl_real_fake_audio' --protocols_path='in_the_wild.txt' --yaml='configs/best_conf_on_large_corpus_2s.yaml' --dataset='in_the_wild' --padding_size=32000
+```
+
 ### Eval Feb07 from VIB MoreKor
 
 ```
@@ -235,6 +239,7 @@ CUDA_VISIBLE_DEVICES=3 OMP_NUM_THREADS=5 PYTHONPATH=$PYTHONPATH:/home/hungdx/cod
 
 ```
 CUDA_VISIBLE_DEVICES=3 OMP_NUM_THREADS=5 PYTHONPATH=$PYTHONPATH:/datab/hungdx/KDW2V-AASISTL/fairseq python eval.py --student_model_path "/datad/pretrained/best_checkpoint_124.pth" --eval_output="./results/Distil_XLSR_5_Custom_Trans_Layer_VIB_noaudioaug_randomstart_large_corpus_on_2s_best124_eval_largecopus_detail.txt" --batch_size_eval=400 --wrapper_ssl --database_path='/datab/Dataset/cnsl_real_fake_audio/0_large-corpus' --protocols_path='protocol.txt' --yaml='configs/best_conf_on_large_corpus_2s.yaml' --dataset='largecorpus' --student_model_type='Distil_W2V2BASE_VIB' --padding_size=32000
+CUDA_VISIBLE_DEVICES=3 OMP_NUM_THREADS=5 PYTHONPATH=$PYTHONPATH:/datab/hungdx/KDW2V-AASISTL/fairseq python eval.py --student_model_path "/datad/pretrained/best_checkpoint_124.pth" --eval_output="./results/Distil_XLSR_5_Custom_Trans_Layer_VIB_noaudioaug_randomstart_large_corpus_on_2s_best124_eval_largecopus.txt" --batch_size_eval=400 --wrapper_ssl --database_path='/datab/Dataset/cnsl_real_fake_audio/0_large-corpus' --protocols_path='protocol.txt' --yaml='configs/best_conf_on_large_corpus_2s.yaml' --dataset='largecorpus' --student_model_type='Distil_W2V2BASE_VIB' --padding_size=32000
 ```
 
 # Export models
@@ -255,4 +260,43 @@ CUDA_VISIBLE_DEVICES=3 OMP_NUM_THREADS=1 PYTHONPATH=$PYTHONPATH:/datab/hungdx/KD
 
 ```
 CUDA_VISIBLE_DEVICES=2 OMP_NUM_THREADS=5 PYTHONPATH=$PYTHONPATH:/datab/hungdx/KDW2V-AASISTL/fairseq python eval.py --student_model_path "/datad/pretrained/vib_conf-5_gelu_2s_may27_epoch6.pth" --eval_output="./results/vib_conf-5_gelu_2s_may27_epoch6_eval_2s_detail.txt" --batch_size_eval=400 --database_path='/datab/Dataset/cnsl_real_fake_audio/0_large-corpus/' --protocols_path='protocol.txt' --dataset='largecorpus' --student_model_type='Distil_W2V2BASE_VIB' --is_eval_teacher --padding_size=32000
+CUDA_VISIBLE_DEVICES=2 OMP_NUM_THREADS=5 PYTHONPATH=$PYTHONPATH:/datab/hungdx/KDW2V-AASISTL/fairseq python eval.py --student_model_path "/datad/pretrained/vib_conf-5_gelu_2s_may27_epoch6.pth" --eval_output="./results/vib_conf-5_gelu_2s_may27_epoch6_eval_2s.txt" --batch_size_eval=400 --database_path='/datab/Dataset/cnsl_real_fake_audio/0_large-corpus/' --protocols_path='protocol.txt' --dataset='largecorpus' --student_model_type='Distil_W2V2BASE_VIB' --is_eval_teacher --padding_size=32000
 ```
+
+### Train on large corpus (Jun) for KAIST project (4s)
+
+configs/kaist_proj_on_large_corpus_jun_4s.yaml
+
+```
+CUDA_VISIBLE_DEVICES=2 OMP_NUM_THREADS=5 PYTHONPATH=$PYTHONPATH:/home/hungdx/code/fairseq python torchdistill_main.py --yaml 'configs/kaist_proj_on_large_corpus_jun_4s.yaml' --padding_size=64000 --database_path='/datab/Dataset/cnsl_real_fake_audio/supcon_cnsl_jan22/' --protocols_path='protocol.txt'
+```
+
+```
+CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=5 PYTHONPATH=$PYTHONPATH:/home/hungdx/code/fairseq python torchdistill_main.py --yaml 'configs/kaist_proj_on_large_corpus_jun_4s_raw5.yaml' --padding_size=64000 --database_path='/datab/Dataset/cnsl_real_fake_audio/supcon_cnsl_jan22/' --protocols_path='protocol.txt'
+```
+
+#### eval on jan22
+
+```
+CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=5 PYTHONPATH=$PYTHONPATH:/datab/hungdx/KDW2V-AASISTL/fairseq python eval.py --student_model_path "/home/hungdx/code/KDW2V-AASISTL/runs/Distil_XLSR_5_Custom_Trans_Layer_Linear_noaudioaug_randomstart_large_corpus_jun_on_4s_kaist/best_checkpoint_105.pth" --eval_output="kaist_project/Distil_XLSR_5_Custom_Trans_Layer_Linear_noaudioaug_randomstart_large_corpus_jun_on_4s_kaist_epoch105_quant.txt" --batch_size_eval=32 --wrapper_ssl --database_path='/datab/Dataset/cnsl_real_fake_audio/supcon_cnsl_jan22/' --protocols_path='protocol.txt' --yaml='configs/kaist_proj_on_large_corpus_jun_4s.yaml' --dataset='jan22' --student_model_type='Distil_XLSR_N_Trans_Layer_Linear' --padding_size=64000
+```
+
+#### eval on intern
+
+```
+CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=5 PYTHONPATH=$PYTHONPATH:/datab/hungdx/KDW2V-AASISTL/fairseq python eval.py --student_model_path "/home/hungdx/code/KDW2V-AASISTL/runs/Distil_XLSR_5_Custom_Trans_Layer_Linear_noaudioaug_randomstart_large_corpus_jun_on_4s_kaist/best_checkpoint_105.pth"  --eval_output="kaist_project/Distil_XLSR_5_Custom_Trans_Layer_Linear_noaudioaug_randomstart_large_corpus_jun_on_4s_kaist_epoch105_intern.txt" --batch_size_eval=32 --wrapper_ssl --database_path='/datab/Dataset/intern_2024_jan31' --protocols_path='protocol.txt' --yaml='configs/kaist_proj_on_large_corpus_jun_4s.yaml' --dataset='intern' --student_model_type='Distil_XLSR_N_Trans_Layer_Linear' --padding_size=64000
+```
+
+#### Eval again teacher
+
+```
+CUDA_VISIBLE_DEVICES=2 OMP_NUM_THREADS=5 PYTHONPATH=$PYTHONPATH:/datab/hungdx/KDW2V-AASISTL/fairseq python eval.py --student_model_path "/datad/pretrained/AudioDeepfakeCMs/vocosig/conf-5-linear-nov22-newfinetune-r-epoch21.pth" --eval_output="./results/conf-5-linear-nov22-newfinetune-r-epoch21_eval_4s_intern.txt" --batch_size_eval=32 --database_path='/datab/Dataset/intern_2024_jan31/' --protocols_path='protocol.txt' --dataset='intern' --is_eval_teacher --padding_size=64000
+```
+
+```
+CUDA_VISIBLE_DEVICES=2 OMP_NUM_THREADS=5 PYTHONPATH=$PYTHONPATH:/datab/hungdx/KDW2V-AASISTL/fairseq python eval.py --student_model_path "/datad/pretrained/AudioDeepfakeCMs/vocosig/conf-5-linear-nov22-newfinetune-r-epoch21.pth" --eval_output="./results/conf-5-linear-nov22-newfinetune-r-epoch21_eval_4s_jan22.txt" --batch_size_eval=32 database_path='/datab/Dataset/cnsl_real_fake_audio/supcon_cnsl_jan22/' --protocols_path='protocol.txt' --dataset='jan22' --is_eval_teacher --padding_size=64000
+```
+
+### 4s
+
+CUDA_VISIBLE_DEVICES="" PYTHONPATH=$PYTHONPATH:/datab/hungdx/KDW2V-AASISTL/fairseq python export.py --student_model_path="/home/hungdx/code/KDW2V-AASISTL/runs/Distil_XLSR_5_Custom_Trans_Layer_Linear_noaudioaug_randomstart_large_corpus_jun_on_4s_kaist/best_checkpoint_105.pth" --comment="wrapper_4s" --padding=4 --yaml="/home/hungdx/code/KDW2V-AASISTL/configs/kaist_proj_on_large_corpus_jun_4s.yaml"
