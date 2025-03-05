@@ -233,9 +233,10 @@ if "pretrained_path" in config["model"]["teacher"]:
             logger.info("Loaded teacher model from {}".format(
                 config["model"]["teacher"]["pretrained_path"]))
 
-        except:
+        except Exception as e:
             logger.info("Failed to load teacher model from {}".format(
                 config["model"]["teacher"]["pretrained_path"]))
+            print(e)
             sys.exit(0)
 else:
     teacher_model.load_state_dict(torch.load(
