@@ -10,7 +10,7 @@ import sys
 from torch.utils.mobile_optimizer import optimize_for_mobile
 from typing import Optional
 from menu import get_main_menu
-import onnxruntime
+#import onnxruntime
 # from data_utils import pad
 from startup_config import set_random_seed
 from main import W2V2_TA

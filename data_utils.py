@@ -200,7 +200,58 @@ def genSpoof_list_v2(dir_meta, is_train=False, is_dev=False, is_eval=False, spec
             d_meta[key] = 1 if label == 'bonafide' else 0
         return d_meta, file_list
 # ------------------------------------------
+def genSpoof_list_standard(dir_meta, is_train=False, is_dev=False, is_eval=False, special=False):
 
+    d_meta = {}
+    file_list = []
+    with open(dir_meta, 'r') as f:
+        l_meta = f.readlines()
+    # print("Special: ", special)
+    # print("Number of samples in the list: ", len(l_meta))
+
+    if (is_train):
+        for line in l_meta:
+            if not special:
+                key, subset, label = line.strip().split()
+            else:
+                # key, label, subset = line.strip().split()
+                key, subset, label = line.strip().split()
+
+            if subset == "train":
+
+                file_list.append(key)
+                d_meta[key] = 1 if label == 'bonafide' else 0
+        return d_meta, file_list
+    if (is_dev):
+        for line in l_meta:
+            if not special:
+                key, subset, label = line.strip().split()
+            else:
+                # key, label, subset = line.strip().split()
+                key, subset, label = line.strip().split()
+            if subset == "dev":
+                file_list.append(key)
+                d_meta[key] = 1 if label == 'bonafide' else 0
+        return d_meta, file_list
+
+    elif (is_eval):
+        for line in l_meta:
+            if not special:
+                key, subset, label = line.strip().split()
+            else:
+                key, subset, label = line.strip().split()
+            if subset == "eval":
+                file_list.append(key)
+        return file_list
+    else:
+        for line in l_meta:
+            if not special:
+                key, subset, label = line.strip().split()
+            else:
+                key, label, subset = line.strip().split()
+            file_list.append(key)
+            d_meta[key] = 1 if label == 'bonafide' else 0
+        return d_meta, file_list
 
 def genList(dir_meta, is_train=False, is_eval=False, is_dev=False):
     # bonafide: 1, spoof: 0
@@ -867,7 +918,7 @@ def get_train_dev_dataloader_v2(args):
 
 
 def get_train_dev_dataloader(args, augment='rawboost', dataset='LA19', padding_size=64600):
-
+    print("##Padding size: {}".format(padding_size))
     # define train dataloader
     if dataset == 'LA19':
         logging.info("Using LA19 dataset")
@@ -980,6 +1031,44 @@ def get_train_dev_dataloader(args, augment='rawboost', dataset='LA19', padding_s
                                base_dir=args.database_path+'/', algo=args.algo, padding_size=padding_size)
         # Batch size
         dev_loader = DataLoader(dev_set, batch_size=100 if padding_size == 64600 else 200,
+                                num_workers=args.workers, shuffle=False)
+        del dev_set, d_label_dev
+        return train_loader, dev_loader
+    elif dataset == 'standard':
+        logging.info("Using standard dataset")
+        d_label_trn, file_train = genSpoof_list_standard(dir_meta=os.path.join(args.database_path, args.protocols_path),
+                                                         is_train=True, is_dev=False, is_eval=False)
+        
+        print('no. of training trials', len(file_train))
+        if augment == 'rawboost':
+            logging.info(
+                "Using Rawboost for data augmentation with algo: {}".format(args.algo))
+            train_set = Dataset_cnsl(
+                args, list_IDs=file_train, labels=d_label_trn, base_dir=args.database_path+'/', algo=args.algo, padding_size=padding_size)
+        elif augment == 'audiomentations':
+            train_set = Dataset_cnsl_augment(
+                args, list_IDs=file_train, labels=d_label_trn, base_dir=args.database_path+'/', padding_size=padding_size)
+        elif augment == 'audiomentations_v2':
+            train_set = Dataset_cnsl_augment_v2(
+                args, list_IDs=file_train, labels=d_label_trn, base_dir=args.database_path+'/', padding_size=padding_size)
+        else:
+            logging.error("Invalid augment type: {}".format(augment))
+            exit(0)
+
+        train_loader = DataLoader(train_set, batch_size=args.batch_size,
+                                  num_workers=args.workers, shuffle=True, drop_last=True)
+
+        del train_set, d_label_trn
+
+        # define validation dataloader
+        d_label_dev, file_dev = genSpoof_list_standard(dir_meta=os.path.join(args.database_path, args.protocols_path),
+                                                 is_train=False, is_dev=True, is_eval=False)
+
+        print('no. of validation trials', len(file_dev))
+
+        dev_set = Dataset_cnsl(args, list_IDs=file_dev, labels=d_label_dev,
+                               base_dir=args.database_path+'/', algo=args.algo, padding_size=padding_size)
+        dev_loader = DataLoader(dev_set, batch_size=int(args.batch_size) * 2,
                                 num_workers=args.workers, shuffle=False)
         del dev_set, d_label_dev
         return train_loader, dev_loader

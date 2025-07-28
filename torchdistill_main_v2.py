@@ -17,7 +17,7 @@ from startup_config import set_random_seed
 from menu import get_main_menu
 from main import get_train_dev_dataloader
 
-from utils import EarlyStopping
+
 import logging
 from tensorboardX import SummaryWriter
 from tqdm import tqdm
@@ -31,6 +31,7 @@ from engine.dot import DistillationOrientedTrainer
 import eval_metrics_DF as em
 from aasist.AASIST import *
 from wav2vec2_conformertcm import Model as W2V2_ConformerTCM
+import numpy as np
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -42,75 +43,6 @@ logging.getLogger('pydub.converter').setLevel(logging.CRITICAL)
 # Set device
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 logger.info('Device: {}'.format(device))
-
-
-def train_one_epoch(train_loader, model, criterion, optimizer, device, scaler, config, exp_lr_scheduler=None, use_amp: bool = True):
-    running_loss = 0
-    num_correct = 0.0
-    model.train()
-    num_total = 0.0
-    iters = len(train_loader)
-    pbar = tqdm(enumerate(train_loader), total=len(train_loader))
-    for i, (batch_x, batch_y) in pbar:
-        # Mixed precision training
-        with torch.autocast(device_type=device, dtype=torch.float16, enabled=use_amp):
-            batch_size = batch_x.size(0)
-            num_total += batch_size
-            batch_x = batch_x.to(device)
-            batch_y = batch_y.view(-1).type(torch.int64).to(device)
-            batch_out = model(batch_x)
-            loss = criterion(batch_out, batch_y)
-            running_loss += (loss.item() * batch_size)
-        # Scaler
-        optimizer.zero_grad()
-        # Backward pass
-        scaler.scale(loss).backward()
-
-        # Update the weights
-        scaler.step(optimizer)
-
-        # Update the scaler
-        scaler.update()
-
-        _, batch_pred = batch_out.max(dim=1)
-        # batch_y = batch_y.view(-1)
-        num_correct += (batch_pred == batch_y).sum(dim=0).item()
-
-        # Update LR
-        if exp_lr_scheduler is not None:
-            if config['learning_rate_scheduler']['name'] == 'CosineAnnealingWarmRestarts':
-                exp_lr_scheduler.step(epoch + i / iters)
-            elif config['learning_rate_scheduler']['name'] in ['ReduceLROnPlateau', 'MultiStepLR', 'StepLR']:
-                # Update learning rate scheduler in validation so do nothing here
-                pass
-            else:
-                exp_lr_scheduler.step()
-    running_loss /= num_total
-    accuracy = (num_correct / num_total) * 100
-    return running_loss, accuracy
-
-
-def validation(dev_loader, model, criterion, device):
-    model.eval()
-    num_total = 0.0
-    num_correct = 0.0
-    val_loss = 0
-    with torch.no_grad():
-        for batch_x, batch_y in tqdm(dev_loader):
-            batch_size = batch_x.size(0)
-            num_total += batch_size
-            batch_x = batch_x.to(device)
-            batch_y = batch_y.view(-1).type(torch.int64).to(device)
-            batch_out = model(batch_x)
-            loss = criterion(batch_out, batch_y)
-            val_loss += (loss.item() * batch_size)
-            _, batch_pred = batch_out.max(dim=1)
-            num_correct += (batch_pred == batch_y).sum(dim=0).item()
-    val_loss /= num_total
-    accuracy = (num_correct / num_total) * 100
-
-    return val_loss, accuracy
-
 
 args = get_main_menu()
 # Load configuration
@@ -146,6 +78,16 @@ teacher_dict = config["model"].get("teacher_multi", {})
 copy_weights = config["train"].get("copy_weights", False)
 padding_size = config["train"].get(
     "padding_size", 64600)  # default 64600 for 4s
+
+# Model saving and averaging configuration
+n_mejores = config['train'].get('n_mejores_loss', 5)  # number of best models to save
+average_model = config['train'].get('average_model', True)  # whether to average models
+n_average_model = config['train'].get('n_average_model', 5)  # number of models to average
+
+logger.info("Padding size: {}".format(padding_size))
+logger.info("Number of best models to save: {}".format(n_mejores))
+logger.info("Average models: {}, Number to average: {}".format(average_model, n_average_model))
+
 is_teacher_parallel = config["model"]["teacher"].get("is_parallel", True)
 freeze_layers = config["train"].get("freeze_layers", [])
 encoder_layerdrop = config["model"]["student"].get("kwargs", {}).get(
@@ -161,20 +103,9 @@ order = config["model"]["student"].get("kwargs", {}).get(
     "order", None)
 
 wandb_project_name = config["train"].get("wandb_project_name", "torchdistill")
-byot_kd_train = config["train"].get("byot_kd_train", False)
-is_recon_loss = config['train'].get('is_recon_loss', False)
-teacher_module_list = []
 
-
-if len(teacher_dict) > 0:
-    logger.info('Using multi teacher')
-    teacher_forward_hook_manager_list = []
-
-train_teacher = config["train"].get("train_teacher", False)
-ssl_teacher_path = config["train"].get(
-    "ssl_teacher_path", "/datad/hungdx/KDW2V-AASISTL/pretrained/xlsr2_300m.pt")
-ssl_student_path = config["train"].get(
-    "ssl_student_path", "/datad/hungdx/KDW2V-AASISTL/wav2vec_small.pt")
+ssl_teacher_path = os.getenv("XLSR_PRETRAINED_PATH")
+ssl_student_path = os.getenv("XLSR_PRETRAINED_PATH")
 
 if augment_mode == "rawboost":
     # DEFAULT rawboost 3
@@ -194,18 +125,10 @@ logger.info('Random seed: {}'.format(seed))
 
 
 teacher_model = get_model(config['model']['teacher']['name'],
-                          device=device, ssl_cpkt_path=ssl_teacher_path).to(device)
+                          device=device, ssl_cpkt_path=ssl_teacher_path, **config['model']['teacher']['kwargs']).to(device)
 
-if student_model_type == 'ssl':
-    if not student_model_name.startswith('Distil_XLSR_N_Trans_Layer') and not student_model_name.startswith('Self_Distil_XLSR_N_Trans_Layer_VIB'):
-        student_model = get_model(student_model_name,
-                                  device=device, ssl_cpkt_path=ssl_student_path).to(device)
-    else:
-        student_model = get_model(
+student_model = get_model(
             student_model_name, device=device, **config['model']['student']['kwargs']).to(device)
-else:
-    student_model = get_model(
-        student_model_name, d_args=config['model']['student']['kwargs']).to(device)
 
 print("Current number of student parameters: ",  sum(p.numel()
       for p in student_model.parameters()))
@@ -266,13 +189,13 @@ if copy_weights:
         logger.info("Copy transformer weights with custom order")
         for index, value in enumerate(custom_order_copy_weights):
             if is_teacher_parallel:
-                student_model.module.ssl_model.model.encoder.layers[index].load_state_dict(
-                    teacher_model.module.ssl_model.model.encoder.layers[value].state_dict(), strict=False)
+                student_model.module.front_end.model.encoder.layers[index].load_state_dict(
+                    teacher_model.module.front_end.model.encoder.layers[value].state_dict(), strict=False)
             else:
-                student_model.module.ssl_model.model.encoder.layers[index].load_state_dict(
-                    teacher_model.ssl_model.model.encoder.layers[value].state_dict(), strict=False)
+                student_model.module.front_end.model.encoder.layers[index].load_state_dict(
+                    teacher_model.front_end.model.encoder.layers[value].state_dict(), strict=False)
             logger.info(
-                f"Copied teacher transformer weights from  to ssl_model.model.encoder.layers[{value}] to ssl_model.model.encoder.layers[{index}] student")
+                f"Copied teacher transformer weights from  to front_end.model.encoder.layers[{value}] to front_end.model.encoder.layers[{index}] student")
 
 if torchaudio_wrapper:
     logger.info('Use torchaudio wrapper')
@@ -280,8 +203,8 @@ if torchaudio_wrapper:
         teacher_model = teacher_model.module
         is_teacher_parallel = False
 
-    teacher_model.ssl_model = W2V2_TA(
-        import_fairseq_model(teacher_model.ssl_model.model)).to(device)
+    teacher_model.front_end = W2V2_TA(
+        import_fairseq_model(teacher_model.front_end.model)).to(device)
 
     print(teacher_model)
 
@@ -311,12 +234,6 @@ for module_path, ios in zip(config['model']['student']['student_module_paths'], 
         student_model.module, module_path, requires_input=requires_input, requires_output=requires_output)
 
 
-# register forward hook for student if recon loss is True
-if is_recon_loss:
-    logger.info('Register forward hook for student for recon loss')
-    student_forward_hook_manager.add_hook(
-        student_model.module, 'VIB', requires_input=False, requires_output=True)
-
 logger.info('Prepare training, dev set .....')
 
 logger.info(f'Use {augment_mode} data augmentation')
@@ -324,7 +241,7 @@ if dataset:
     logger.info(f'Use {dataset} dataset')
 
 train_loader, dev_loader = get_train_dev_dataloader(
-    args, augment_mode, dataset, padding_size)
+    args, augment_mode, dataset, padding_size=padding_size)
 
 optimizer = torch.optim.Adam(student_model.parameters(), lr=float(
     config['train']['learning_rate']), weight_decay=config['train']['weight_decay'])
@@ -357,9 +274,14 @@ if not os.path.exists(model_save_path):
     os.makedirs(model_save_path)
     logger.info('Created model save path {}'.format(model_save_path))
 
+# Create best models directory for top-n checkpoint saving
+best_save_path = os.path.join(model_save_path, 'best')
+if not os.path.exists(best_save_path):
+    os.makedirs(best_save_path)
+    logger.info('Created best models save path {}'.format(best_save_path))
 
-early_stopping = EarlyStopping(
-    patience=config['train']['patience'], verbose=True, model_save_path=model_save_path)
+
+
 
 # Train loop
 logger.info("Start training")
@@ -374,6 +296,13 @@ if 'criterions' in config and 'criterion_weights' in config:
         config['criterion_weights']))
 
 start_epoch = 0
+
+# Initialize early stopping variables
+not_improving = 0
+best_loss = float('inf')
+bests = np.ones(n_mejores, dtype=float) * float('inf')
+
+# Initialize best checkpoints tracking (no placeholder files needed)
 
 if restore:
     logger.info('Restore from previous checkpoint')
@@ -415,7 +344,7 @@ if restore:
 ######## Transformer layer drop ########
 if encoder_layerdrop > 0:
     logger.info('Use encoder layer drop')
-    student_model.module.ssl_model.model.cfg.encoder_layerdrop = encoder_layerdrop
+    student_model.module.front_end.model.cfg.encoder_layerdrop = encoder_layerdrop
     logger.info('Encoder layer drop: {}'.format(encoder_layerdrop))
 
 
@@ -431,39 +360,37 @@ if len(freeze_layers) > 0:
 # Summary model
 summary(student_model, (1, 16000))
 
-
-
 for epoch in tqdm(range(start_epoch, num_epochs), colour='green'):
     logger.info('Epoch {}/{}'.format(epoch, num_epochs - 1))
 
     # Freeze SSL model for the first defined epochs
     if 'freeze_ssl_num_epoch' in config['train'] and epoch < config['train']['freeze_ssl_num_epoch']:
         logger.info('Freeze SSL model')
-        student_model.module.ssl_model.frozen()
+        student_model.module.front_end.frozen()
 
     else:
         try:
-            if student_model.module.ssl_model.freeze:
+            if student_model.module.front_end.freeze:
                 logger.info('Unfreeze SSL model')
-                student_model.module.ssl_model.unfrozen()
+                student_model.module.front_end.unfrozen()
             else:
                 # Do nothing
                 pass
         except:
             pass
 
-    if "self_kd_config" not in config and byot_kd_train is False:
+    if "self_kd_config" not in config:
         train_loss, train_acc, loss_dict = kd_train_epoch(train_loader, student_model, teacher_model, optimizer, device, scaler, config,
                                                               student_forward_hook_manager, teacher_forward_hook_manager, epoch, exp_lr_scheduler=exp_lr_scheduler, use_amp=use_amp)
        
-        # eval_loss, accuracy = kd_val_epoch(
+        # dev_loss, accuracy = kd_val_epoch(
         #     dev_loader, student_model, device, config)
         # new eval
-        eval_loss, accuracy, eval_loss_dict = kd_val_epoch_advanced(
+        dev_loss, accuracy, dev_loss_dict = kd_val_epoch_advanced(
             dev_loader, student_model, teacher_model, device, config, student_forward_hook_manager, teacher_forward_hook_manager)
 
         logger.info(
-            'Epoch: {} - train_loss: {} - eval_loss: {}'.format(epoch, train_loss, eval_loss))
+            'Epoch: {} - train_loss: {} - dev_loss: {}'.format(epoch, train_loss, dev_loss))
         writer.add_scalar('Accuracy/train', train_acc, epoch)
         for key, value in loss_dict.items():
             if isinstance(value, AverageMeter):
@@ -472,7 +399,7 @@ for epoch in tqdm(range(start_epoch, num_epochs), colour='green'):
                 wandb.log({key: value})
             # writer.add_scalar(f'train_key', value, epoch)
 
-        for key, value in eval_loss_dict.items():
+        for key, value in dev_loss_dict.items():
             if isinstance(value, AverageMeter):
                 wandb.log({"Eval/" + key: value.avg})
             else:
@@ -482,92 +409,122 @@ for epoch in tqdm(range(start_epoch, num_epochs), colour='green'):
         wandb.log({
             "Accuracy_train": train_acc
         })
-    
-    else:
-        train_loss, train_total_label_loss, train_total_kd_loss, train_total_feature_loss, running_total_hidden_rep_loss, running_sup_contrastive_loss = self_KD_teacher_train_epoch(
-            train_loader, student_model, teacher_model, optimizer, device, scaler, config, student_forward_hook_manager, teacher_forward_hook_manager, exp_lr_scheduler, temperature=temperature, alpha=alpha, beta=beta, use_amp=use_amp)
-        # Eval
-        eval_loss, accuracy = self_KD_teacher_val_epoch(
-            dev_loader, student_model, device, config)
-        writer.add_scalar('Loss/train_label', train_total_label_loss, epoch)
-        writer.add_scalar('Loss/train_kd', train_total_kd_loss, epoch)
-        writer.add_scalar('Loss/train_feature',
-                          train_total_feature_loss, epoch)
-        writer.add_scalar('Loss/train_hidden_rep',
-                          running_total_hidden_rep_loss, epoch)
-        writer.add_scalar('Loss/train_sup_contrastive',
-                          running_sup_contrastive_loss, epoch)
-        logging.log(logging.INFO, 'Epoch: {} - train_loss: {} - train_total_label_loss: {} - train_total_kd_loss: {} - train_total_feature_loss: {} - running_total_hidden_rep_loss: {} - train_sup_contrastive: {} - eval_loss: {}'.format(
-            epoch, train_loss, train_total_label_loss, train_total_kd_loss, train_total_feature_loss, running_total_hidden_rep_loss, running_sup_contrastive_loss, eval_loss))
 
     if exp_lr_scheduler is not None:
         if config['learning_rate_scheduler']['name'] == 'ReduceLROnPlateau':
-            exp_lr_scheduler.step(eval_loss)
+            exp_lr_scheduler.step(dev_loss)
         elif config['learning_rate_scheduler']['name'] == 'MultiStepLR' or config['learning_rate_scheduler']['name'] == 'StepLR':
             exp_lr_scheduler.step()
 
-    # Log
-    # writer.add_scalar('Loss/train', train_loss, epoch)
-    # writer.add_scalar('Loss/eval', eval_loss, epoch)
-    # writer.add_scalar('Accuracy/eval', accuracy, epoch)
-    # Write current learning rate to tensorboard
 
     if exp_lr_scheduler is not None and config['learning_rate_scheduler']['name'] != 'ReduceLROnPlateau':
         writer.add_scalar('Lr/epoch', exp_lr_scheduler.get_last_lr()[0], epoch)
 
-        if not byot_kd_train:
-            wandb.log({"train_loss": train_loss, "eval_loss": eval_loss, "Eval Accuracy": accuracy,
+        
+        wandb.log({"train_loss": train_loss, "dev_loss": dev_loss, "Eval Accuracy": accuracy,
                        "learning_rate": exp_lr_scheduler.get_last_lr()[0]})
-        else:
-            wandb.log({"learning_rate": exp_lr_scheduler.get_last_lr()[0]})
+        
     else:
         writer.add_scalar('Lr/epoch', optimizer.param_groups[0]['lr'], epoch)
-        if not byot_kd_train:
-            wandb.log({"train_loss": train_loss, "eval_loss": eval_loss,
+        wandb.log({"train_loss": train_loss, "dev_loss": dev_loss,
                        "Eval Accuracy": accuracy,
                        "learning_rate": optimizer.param_groups[0]['lr'],
                        "Accuracy_train": train_acc
                        })
 
-    # if train_loss < 0.001 and eval_loss < 0.001:
-    #     wandb.alert(
-    #         title='Low loss',
-    #         text=f'train_loss {train_loss} and eval_loss: {eval_loss} is below the acceptable threshold 0.001',
-    #         level=AlertLevel.WARN,
-    #         wait_duration=timedelta(minutes=5)
-    #     )
-    # Early stopping
-    if isinstance(eval_loss, AverageMeter):
-        early_stopping(eval_loss.avg, accuracy, student_model, epoch)
-    else:
-        early_stopping(eval_loss, accuracy, student_model, epoch)
-    if early_stopping.early_stop:
-        logger.info("Early stopping")
-        break
-    # Save model
-    if epoch % 1 == 0:
-        # Save model and all other necessary information
-        save_config = {
-            'epoch': epoch,
-            'model_state_dict': student_model.state_dict(),
-            'optimizer_state_dict': optimizer.state_dict(),
-            'loss': eval_loss.avg if isinstance(eval_loss, AverageMeter) else eval_loss,
-            # 'accuracy': eval_top1.avg,
-            'accuracy': accuracy,
-            'scaler': scaler.state_dict(),
-        }
 
-        torch.save(save_config, os.path.join(
-            model_save_path, 'checkpoint_{}.pth'.format(epoch)))
-        logger.info('Saved model at epoch {}'.format(epoch))
-        # Remove old checkpoint
-        if epoch > 0:
-            old_checkpoint = os.path.join(
-                model_save_path, 'checkpoint_{}.pth'.format(epoch - 1))
-            if os.path.exists(old_checkpoint):
-                os.remove(old_checkpoint)
-                logger.info('Removed old checkpoint {}'.format(old_checkpoint))
+    # Early stopping based on not_improving criteria
+    current_dev_loss = dev_loss.avg if isinstance(dev_loss, AverageMeter) else dev_loss
+    if current_dev_loss < best_loss:
+        best_loss = current_dev_loss
+        torch.save(student_model.state_dict(), os.path.join(
+            model_save_path, 'best.pth'))
+        logger.info('New best epoch with dev_loss: {}'.format(current_dev_loss))
+        not_improving = 0
+    else:
+        not_improving += 1
+        logger.info('Not improving for {} epochs'.format(not_improving))
+    
+    # Save top n_mejores models
+    for i in range(n_mejores):
+        if bests[i] > current_dev_loss:
+            # Shift worse models down
+            for t in range(n_mejores-1, i, -1):
+                bests[t] = bests[t-1]
+                old_path = os.path.join(best_save_path, 'best_{}.pth'.format(t-1))
+                new_path = os.path.join(best_save_path, 'best_{}.pth'.format(t))
+                if os.path.exists(old_path):
+                    if os.path.exists(new_path):
+                        os.remove(new_path)
+                    os.rename(old_path, new_path)
+            
+            # Save current model at position i
+            bests[i] = current_dev_loss
+            torch.save(student_model.state_dict(), os.path.join(
+                best_save_path, 'best_{}.pth'.format(i)))
+            logger.info('Saved model at rank {} with dev_loss: {}'.format(i, current_dev_loss))
+            break
+    
+    logger.info('Current n-best losses: {}'.format(bests))
+    
+    # Check if we should stop early
+    if not_improving >= patience:
+        logger.info("Early stopping: not improving for {} epochs".format(patience))
+        break
+
 
 
 if use_amp:
     logger.info('End automatic mixed precision training')
+
+# Model averaging after training
+logger.info('######## Post-training Model Averaging ########')
+if average_model and n_average_model <= n_mejores:
+    logger.info('Averaging top {} models'.format(n_average_model))
+    
+    # Load first model
+    first_model_path = os.path.join(best_save_path, 'best_0.pth')
+    if os.path.exists(first_model_path):
+        student_model.load_state_dict(torch.load(first_model_path, map_location=device))
+        logger.info('Model loaded: {}'.format(first_model_path))
+        sd = student_model.state_dict()
+        
+        # Add remaining models
+        for i in range(1, n_average_model):
+            model_path = os.path.join(best_save_path, 'best_{}.pth'.format(i))
+            if os.path.exists(model_path):
+                student_model.load_state_dict(torch.load(model_path, map_location=device))
+                logger.info('Model loaded: {}'.format(model_path))
+                sd2 = student_model.state_dict()
+                for key in sd:
+                    sd[key] = sd[key] + sd2[key]
+            else:
+                logger.warning('Model {} not found, skipping'.format(model_path))
+        
+        # Average the weights
+        for key in sd:
+            sd[key] = sd[key] / n_average_model
+        
+        # Load averaged model and save
+        student_model.load_state_dict(sd)
+        averaged_model_path = os.path.join(best_save_path, 'avg_{}_best.pth'.format(n_average_model))
+        torch.save(student_model.state_dict(), averaged_model_path)
+        
+        logger.info('Model loaded average of {} best models and saved to {}'.format(
+            n_average_model, averaged_model_path))
+    else:
+        logger.warning('No best models found for averaging')
+else:
+    if not average_model:
+        logger.info('Model averaging disabled')
+    else:
+        logger.warning('Cannot average {} models when only {} best models are saved'.format(
+            n_average_model, n_mejores))
+    
+    # Load single best model
+    best_model_path = os.path.join(model_save_path, 'best.pth')
+    if os.path.exists(best_model_path):
+        student_model.load_state_dict(torch.load(best_model_path, map_location=device))
+        logger.info('Loaded single best model: {}'.format(best_model_path))
+    else:
+        logger.warning('No best model found at {}'.format(best_model_path))

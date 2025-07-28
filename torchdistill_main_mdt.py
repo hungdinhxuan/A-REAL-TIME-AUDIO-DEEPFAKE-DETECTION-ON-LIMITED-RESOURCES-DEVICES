@@ -17,7 +17,7 @@ from startup_config import set_random_seed
 from menu import get_main_menu
 from main import get_train_dev_dataloader
 
-from utils import EarlyStopping
+from utils import EarlyStoppingLTS
 import logging
 from tensorboardX import SummaryWriter
 from tqdm import tqdm
@@ -30,7 +30,11 @@ from contrast.supcontrastloss import SupConLoss
 from engine.dot import DistillationOrientedTrainer
 import eval_metrics_DF as em
 from aasist.AASIST import *
-from wav2vec2_conformertcm import Model as W2V2_ConformerTCM
+from dotenv import load_dotenv
+from collate_fn import multi_view_collate_fn
+# Load environment variables
+
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -42,75 +46,6 @@ logging.getLogger('pydub.converter').setLevel(logging.CRITICAL)
 # Set device
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 logger.info('Device: {}'.format(device))
-
-
-def train_one_epoch(train_loader, model, criterion, optimizer, device, scaler, config, exp_lr_scheduler=None, use_amp: bool = True):
-    running_loss = 0
-    num_correct = 0.0
-    model.train()
-    num_total = 0.0
-    iters = len(train_loader)
-    pbar = tqdm(enumerate(train_loader), total=len(train_loader))
-    for i, (batch_x, batch_y) in pbar:
-        # Mixed precision training
-        with torch.autocast(device_type=device, dtype=torch.float16, enabled=use_amp):
-            batch_size = batch_x.size(0)
-            num_total += batch_size
-            batch_x = batch_x.to(device)
-            batch_y = batch_y.view(-1).type(torch.int64).to(device)
-            batch_out = model(batch_x)
-            loss = criterion(batch_out, batch_y)
-            running_loss += (loss.item() * batch_size)
-        # Scaler
-        optimizer.zero_grad()
-        # Backward pass
-        scaler.scale(loss).backward()
-
-        # Update the weights
-        scaler.step(optimizer)
-
-        # Update the scaler
-        scaler.update()
-
-        _, batch_pred = batch_out.max(dim=1)
-        # batch_y = batch_y.view(-1)
-        num_correct += (batch_pred == batch_y).sum(dim=0).item()
-
-        # Update LR
-        if exp_lr_scheduler is not None:
-            if config['learning_rate_scheduler']['name'] == 'CosineAnnealingWarmRestarts':
-                exp_lr_scheduler.step(epoch + i / iters)
-            elif config['learning_rate_scheduler']['name'] in ['ReduceLROnPlateau', 'MultiStepLR', 'StepLR']:
-                # Update learning rate scheduler in validation so do nothing here
-                pass
-            else:
-                exp_lr_scheduler.step()
-    running_loss /= num_total
-    accuracy = (num_correct / num_total) * 100
-    return running_loss, accuracy
-
-
-def validation(dev_loader, model, criterion, device):
-    model.eval()
-    num_total = 0.0
-    num_correct = 0.0
-    val_loss = 0
-    with torch.no_grad():
-        for batch_x, batch_y in tqdm(dev_loader):
-            batch_size = batch_x.size(0)
-            num_total += batch_size
-            batch_x = batch_x.to(device)
-            batch_y = batch_y.view(-1).type(torch.int64).to(device)
-            batch_out = model(batch_x)
-            loss = criterion(batch_out, batch_y)
-            val_loss += (loss.item() * batch_size)
-            _, batch_pred = batch_out.max(dim=1)
-            num_correct += (batch_pred == batch_y).sum(dim=0).item()
-    val_loss /= num_total
-    accuracy = (num_correct / num_total) * 100
-
-    return val_loss, accuracy
-
 
 args = get_main_menu()
 # Load configuration
@@ -153,7 +88,7 @@ encoder_layerdrop = config["model"]["student"].get("kwargs", {}).get(
 
 
 torchaudio_wrapper = config["train"].get("torchaudio_wrapper", False)
-
+adaptive_kd_loss = config["train"].get("adaptive_kd_loss", False)
 
 custom_order_copy_weights = config["model"]["student"].get("kwargs", {}).get(
     "custom_order", [])
@@ -162,8 +97,10 @@ order = config["model"]["student"].get("kwargs", {}).get(
 
 wandb_project_name = config["train"].get("wandb_project_name", "torchdistill")
 byot_kd_train = config["train"].get("byot_kd_train", False)
-is_recon_loss = config['train'].get('is_recon_loss', False)
+
 teacher_module_list = []
+
+logger.info('Using Mixup: {}'.format(mixup))
 
 
 if len(teacher_dict) > 0:
@@ -172,9 +109,9 @@ if len(teacher_dict) > 0:
 
 train_teacher = config["train"].get("train_teacher", False)
 ssl_teacher_path = config["train"].get(
-    "ssl_teacher_path", "/datad/hungdx/KDW2V-AASISTL/pretrained/xlsr2_300m.pt")
+    "ssl_teacher_path", os.getenv("XLSR_PRETRAINED_PATH"))
 ssl_student_path = config["train"].get(
-    "ssl_student_path", "/datad/hungdx/KDW2V-AASISTL/wav2vec_small.pt")
+    "ssl_student_path", os.getenv("XLSR_PRETRAINED_PATH"))
 
 if augment_mode == "rawboost":
     # DEFAULT rawboost 3
@@ -311,11 +248,6 @@ for module_path, ios in zip(config['model']['student']['student_module_paths'], 
         student_model.module, module_path, requires_input=requires_input, requires_output=requires_output)
 
 
-# register forward hook for student if recon loss is True
-if is_recon_loss:
-    logger.info('Register forward hook for student for recon loss')
-    student_forward_hook_manager.add_hook(
-        student_model.module, 'VIB', requires_input=False, requires_output=True)
 
 logger.info('Prepare training, dev set .....')
 
@@ -323,8 +255,17 @@ logger.info(f'Use {augment_mode} data augmentation')
 if dataset:
     logger.info(f'Use {dataset} dataset')
 
-train_loader, dev_loader = get_train_dev_dataloader(
-    args, augment_mode, dataset, padding_size)
+
+if "sup_contrastive" in config["train"] and config["train"]["sup_contrastive"]:
+    # [DEPRECATED]
+    # logger.info('Use supervised contrastive learning')
+    # train_loader, dev_loader = get_train_dev_dataloader_contrastive(args)
+    pass
+    sys.exit(0)
+else:
+    train_loader, dev_loader = get_train_dev_dataloader(
+        args, augment_mode, dataset, padding_size)
+
 
 optimizer = torch.optim.Adam(student_model.parameters(), lr=float(
     config['train']['learning_rate']), weight_decay=config['train']['weight_decay'])
@@ -358,14 +299,17 @@ if not os.path.exists(model_save_path):
     logger.info('Created model save path {}'.format(model_save_path))
 
 
-early_stopping = EarlyStopping(
+early_stopping = EarlyStoppingLTS(
     patience=config['train']['patience'], verbose=True, model_save_path=model_save_path)
 
 # Train loop
 logger.info("Start training")
 num_epochs = config['train']['num_epochs']
 
-
+if "self_kd_config" in config:
+    temperature = float(config['self_kd_config']['temperature'])
+    alpha = float(config['self_kd_config']['alpha'])
+    beta = float(config['self_kd_config']['beta'])
 
 if 'criterions' in config and 'criterion_weights' in config:
     logger.info('Use mid level loss')
@@ -431,6 +375,12 @@ if len(freeze_layers) > 0:
 # Summary model
 summary(student_model, (1, 16000))
 
+if adaptive_kd_loss:
+    logger.info('Use adaptive kd loss')
+    adaptive_losses = nn.ModuleList()
+    for loss in config['criterions']:
+        loss_i = globals()[loss['key']](**loss['adaptive_kwargs']).to(device)
+        adaptive_losses.append(loss_i)
 
 
 for epoch in tqdm(range(start_epoch, num_epochs), colour='green'):
@@ -453,9 +403,15 @@ for epoch in tqdm(range(start_epoch, num_epochs), colour='green'):
             pass
 
     if "self_kd_config" not in config and byot_kd_train is False:
-        train_loss, train_acc, loss_dict = kd_train_epoch(train_loader, student_model, teacher_model, optimizer, device, scaler, config,
+        if not adaptive_kd_loss:
+            train_loss, train_acc, loss_dict = kd_train_epoch(train_loader, student_model, teacher_model, optimizer, device, scaler, config,
                                                               student_forward_hook_manager, teacher_forward_hook_manager, epoch, exp_lr_scheduler=exp_lr_scheduler, use_amp=use_amp)
-       
+        else:
+            # print("Adaptive KD training")
+            # print(adaptive_losses)
+            train_loss, train_acc, loss_dict = adaptive_kd_train_epoch(train_loader, adaptive_losses, student_model, teacher_model, optimizer, device, scaler,
+                                                                       config, student_forward_hook_manager, teacher_forward_hook_manager, epoch, exp_lr_scheduler=exp_lr_scheduler, use_amp=use_amp)
+
         # eval_loss, accuracy = kd_val_epoch(
         #     dev_loader, student_model, device, config)
         # new eval
