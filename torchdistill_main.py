@@ -30,6 +30,7 @@ from contrast.supcontrastloss import SupConLoss
 from engine.dot import DistillationOrientedTrainer
 import eval_metrics_DF as em
 from aasist.AASIST import *
+from wav2vec2_conformertcm import Model as W2V2_ConformerTCM
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -152,7 +153,7 @@ encoder_layerdrop = config["model"]["student"].get("kwargs", {}).get(
 
 
 torchaudio_wrapper = config["train"].get("torchaudio_wrapper", False)
-adaptive_kd_loss = config["train"].get("adaptive_kd_loss", False)
+
 
 custom_order_copy_weights = config["model"]["student"].get("kwargs", {}).get(
     "custom_order", [])
@@ -163,8 +164,6 @@ wandb_project_name = config["train"].get("wandb_project_name", "torchdistill")
 byot_kd_train = config["train"].get("byot_kd_train", False)
 is_recon_loss = config['train'].get('is_recon_loss', False)
 teacher_module_list = []
-
-logger.info('Using Mixup: {}'.format(mixup))
 
 
 if len(teacher_dict) > 0:
@@ -233,9 +232,10 @@ if "pretrained_path" in config["model"]["teacher"]:
             logger.info("Loaded teacher model from {}".format(
                 config["model"]["teacher"]["pretrained_path"]))
 
-        except:
+        except Exception as e:
             logger.info("Failed to load teacher model from {}".format(
                 config["model"]["teacher"]["pretrained_path"]))
+            print(e)
             sys.exit(0)
 else:
     teacher_model.load_state_dict(torch.load(
@@ -300,59 +300,6 @@ for module_path, ios in zip(config['model']['teacher']['teacher_module_paths'], 
         teacher_forward_hook_manager.add_hook(
             teacher_model.module, module_path, requires_input=requires_input, requires_output=requires_output)
 
-# ---------------------------------------- Multi teacher ----------------------------------------
-if len(teacher_dict) > 0:
-    print(teacher_dict)
-    # teacher_dict[teacher_model_name] = teacher_model
-    teacher_forward_hook_manager_list.append(teacher_forward_hook_manager)
-
-    for teacher_k, teacher_v in teacher_dict.items():
-        if teacher_k != teacher_model_name:  # Skip the teacher model
-            key = teacher_v["name"]
-            _teacher_forward_hook_manager = ForwardHookManager(device)
-            _teacher_model = get_model(
-                teacher_v["name"], device=device, ssl_cpkt_path=ssl_teacher_path).to(device)
-
-            if teacher_v["is_parallel"]:
-                _teacher_model = torch.nn.DataParallel(
-                    _teacher_model).to(device)
-
-            # Load pretrained model
-
-            if "pretrained_path" in teacher_v:
-                if teacher_v["pretrained_path"] == "":
-                    logger.info("No pretrained teacher path")
-                else:
-                    try:
-                        _teacher_model.load_state_dict(torch.load(
-                            teacher_v["pretrained_path"], map_location=device))
-                        logger.info("Loaded teacher model from {}".format(
-                            teacher_v["pretrained_path"]))
-                    except:
-                        logger.info("Failed to load teacher model from {}".format(
-                            teacher_v["pretrained_path"]))
-                        sys.exit(0)
-            # Register forward hook
-            logger.info('Register forward hook for teacher {}'.format(key))
-            for module_path, ios in zip(teacher_v['teacher_module_paths'], teacher_v['teacher_module_ios']):
-                logger.info('Register teacher forward hook for {}'.format(
-                    module_path))
-                requires_input, requires_output = ios.split(':')
-                requires_input, requires_output = bool(
-                    requires_input), bool(requires_output)
-                if teacher_v["is_parallel"]:
-                    _teacher_forward_hook_manager.add_hook(
-                        _teacher_model.module, module_path, requires_input=requires_input, requires_output=requires_output)
-                else:
-                    _teacher_forward_hook_manager.add_hook(
-                        _teacher_model, module_path, requires_input=requires_input, requires_output=requires_output)
-
-            teacher_module_list.append(_teacher_model)
-            teacher_forward_hook_manager_list.append(
-                _teacher_forward_hook_manager)
-
-    print("DEBUG")
-    sys.exit(0)
 
 logger.info('Register forward hook for student')
 for module_path, ios in zip(config['model']['student']['student_module_paths'], config['model']['student']['student_module_ios']):
@@ -376,32 +323,11 @@ logger.info(f'Use {augment_mode} data augmentation')
 if dataset:
     logger.info(f'Use {dataset} dataset')
 
+train_loader, dev_loader = get_train_dev_dataloader(
+    args, augment_mode, dataset, padding_size)
 
-if "sup_contrastive" in config["train"] and config["train"]["sup_contrastive"]:
-    # [DEPRECATED]
-    # logger.info('Use supervised contrastive learning')
-    # train_loader, dev_loader = get_train_dev_dataloader_contrastive(args)
-    pass
-    sys.exit(0)
-else:
-    train_loader, dev_loader = get_train_dev_dataloader(
-        args, augment_mode, dataset, padding_size)
-
-if not dot:
-    optimizer = torch.optim.Adam(student_model.parameters(), lr=float(
-        config['train']['learning_rate']), weight_decay=config['train']['weight_decay'])
-else:
-    '''
-        Initialize optimizer for Distillation-Oriented Trainer
-    '''
-    momentum = float(config['train'].get('momentum', 0.9))
-    delta = float(config['train'].get('delta', 0.0075))
-    m_task = momentum - delta
-    m_kd = momentum + delta
-    optimizer = DistillationOrientedTrainer(student_model.parameters(), lr=float(
-        config['train']['learning_rate']), momentum=m_task, momentum_kd=m_kd, weight_decay=config['train']['weight_decay'])
-    logger.info(
-        'Use Distillation-Oriented Trainer with momentum = {} and momentum_kd = {}'.format(m_task, m_kd))
+optimizer = torch.optim.Adam(student_model.parameters(), lr=float(
+    config['train']['learning_rate']), weight_decay=config['train']['weight_decay'])
 
 exp_lr_scheduler = None
 if 'is_learning_rate_scheduler' in config and config['is_learning_rate_scheduler']:
@@ -439,68 +365,7 @@ early_stopping = EarlyStopping(
 logger.info("Start training")
 num_epochs = config['train']['num_epochs']
 
-if train_teacher:
-    logger.info('Train teacher model')
-    weight = torch.FloatTensor(config['train'].get(
-        'cross_entropy_loss_weight', [0.1, 0.9])).to(device)
-    criterion = nn.CrossEntropyLoss(weight=weight)
-    for epoch in tqdm(range(num_epochs), colour='green'):
-        train_loss, train_acc = train_one_epoch(train_loader, teacher_model, criterion,
-                                                optimizer, device, scaler, config, exp_lr_scheduler, use_amp=use_amp)
-        eval_loss, accuracy = validation(
-            dev_loader, teacher_model, criterion, device)
 
-        writer.add_scalar('Loss/train', train_loss, epoch)
-        writer.add_scalar('Loss/eval', eval_loss, epoch)
-
-        if exp_lr_scheduler is not None and config['learning_rate_scheduler']['name'] == 'StepLR':
-            exp_lr_scheduler.step()
-
-        if exp_lr_scheduler is not None and config['learning_rate_scheduler']['name'] != 'ReduceLROnPlateau':
-            writer.add_scalar(
-                'Lr/epoch', exp_lr_scheduler.get_last_lr()[0], epoch)
-            wandb.log({"train_loss": train_loss, "eval_loss": eval_loss, "Eval Accuracy": accuracy,
-                       "Train Accuracy": train_acc, "learning_rate": exp_lr_scheduler.get_last_lr()[0]})
-        else:
-            writer.add_scalar(
-                'Lr/epoch', optimizer.param_groups[0]['lr'], epoch)
-            wandb.log({"train_loss": train_loss, "eval_loss": eval_loss, "Eval Accuracy": accuracy,
-                       "Train Accuracy": train_acc, "learning_rate": optimizer.param_groups[0]['lr']})
-
-        if train_loss < 0.001 and eval_loss < 0.001:
-            wandb.alert(
-                title='Low loss',
-                text=f'train_loss {train_loss} and eval_loss: {eval_loss} is below the acceptable threshold 0.001',
-                level=AlertLevel.WARN,
-                wait_duration=timedelta(minutes=5)
-            )
-        # Early stopping
-        early_stopping(eval_loss, accuracy, student_model, epoch)
-        if early_stopping.early_stop:
-            logger.info("Early stopping")
-            break
-        # Save model
-        if epoch % 1 == 0:
-            torch.save(student_model.state_dict(), os.path.join(
-                model_save_path, 'checkpoint_{}.pth'.format(epoch)))
-            logger.info('Saved model at epoch {}'.format(epoch))
-            # Remove old checkpoint
-            if epoch > 0:
-                old_checkpoint = os.path.join(
-                    model_save_path, 'checkpoint_{}.pth'.format(epoch - 1))
-                if os.path.exists(old_checkpoint):
-                    os.remove(old_checkpoint)
-                    logger.info(
-                        'Removed old checkpoint {}'.format(old_checkpoint))
-
-    logger.info('End training teacher model')
-    sys.exit(0)
-
-
-if "self_kd_config" in config:
-    temperature = float(config['self_kd_config']['temperature'])
-    alpha = float(config['self_kd_config']['alpha'])
-    beta = float(config['self_kd_config']['beta'])
 
 if 'criterions' in config and 'criterion_weights' in config:
     logger.info('Use mid level loss')
@@ -566,12 +431,6 @@ if len(freeze_layers) > 0:
 # Summary model
 summary(student_model, (1, 16000))
 
-if adaptive_kd_loss:
-    logger.info('Use adaptive kd loss')
-    adaptive_losses = nn.ModuleList()
-    for loss in config['criterions']:
-        loss_i = globals()[loss['key']](**loss['adaptive_kwargs']).to(device)
-        adaptive_losses.append(loss_i)
 
 
 for epoch in tqdm(range(start_epoch, num_epochs), colour='green'):
@@ -594,15 +453,9 @@ for epoch in tqdm(range(start_epoch, num_epochs), colour='green'):
             pass
 
     if "self_kd_config" not in config and byot_kd_train is False:
-        if not adaptive_kd_loss:
-            train_loss, train_acc, loss_dict = kd_train_epoch(train_loader, student_model, teacher_model, optimizer, device, scaler, config,
+        train_loss, train_acc, loss_dict = kd_train_epoch(train_loader, student_model, teacher_model, optimizer, device, scaler, config,
                                                               student_forward_hook_manager, teacher_forward_hook_manager, epoch, exp_lr_scheduler=exp_lr_scheduler, use_amp=use_amp)
-        else:
-            # print("Adaptive KD training")
-            # print(adaptive_losses)
-            train_loss, train_acc, loss_dict = adaptive_kd_train_epoch(train_loader, adaptive_losses, student_model, teacher_model, optimizer, device, scaler,
-                                                                       config, student_forward_hook_manager, teacher_forward_hook_manager, epoch, exp_lr_scheduler=exp_lr_scheduler, use_amp=use_amp)
-
+       
         # eval_loss, accuracy = kd_val_epoch(
         #     dev_loader, student_model, device, config)
         # new eval
@@ -629,65 +482,7 @@ for epoch in tqdm(range(start_epoch, num_epochs), colour='green'):
         wandb.log({
             "Accuracy_train": train_acc
         })
-    elif byot_kd_train:
-        print("BYOT KD training")
-        losses, middle1_losses, middle2_losses, middle3_losses, middle4_losses, losses1_kd, losses2_kd, losses3_kd, losses4_kd, feature_losses_1, feature_losses_2, feature_losses_3, feature_losses_4, top1, middle1_top1, middle2_top1, middle3_top1, middle4_top1 = byot_kd_train_epoch(
-            train_loader, student_model, optimizer, device, scaler, config,  epoch, exp_lr_scheduler=exp_lr_scheduler, use_amp=use_amp)
-
-        eval_loss, eval_middle1_loss, eval_middle2_loss, eval_middle3_loss, eval_middle4_loss, eval_middle1_kd_loss, eval_middle2_kd_loss, eval_middle3_kd_loss, eval_middle4_kd_loss, eval_feature_loss_1, eval_feature_loss_2, eval_feature_loss_3, eval_feature_loss_4, eval_top1, eval_middle1_top1, eval_middle2_top1, eval_middle3_top1, eval_middle4_top1 = byot_kd_val_epoch(
-            dev_loader, student_model, device, config, epoch)
-
-        wandb.log({
-            "Train/Accuracy_train": top1.avg,
-            "Train/Middle1 Accuracy": middle1_top1.avg,
-            "Train/Middle2 Accuracy": middle2_top1.avg,
-            "Train/Middle3 Accuracy": middle3_top1.avg,
-            "Train/Middle4 Accuracy": middle4_top1.avg,
-
-            "Train/Total Loss": losses.avg,
-
-            "Train/Middle1 Loss": middle1_losses.avg,
-            "Train/Middle2 Loss": middle2_losses.avg,
-            "Train/Middle3 Loss": middle3_losses.avg,
-            "Train/Middle4 Loss": middle4_losses.avg,
-
-            "Train/Middle1 KD Loss": losses1_kd.avg,
-            "Train/Middle2 KD Loss": losses2_kd.avg,
-            "Train/Middle3 KD Loss": losses3_kd.avg,
-            "Train/Middle4 KD Loss": losses4_kd.avg,
-
-
-            "Train/Feature Loss 1": feature_losses_1.avg,
-            "Train/Feature Loss 2": feature_losses_2.avg,
-            "Train/Feature Loss 3": feature_losses_3.avg,
-            "Train/Feature Loss 4": feature_losses_4.avg,
-
-            "Eval/Accuracy_eval": eval_top1.avg,
-            "Eval/Middle1 Accuracy": eval_middle1_top1.avg,
-            "Eval/Middle2 Accuracy": eval_middle2_top1.avg,
-            "Eval/Middle3 Accuracy": eval_middle3_top1.avg,
-            "Eval/Middle4 Accuracy": eval_middle4_top1.avg,
-
-            "Eval/Total Loss": eval_loss.avg,
-
-            "Eval/Middle1 Loss": eval_middle1_loss.avg,
-            "Eval/Middle2 Loss": eval_middle2_loss.avg,
-            "Eval/Middle3 Loss": eval_middle3_loss.avg,
-            "Eval/Middle4 Loss": eval_middle4_loss.avg,
-
-            "Eval/Middle1 KD Loss": eval_middle1_kd_loss.avg,
-            "Eval/Middle2 KD Loss": eval_middle2_kd_loss.avg,
-            "Eval/Middle3 KD Loss": eval_middle3_kd_loss.avg,
-            "Eval/Middle4 KD Loss": eval_middle4_kd_loss.avg,
-
-            "Eval/Feature Loss 1": eval_feature_loss_1.avg,
-            "Eval/Feature Loss 2": eval_feature_loss_2.avg,
-            "Eval/Feature Loss 3": eval_feature_loss_3.avg,
-            "Eval/Feature Loss 4": eval_feature_loss_4.avg,
-
-            "Epoch": epoch
-        })
-
+    
     else:
         train_loss, train_total_label_loss, train_total_kd_loss, train_total_feature_loss, running_total_hidden_rep_loss, running_sup_contrastive_loss = self_KD_teacher_train_epoch(
             train_loader, student_model, teacher_model, optimizer, device, scaler, config, student_forward_hook_manager, teacher_forward_hook_manager, exp_lr_scheduler, temperature=temperature, alpha=alpha, beta=beta, use_amp=use_amp)

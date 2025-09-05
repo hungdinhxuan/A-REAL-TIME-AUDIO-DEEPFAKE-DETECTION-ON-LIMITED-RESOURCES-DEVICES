@@ -10,7 +10,7 @@ import sys
 from torch.utils.mobile_optimizer import optimize_for_mobile
 from typing import Optional
 from menu import get_main_menu
-import onnxruntime
+#import onnxruntime
 # from data_utils import pad
 from startup_config import set_random_seed
 from main import W2V2_TA
@@ -122,6 +122,30 @@ class WrapperModel(nn.Module):
         wav_padded = pad(x).unsqueeze(0)
         output = self.model(wav_padded)
         return self.softmax(output)[0][0]
+
+
+        # Update for kaist
+        output = torch.argmax(output, dim=1)
+        # If output is 1, then it is bonafide (real) else it is spoofed
+        # Swap the output
+        if output == 0:
+            return 1
+        else:
+            return 0
+        
+class WrapperModel_NOPAD(nn.Module):
+    def __init__(self, model):
+        super().__init__()
+        self.model = model
+        self.softmax = nn.Softmax(dim=1)
+        print('WrapperModel_NOPAD')
+
+    def forward(self, x):
+        #wav_padded = pad(x).unsqueeze(0)
+        output = self.model(x)
+        return self.softmax(output)[0][0]
+
+        
 
 
 class WrapperFusionModel(nn.Module):
@@ -242,6 +266,9 @@ with torch.no_grad():
 if args.scale_export:
     print("Using scaled model")
     model_fp32 = WrapperScaledModel(model.module).to(device)
+elif PADDING_SIZE < 0:
+    print("Using no pad model")
+    model_fp32 = WrapperModel_NOPAD(model.module).to(device)
 else:
     print("Using normal model")
     model_fp32 = WrapperModel(model.module).to(device)
@@ -258,9 +285,20 @@ comment = args.comment
 if comment is None:
     comment = ""
 
+if args.qat:
+    print("Quantizing model")
+    comment += "_qat"
+    torch.backends.quantized.engine = 'qnnpack'
+    model_fp32 = torch.quantization.quantize_dynamic(
+        model_fp32, {nn.Linear}, dtype=torch.qint8)
+    print("Done quantizing")
+
+
 SAVE_MODEL_PATH = f"{second_last}_{os.path.basename(checkpoint).split('.')[0]}_{comment}%s.pt"
+    
 os.makedirs("./exports", exist_ok=True)
 SAVE_MODEL_PATH = os.path.join("./exports", SAVE_MODEL_PATH)
+
 
 if args.bf16:
     SAVE_MODEL_PATH_LAPTOP_BF16 = SAVE_MODEL_PATH % "bf16"
@@ -338,5 +376,5 @@ print("Saved model to ", SAVE_MODEL_PATH_MOBILE)
 
 
 # Save
-# opt_model._save_for_lite_interpreter("W2V2BASE_AASISTL_SelfKD_KDLoss_Without_teacher_best_checkpoint_126.ptl")
+opt_model._save_for_lite_interpreter(SAVE_MODEL_PATH_MOBILE.split(".pt")[0] + "_lite.ptl")
 print("Done~")

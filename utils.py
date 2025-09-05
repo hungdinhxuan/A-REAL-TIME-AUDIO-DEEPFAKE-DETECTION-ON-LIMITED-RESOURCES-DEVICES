@@ -6,7 +6,7 @@ import logging
 import subprocess
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
+import heapq
 
 @torch.jit.script
 def pad(x, max_len: int = 64600) -> Tensor:
@@ -20,95 +20,6 @@ def pad(x, max_len: int = 64600) -> Tensor:
 
     padded_x = x.repeat((1, num_repeats))[:, :max_len][0]
     return padded_x
-
-
-# class EarlyStopping_new:
-#     def __init__(self, patience=7, verbose=False, delta=0):
-#         # how many times will you tolerate for loss not being on decrease
-#         self.patience = patience
-#         self.verbose = verbose  # whether to print tip info
-#         self.counter = 0  # now how many times loss not on decrease
-#         self.best_score = None
-#         self.early_stop = False
-#         self.val_loss_min = np.Inf
-#         self.delta = delta
-
-#     def __call__(self, val_loss, model, path):
-#         score = -val_loss
-#         if self.best_score is None:
-#             self.best_score = score
-#             self.save_checkpoint(val_loss, model, path)
-
-#         # meaning: current score is not 'delta' better than best_score, representing that
-#         # further training may not bring remarkable improvement in loss.
-#         elif score < self.best_score + self.delta:
-#             self.counter += 1
-#             print(
-#                 f'EarlyStopping counter: {self.counter} out of {self.patience}')
-#             # 'No Improvement' times become higher than patience --> Stop Further Training
-#             if self.counter >= self.patience:
-#                 self.early_stop = True
-
-#         else:  # model's loss is still on decrease, save the now best model and go on training
-#             self.best_score = score
-#             self.save_checkpoint(val_loss, model, path)
-#             self.counter = 0
-
-#     def save_checkpoint(self, val_loss, model, path):
-#         # used for saving the current best model
-#         if self.verbose:
-#             print(
-#                 f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).  Saving model ...')
-#         torch.save(model.state_dict(), path + '/' + 'checkpoint.pth')
-#         self.val_loss_min = val_loss
-
-
-# class EarlyStopping:
-#     def __init__(self, patience=7, verbose=False, delta=0, model_save_path=None):
-#         self.patience = patience
-#         self.verbose = verbose
-#         self.counter = 0
-#         self.best_score = None
-#         self.early_stop = False
-#         self.val_loss_min = np.Inf
-#         self.accuracy_max = 0
-#         self.delta = delta
-#         self.model_save_path = model_save_path
-#         self.best_epoch = None
-#         self.best_acc = None
-
-#     def __call__(self, val_loss, accuracy, model, epoch):
-
-#         score = -val_loss
-
-#         if self.best_score is None:
-#             self.best_score = score
-#             self.best_acc = accuracy
-#             self.save_checkpoint(val_loss, accuracy, model, epoch)
-#         elif score < self.best_score + self.delta and accuracy < self.best_acc:
-#             self.counter += 1
-#             logger.info('EarlyStopping counter: %s out of %s - Current best val loss: %s - Current best val acc: %s',
-#                         self.counter, self.patience, self.best_score, self.best_acc)
-#             if self.counter >= self.patience:
-#                 self.early_stop = True
-#         else:
-#             self.best_score = score
-#             self.best_acc = accuracy
-#             self.save_checkpoint(val_loss, accuracy, model, epoch)
-#             self.counter = 0
-
-#     def save_checkpoint(self, val_loss, accuracy, model, epoch):
-#         '''Saves model when validation loss decrease.'''
-#         if self.verbose:
-#             logger.info(
-#                 f'Validation loss decreased({self.val_loss_min: .6f} - -> {val_loss: .6f}), (Accuracy: {self.accuracy_max: .6f} - -> {accuracy: .6f}).Saving model ...')
-
-#         path_save = os.path.join(
-#             self.model_save_path, 'best_checkpoint_{}.pth'.format(epoch))
-#         torch.save(model.state_dict(), path_save)
-
-#         self.val_loss_min = val_loss
-#         self.accuracy_max = accuracy
 
 class EarlyStopping:
     def __init__(self, patience=7, verbose=False, delta=0, model_save_path=None):
@@ -163,6 +74,110 @@ class EarlyStopping:
         self.val_loss_min = val_loss
         self.accuracy_max = accuracy
 
+
+class EarlyStoppingLTS:
+    def __init__(self, patience=7, verbose=False, delta=0, model_save_path=None, top_k=5):
+        """
+        Args:
+            patience (int): Number of epochs with no improvement after which training will be stopped
+            verbose (bool): If True, prints a message for each validation improvement
+            delta (float): Minimum change in the monitored quantity to qualify as an improvement
+            model_save_path (str): Directory to save model checkpoints
+            top_k (int): Number of best models to keep based on validation loss
+        """
+        self.patience = patience
+        self.verbose = verbose
+        self.counter = 0
+        self.best_loss_score = None
+        self.early_stop = False
+        self.delta = delta
+        self.model_save_path = model_save_path
+        self.top_k = top_k
+        
+        # Use a heap to track top k models
+        self.top_k_models = []
+        
+        # Ensure save path exists
+        if model_save_path:
+            os.makedirs(model_save_path, exist_ok=True)
+
+    def __call__(self, val_loss, model, epoch):
+        """
+        Check if early stopping is needed and save top k models
+        
+        Args:
+            val_loss (float): Validation loss for current epoch
+            model (torch.nn.Module): Model to potentially save
+            epoch (int): Current training epoch
+        """
+        # Convert loss to a score (lower is better)
+        loss_score = val_loss
+
+        # First iteration
+        if self.best_loss_score is None:
+            self.best_loss_score = loss_score
+            self._save_top_k_model(loss_score, model, epoch)
+            return False
+
+        # Check for improvement
+        if loss_score < self.best_loss_score - self.delta:
+            # Reset counter on improvement
+            self.counter = 0
+            self.best_loss_score = loss_score
+            self._save_top_k_model(loss_score, model, epoch)
+        else:
+            # Increment counter if no improvement
+            self.counter += 1
+            
+            if self.verbose:
+                logger.info(f'EarlyStopping counter: {self.counter} out of {self.patience} - '
+                            f'Best validation loss: {self.best_loss_score:.6f}')
+
+        # Check if we should stop training
+        if self.counter >= self.patience:
+            self.early_stop = True
+            return True
+
+        return False
+
+    def _save_top_k_model(self, loss_score, model, epoch):
+        """
+        Save top k models based on validation loss
+        
+        Args:
+            loss_score (float): Validation loss score
+            model (torch.nn.Module): Model to save
+            epoch (int): Current training epoch
+        """
+        # Create save path if not exists
+        if not os.path.exists(self.model_save_path):
+            os.makedirs(self.model_save_path)
+
+        # Prepare checkpoint
+        checkpoint = model.state_dict()
+   
+        # If we haven't reached top k models yet
+        if len(self.top_k_models) < self.top_k:
+            save_path = os.path.join(self.model_save_path, f'best_checkpoint_loss_{epoch}.pth')
+            torch.save(checkpoint, save_path)
+            heapq.heappush(self.top_k_models, (loss_score, save_path))
+            
+            if self.verbose:
+                logger.info(f'Saved model checkpoint at epoch {epoch} with loss {loss_score:.6f}')
+        else:
+            # If current loss is better than the worst in top k
+            if loss_score < self.top_k_models[0][0]:
+                # Remove the worst model file
+                _, worst_model_path = heapq.heappop(self.top_k_models)
+                os.remove(worst_model_path)
+
+                # Save new model
+                save_path = os.path.join(self.model_save_path, f'best_checkpoint_loss_{epoch}.pth')
+                torch.save(checkpoint, save_path)
+                heapq.heappush(self.top_k_models, (loss_score, save_path))
+                
+                if self.verbose:
+                    logger.info(f'Updated top k models: Saved model checkpoint at epoch {epoch} with loss {loss_score:.6f}')
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""

@@ -8,142 +8,18 @@ from torch import Tensor
 import fairseq
 import logging
 # from fairseq.models.distilXLSR import DistilXLSR, DistilXLSRConfig
-from transformers import Wav2Vec2ForCTC, Wav2Vec2Config
-from transformers import AutoProcessor, AutoModelForPreTraining, Wav2Vec2Processor, Wav2Vec2Model, Wav2Vec2PreTrainedModel, AutoConfig
+#from transformers import Wav2Vec2ForCTC, Wav2Vec2Config
+#from transformers import AutoProcessor, AutoModelForPreTraining, Wav2Vec2Processor, Wav2Vec2Model, Wav2Vec2PreTrainedModel, AutoConfig
 from torchaudio.models.wav2vec2.utils.import_huggingface import import_huggingface_model
 from torchaudio.pipelines import WAV2VEC2_ASR_BASE_960H, WAV2VEC2_BASE
 from torchaudio.models.wav2vec2.utils import import_fairseq_model
-from transformers.models.wav2vec2.convert_wav2vec2_original_pytorch_checkpoint_to_pytorch import recursively_load_weights
+#from transformers.models.wav2vec2.convert_wav2vec2_original_pytorch_checkpoint_to_pytorch import recursively_load_weights
 from typing import Optional
 from torchaudio.models import wav2vec2_model
 from torchdistill.models.registry import register_model
-# class Wav2Vec2Model(nn.Module):
-
-#     def __init__(self, cp_path, device, model_type='base'):
-#         super().__init__()
-#         self.SUPPORT_LISTS = ['base', 'xlsr', 'distil-xlsr']
-#         if model_type not in self.SUPPORT_LISTS:
-#             raise ValueError('Unknown model_type of Wav2Vec2 model: {} it should in {}'.format(model_type, self.SUPPORT_LISTS))
-#         self.model_type = model_type
-
-#         if model_type == 'base' or model_type == 'xlsr':
-#             model, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([cp_path])
-#             self.model = model[0]
-#         else:
-#             checkpoint = torch.load(cp_path, map_location=device)
-#             self.pretrained_model_cfg = checkpoint["Config"]["model"]
-#             self.pretrained_model_cfg = DistilXLSRConfig(self.pretrained_model_cfg)
-#             self.model = DistilXLSR(self.pretrained_model_cfg)
-#             self.model.load_state_dict(checkpoint["Student"])
-
-#         self.out_dim = 768 if self.model_type == 'base' else 1024
-
-#     def forward(self, input_data):
-#         if self.model_type == 'base' or self.model_type == 'xlsr':
-#             input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data
-#             emb = self.model(input_tmp, mask=False, features_only=True)['x']
-#             return emb
-#         else:
-#             input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data
-
-#             (final_output, layer_results), padding_mask = self.model(
-#                     source=input_tmp,
-#                     ret_layer_results=True
-#                 )
-#             if self.model.encoder.layer_norm_first:
-#                 layer_hiddens = [i[2] for i in layer_results]
-#                 layer_hiddens.pop(0)
-#                 layer_hiddens.append(final_output)
-#             else:
-#                 layer_hiddens = [i[0] for i in layer_results]
-
-#             x = layer_hiddens[-1]
-#             return x
-
-
-class SSL_WAV2VEC2_ASR_BASE_960H_TA(nn.Module):
-    def __init__(self, device):
-        super().__init__()
-        self.model = WAV2VEC2_ASR_BASE_960H.get_model().to(device)
-        self.out_dim = 768
-
-    def forward(self, input_data):
-        input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data
-        features, _ = self.model.extract_features(input_tmp)
-        features = features[0]
-        return features
-
-
-class SSL_WAV2VEC2_BASE_TA(nn.Module):
-    def __init__(self, device):
-        super().__init__()
-        self.model = WAV2VEC2_BASE.get_model().to(device)
-        self.out_dim = 768
-
-    def forward(self, input_data):
-        input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data
-        features, _ = self.model.extract_features(input_tmp)
-        features = features[0]
-        return features
-
-
-class SSL_WAV2VEC2_BASE_FSTA(nn.Module):
-    def __init__(self, device):
-        super().__init__()
-        # Change the pre-trained XLSR model path.
-        cp_path = '/datab/hungdx/KDW2V-AASISTL/wav2vec_small.pt'
-        model, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([
-                                                                                 cp_path])
-        self.model = model[0]
-        self.model = import_fairseq_model(self.model)
-        self.model = self.model.to(device)
-        self.out_dim = 768
-
-    def forward(self, input_data):
-        input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data
-        features, _ = self.model.extract_features(input_tmp)
-        features = features[0]
-        return features
-
-
-class Distil_SSL_WAV2VEC2_BASE_TAHG(nn.Module):
-    def __init__(self, device):
-        super().__init__()
-        self.model = Wav2Vec2ForCTC.from_pretrained('OthmaneJ/distil-wav2vec2')
-        self.model = import_huggingface_model(self.model)
-        self.model = self.model.to(device)
-        self.out_dim = 768
-
-    def forward(self, input_data):
-        input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data
-        features, _ = self.model.extract_features(input_tmp)
-        print(features)
-        features = features[0]
-        return features
-
-
-class SSLHuggingFaceModel(nn.Module):
-    def __init__(self, model_name="facebook/wav2vec2-base", out_dim=768, device="cuda"):
-        super().__init__()
-
-        # fairseq_model, _, _ = fairseq.checkpoint_utils.load_model_ensemble_and_task(["wav2vec_small.pt"])
-        # fairseq_model = fairseq_model[0]
-
-        config = Wav2Vec2Config.from_pretrained(model_name)
-        # self.model = AutoModelForPreTraining.from_pretrained(model_name, config=config)
-        self.model = Wav2Vec2Model.from_pretrained(model_name, config=config)
-
-        # Recursively load weights from fairseq model
-        # recursively_load_weights(fairseq_model, self.model, is_headless=False)
-        # del fairseq_model
-        self.model = self.model.to(device)
-        self.out_dim = out_dim
-
-    def forward(self, input_data) -> Tensor:
-        input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data
-        emb = self.model(
-            input_tmp, output_hidden_states=True).hidden_states[-1]
-        return emb
+from dotenv import load_dotenv
+import os
+load_dotenv()
 
 
 class SSLModelBase(nn.Module):
@@ -680,7 +556,7 @@ def middle_indices(array_length, number_of_middle_elements):
     return middle_indices
 
 
-@register_model(key='My_XLSR_FE')
+# @register_model(key='My_XLSR_FE')
 class My_XLSR_FE(nn.Module):
 
     def __init__(self, device, **kwargs):
@@ -688,11 +564,11 @@ class My_XLSR_FE(nn.Module):
         self.num_layers = kwargs.get('num_layers', 24)
         self.order = kwargs.get('order', 'first')
         self.custom_order = kwargs.get('custom_order', None)
+        ckpt_path = os.getenv("XLSR_PRETRAINED_PATH", "/nvme1/hungdx/Lightning-hydra/xlsr2_300m.pt")
         if self.num_layers < 1 or self.num_layers > 24:
             raise ValueError(
                 "Number of layers must be at least 1 and at most 24.")
-        model, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([
-                                                                                 '/datad/hungdx/Rawformer-implementation-anti-spoofing/pretrained/xlsr2_300m.pt'])
+        model, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([ckpt_path])
         self.model = model[0]
         self.model = self.model.to(device)
         self.out_dim = 1024
@@ -738,6 +614,79 @@ class My_XLSR_FE(nn.Module):
             'layer_results']
         return layer_results
 
+
+class My_Wav2vec2Base_FE(nn.Module):
+
+    def __init__(self, device, **kwargs):
+        super().__init__()
+        self.num_layers = kwargs.get('num_layers', 12)
+        self.order = kwargs.get('order', 'first')
+        self.custom_order = kwargs.get('custom_order', None)
+        ckpt_path = "/home/hungdx/wav2vec_small.pt"
+        if self.num_layers < 1 or self.num_layers > 12:
+            raise ValueError(
+                "Number of layers must be at least 1 and at most 12.")
+        model, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([ckpt_path])
+        self.model = model[0]
+        # Disable all dropout
+        # self.model.encoder_layerdrop = 0.0
+        # self.model.cfg.dropout_features = 0.0
+        # self.model.cfg.dropout_input = 0.0
+        # self.model.cfg.dropout = 0.0
+        # self.model.cfg.attention_dropout = 0.0
+        # self.model.cfg.activation_dropout = 0.0
+        # self.model.dropout_features  = nn.Dropout(0.0)
+        #self.model.dropout_input   = nn.Dropout(0.0)
+        # self.model.dropout_features = nn.Dropout(0.0)
+        # self.model.dropout = nn.Dropout(0.0)
+        # self.model.attention_dropout = nn.Dropout(0.0)
+        # self.model.activation_dropout = nn.Dropout(0.0)
+        
+        self.model = self.model.to(device)
+        self.out_dim = 768
+        
+        # self.model.eval() # Disable dropout
+  
+        if self.order == 'last':
+            # Get the last n layers
+            self.model.encoder.layers = self.model.encoder.layers[-self.num_layers:]
+        elif self.order == 'first':
+            # Get the first n layers
+            self.model.encoder.layers = self.model.encoder.layers[:self.num_layers]
+        elif self.order == 'middle':
+            indices = middle_indices(12, self.num_layers)
+
+            self.model.encoder.layers = nn.ModuleList([
+                self.model.encoder.layers[i] for i in indices])
+        else:
+            if self.custom_order is None:
+                raise ValueError(
+                    "Custom order must be provided as a list of integers (0-11).")
+
+            # Check if the custom order is valid
+            if type(self.custom_order) != list:
+                raise ValueError("Custom order must be a list of integers.")
+
+            # if len(self.custom_order) != self.num_layers:
+            #     raise ValueError(
+            #         "Length of custom order must be less than or equal to the number of layers.")
+            self.model.encoder.layers = nn.ModuleList([
+                self.model.encoder.layers[i] for i in self.custom_order])
+
+    def forward(self, x):
+        return self.extract_feat(x)
+
+    def extract_feat(self, x):
+        input_tmp = x[:, :, 0] if x.ndim == 3 else x
+        emb = self.model(input_tmp, mask=False, features_only=True)[
+            'x']
+        return emb
+
+    def extract_layer_results(self, x):
+        input_tmp = x[:, :, 0] if x.ndim == 3 else x
+        layer_results = self.model(input_tmp, mask=False, features_only=True)[
+            'layer_results']
+        return layer_results
 
 @register_model(key='Custom_Wav2Vec2_Fe')
 class Custom_Wav2Vec2_Fe(nn.Module):

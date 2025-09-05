@@ -282,6 +282,68 @@ def batch_pad_for_multiview(input_data_batch_, wav_samp_rate, length,
     return output_data_batch
 
 
+def batch_pad_for_multiview_torch(input_data_batch_, wav_samp_rate, length, random_trim_nosil=False, repeat_pad=False):
+    """ output = batch_pad_for_multiview(
+          input_data_batch, wav_samp_rate, length, random_trim_nosil=False)
+    
+    If input_data_batch is a single trial, trim it to a fixed length.
+    For multi-view data, trim all the trials to a fixed length, using the same
+    random start and end.
+
+    input
+    -----
+      input_data: list of torch.Tensor, (length, 1)
+      wav_samp_rate: int, waveform sampling rate
+    
+    output
+    ------
+      output: list of torch.Tensor, (length, 1)
+    """
+
+    # unify the length of input data before further processing
+    def _ad_length(x, length, repeat_pad):
+        # adjust the length of the input x
+        if length > x.shape[0]:
+            if repeat_pad:
+                rt = int(length / x.shape[0]) + 1
+                tmp = x.repeat((rt, 1))[:length]
+            else:
+                tmp = torch.zeros([length, 1], dtype=x.dtype)
+                tmp[:x.shape[0]] = x
+        else:
+            tmp = x[:length]
+        return tmp
+    
+    # use the first data in the list to determine the unified length
+    firstlen = input_data_batch_[0].shape[0]
+    input_data_batch = [_ad_length(x, firstlen, repeat_pad) for x in input_data_batch_]
+
+    new_len = input_data_batch[0].shape[0]
+    if not repeat_pad:
+        if new_len < length:
+            start_len = 0
+            end_len = new_len
+        elif random_trim_nosil:
+            start_len = int(torch.randint(0, new_len - length, (1,)).item())
+            end_len = start_len + length
+        else:
+            start_len = 0
+            end_len = length
+    else:
+        if new_len < length:
+            start_len = 0
+            end_len = length
+            rt = int(length / new_len) + 1
+            input_data_batch_ = [x.repeat((rt, 1)) for x in input_data_batch]
+        elif random_trim_nosil:
+            start_len = int(torch.randint(0, new_len - length, (1,)).item())
+            end_len = start_len + length
+        else:
+            start_len = 0
+            end_len = length
+    
+    output_data_batch = [x[start_len:end_len] for x in input_data_batch_]
+    return output_data_batch
 
 ##################
 # Frequency domain

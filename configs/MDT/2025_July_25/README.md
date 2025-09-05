@@ -1,0 +1,2 @@
+# Conf-1: dataset used data/replay_cl_250609, old mapping weird init, custom order 1-5 (using amp for train)
+# Conf-2: dataset used data/replay_cl_250610, correct init, correct order 0-4 (more data, expect better performace, no amp)

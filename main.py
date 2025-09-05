@@ -77,20 +77,20 @@ def produce_evaluation_file(dataset, model, device, save_path, kd_method=None, b
                 batch_x = batch_x.half()
             batch_x = batch_x.to(device)
 
-            if kd_method == 'KD_logits':
-                batch_out = model(batch_x)
-            elif kd_method == 'KD_cosine':
-                batch_out, _ = model(batch_x)
-            elif kd_method == 'KD_mse':
-                batch_out, _ = model(batch_x)
-            elif kd_method == 'self_KD':
-                batch_out, spectral_output, temporal_output, graph_output_S, graph_output_T, hs_gal_output_S, hs_gal_output_T, middle_feature1, middle_feature2, final_feature1, final_feature2 = model(
-                    batch_x)
-            elif kd_method == 'self_KD_Teacher':
-                batch_out, spectral_output, temporal_output, graph_output_S, graph_output_T, hs_gal_output_S, hs_gal_output_T, middle_feature1, middle_feature2, final_feature1, final_feature2, hidden_features = model(
-                    batch_x)
-            else:
-                batch_out = model(batch_x)
+            # if kd_method == 'KD_logits':
+            #     batch_out = model(batch_x)
+            # elif kd_method == 'KD_cosine':
+            #     batch_out, _ = model(batch_x)
+            # elif kd_method == 'KD_mse':
+            #     batch_out, _ = model(batch_x)
+            # elif kd_method == 'self_KD':
+            #     batch_out, spectral_output, temporal_output, graph_output_S, graph_output_T, hs_gal_output_S, hs_gal_output_T, middle_feature1, middle_feature2, final_feature1, final_feature2 = model(
+            #         batch_x)
+            # elif kd_method == 'self_KD_Teacher':
+            #     batch_out, spectral_output, temporal_output, graph_output_S, graph_output_T, hs_gal_output_S, hs_gal_output_T, middle_feature1, middle_feature2, final_feature1, final_feature2, hidden_features = model(
+            #         batch_x)
+            # else:
+            batch_out = model(batch_x)
 
             if device == 'cpu':
                 # batch_out = batch_out.to(torch.float32)
