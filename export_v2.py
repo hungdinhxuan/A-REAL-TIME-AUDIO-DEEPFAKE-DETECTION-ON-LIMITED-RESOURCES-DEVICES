@@ -54,6 +54,29 @@ def perform_onnx_inference(model_path, input):
     return result
 
 
+def pad2(x, max_len: int = PADDING_SIZE):
+    """
+    Trace-friendly padding function optimized for serving/inference.
+    Handles both truncation and repetitive padding without TracerWarnings.
+    """
+    # Handle both 1D and 2D tensors consistently
+    if x.dim() == 2:
+        x = x.squeeze(0)
+    
+    x_len = x.size(0)
+    
+    # Method 1: Use torch.tile (PyTorch >= 1.7) - most efficient and trace-friendly
+    # Calculate a safe number of repetitions
+    # For typical audio (16kHz, 4sec = 64k samples), even with 100ms input (1.6k samples)
+    # we'd need ~40 repetitions. Use 50 for safety margin.
+    num_reps = max(1, (max_len // 1000) + 10)  # Conservative estimate
+    
+    # torch.tile is the most efficient way to repeat tensors
+    tiled = torch.tile(x, (num_reps,))
+    
+    # Always truncate to exact length
+    return tiled[:max_len]
+
 def pad(x, max_len: int = PADDING_SIZE):
     x_len = x.shape[0]
     if x_len >= max_len:
@@ -63,6 +86,17 @@ def pad(x, max_len: int = PADDING_SIZE):
     padded_x = x.repeat((1, num_repeats))[:, :max_len][0]
     return padded_x
 
+@torch.jit.script
+def make_sure_2d(x: Tensor) -> Tensor:
+    if len(x.shape) == 1:
+        x = x.unsqueeze(0)
+    return x
+
+# def pad2(x, max_len: int = PADDING_SIZE):
+#     '''
+#     Maximum length of the input is 10000
+#     '''
+#     pass
 
 class WrapperScaledModel(nn.Module):
     def __init__(self, model):
@@ -123,15 +157,6 @@ class WrapperModel(nn.Module):
         output = self.model(wav_padded)
         return self.softmax(output)[0][0]
 
-
-        # Update for kaist
-        output = torch.argmax(output, dim=1)
-        # If output is 1, then it is bonafide (real) else it is spoofed
-        # Swap the output
-        if output == 0:
-            return 1
-        else:
-            return 0
         
 class WrapperModel_NOPAD(nn.Module):
     def __init__(self, model):
@@ -142,38 +167,11 @@ class WrapperModel_NOPAD(nn.Module):
 
     def forward(self, x):
         #wav_padded = pad(x).unsqueeze(0)
-        output = self.model(x)
+        x = make_sure_2d(x)
+        with torch.no_grad():
+            output = self.model(x)
         return self.softmax(output)[0][0]
 
-        
-
-
-class WrapperFusionModel(nn.Module):
-    def __init__(self, models: nn.ModuleList):
-        super().__init__()
-        self.models = models
-        self.softmax = nn.Softmax(dim=1)
-
-        #
-        for model in self.models:
-            model.eval()
-
-    def forward(self, x) -> Tensor:
-
-        wav_padded = pad(x).unsqueeze(0)
-        outputs = torch.stack([model(wav_padded) for model in self.models])
-        # print("Outputs")
-        # print(outputs)
-
-        # Calculate the average score
-        avg_output = outputs.mean(dim=0)
-        # print("Average output")
-        # print(avg_output)
-
-        # Apply softmax
-        softmax_output = self.softmax(avg_output)
-
-        return softmax_output[0][0]
 
 
 # Load spoofed sample
@@ -183,7 +181,7 @@ input = torch.tensor(input).unsqueeze(0)
 # input = torch.zeros(1, 64600)
 
 print(input.shape)
-padded_input = pad(input).unsqueeze(0)
+padded_input = pad(input).unsqueeze(0) if PADDING_SIZE > 0 else input
 
 checkpoint = args.student_model_path
 
@@ -221,8 +219,8 @@ with torch.no_grad():
     before = model(padded_input)
     print(before)
 
-model.module.ssl_model = W2V2_TA(import_fairseq_model(
-    model.module.ssl_model.model
+model.module.front_end = W2V2_TA(import_fairseq_model(
+    model.module.front_end.model
 )).to(device)
 # model.ssl_model = W2V2_TA(import_fairseq_model(
 #     model.ssl_model.model
@@ -285,19 +283,83 @@ comment = args.comment
 if comment is None:
     comment = ""
 
+SAVE_MODEL_PATH = f"{second_last}_{os.path.basename(checkpoint).split('.')[0]}_{comment}%s.pt"
+os.makedirs("./exports", exist_ok=True)
+SAVE_MODEL_PATH = os.path.join("./exports", SAVE_MODEL_PATH)
+ 
 if args.qat:
     print("Quantizing model")
     comment += "_qat"
-    torch.backends.quantized.engine = 'qnnpack'
-    model_fp32 = torch.quantization.quantize_dynamic(
+    #torch.backends.quantized.engine = 'qnnpack'
+
+    quantized_model = torch.quantization.quantize_dynamic(
         model_fp32, {nn.Linear}, dtype=torch.qint8)
-    print("Done quantizing")
-
-
-SAVE_MODEL_PATH = f"{second_last}_{os.path.basename(checkpoint).split('.')[0]}_{comment}%s.pt"
     
-os.makedirs("./exports", exist_ok=True)
-SAVE_MODEL_PATH = os.path.join("./exports", SAVE_MODEL_PATH)
+    padded_input = padded_input.squeeze(0)
+    print("Padded input shape", padded_input.shape)
+    scripted_model = torch.jit.trace(quantized_model, padded_input)
+    # Save scripted model
+    scripted_model_path = SAVE_MODEL_PATH % "qat_scripted"
+    torch.jit.save(scripted_model, scripted_model_path)
+    print("Saved scripted model to ", scripted_model_path)
+    
+    from torch._C import _MobileOptimizerType as MobileOptimizerType
+    
+    # 4. Optimize for mobile
+    # optimized_model = optimize_for_mobile(scripted_model, optimization_blocklist={
+    #         #MobileOptimizerType.HOIST_CONV_PACKED_PARAMS,
+    #         MobileOptimizerType.INSERT_FOLD_PREPACK_OPS
+    # })
+    optimized_model = optimize_for_mobile(scripted_model)
+    
+    # Save quantized model
+    quantized_model_path = SAVE_MODEL_PATH % "qat_mobile"
+    torch.jit.save(optimized_model, quantized_model_path)
+    print("Saved quantized model to ", quantized_model_path)
+    
+    # Save lite model
+    lite_model_path = quantized_model_path.split(".pt")[0] + "_lite.ptl"
+    optimized_model._save_for_lite_interpreter(lite_model_path)
+    print("Saved lite model to ", lite_model_path)
+    
+    # Testing lite model
+    
+    
+    
+   
+    print("Done quantizing")
+    import sys
+    sys.exit(0)
+
+if args.executorch:
+    print("Exporting executorch model")
+    comment += "_executorch"
+    from executorch.backends.xnnpack.partition.xnnpack_partitioner import XnnpackPartitioner
+    from executorch.exir import to_edge_transform_and_lower
+    from torch.export import Dim, export
+    dynamic_shapes = {
+        "x": Dim("length", min=16000, max=160000)
+    }
+    inputs = (torch.randn(1, 64000),)
+    exported_program = export(model_fp32, inputs, dynamic_shapes=dynamic_shapes)
+    executorch_program = to_edge_transform_and_lower(
+        exported_program,
+        partitioner = [XnnpackPartitioner()]
+    ).to_executorch()
+    print("Executorch program")
+    with open("model.pte", "wb") as f:
+        f.write(executorch_program.buffer)
+        
+    # Testing executorch program
+    from executorch.runtime import Runtime
+    runtime = Runtime.get()
+    program = runtime.load_program("model.pte")
+    method = program.load_method("forward")
+    print("Executorch program output")
+    outputs = method.execute([inputs])
+    print(outputs)
+    sys.exit(0)
+ 
 
 
 if args.bf16:
@@ -350,23 +412,40 @@ if args.onnx:
     print("ONNX results")
     print(results)
 
-jit_model = torch.jit.script(model_fp32)
+
+print("Before trace")
+padded_input = padded_input.squeeze(0)
+with torch.no_grad():
+    before = model_fp32(padded_input)
+    print(before)
+
+# Script
+#jit_model = torch.jit.script(model_fp32)
+# Trace
+
+
+print("Padded input shape", padded_input.shape)
+
+jit_model = torch.jit.trace(model_fp32, padded_input)
 
 with torch.no_grad():
-    jit_out = jit_model(input)
+    jit_out = jit_model(padded_input)
     print("JIT model output")
     print(jit_out)
 
 SAVE_MODEL_PATH_LAPTOP = SAVE_MODEL_PATH % "jit"
 # optimized_jit_for_inference = torch.jit.optimize_for_inference(jit_model)
-torch.jit.save(jit_model, SAVE_MODEL_PATH_LAPTOP)
-print("Saved model to ", SAVE_MODEL_PATH_LAPTOP)
+# torch.jit.save(jit_model, SAVE_MODEL_PATH_LAPTOP)
+# print("Saved model to ", SAVE_MODEL_PATH_LAPTOP)
 
-
-opt_model = optimize_for_mobile(jit_model)
+from torch._C import _MobileOptimizerType as MobileOptimizerType
+opt_model = optimize_for_mobile(jit_model, optimization_blocklist={
+            #MobileOptimizerType.HOIST_CONV_PACKED_PARAMS,
+            MobileOptimizerType.INSERT_FOLD_PREPACK_OPS
+    })
 print("After optimize_for_mobile")
 with torch.no_grad():
-    after = opt_model(input)
+    after = opt_model(padded_input)
     print(after)
 
 # Save optimized model

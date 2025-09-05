@@ -992,6 +992,26 @@ class Distil_XLSR_N_Trans_Layer_ConformerTCM(nn.Module):
         out = self.backend(x)
         return out
 
+@register_model(key='Distil_Wav2vec2_N_Trans_Layer_ConformerTCM')
+class Distil_Wav2vec2_N_Trans_Layer_ConformerTCM(nn.Module):
+    def __init__(self, device,  args, **kwargs):
+        super().__init__()
+        self.front_end = My_Wav2vec2Base_FE(device, **kwargs).to(device)
+        self.LL = nn.Linear(self.front_end.out_dim, args['emb_size'])
+        self.first_bn = nn.BatchNorm2d(num_features=1)
+        self.selu = nn.SELU(inplace=True)
+        self.backend=MyConformer(**args)
+    
+    def forward(self, x):
+        x_ssl_feat = self.front_end.extract_feat(x.squeeze(-1))
+        x = self.LL(x_ssl_feat)
+        x = x.unsqueeze(dim=1)
+        x = self.first_bn(x)
+        x = self.selu(x)
+        x = x.squeeze(dim=1)
+        out = self.backend(x)
+        return out
+
 @register_model(key='Distil_XLSR_N_Trans_Layer_AASIST')
 class Distil_XLSR_N_Trans_Layer_AASIST(nn.Module):
     def __init__(self, device, ssl_cpkt_path=None, **kwargs):

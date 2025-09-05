@@ -75,6 +75,8 @@ def get_main_menu():
                         help='use amp mode')
     parser.add_argument('--qat', action='store_true', default=False,
                         help='Enable Quantization Aware Training')
+    parser.add_argument('--executorch', action='store_true', default=False,
+                        help='Enable Executorch')
     parser.add_argument('--bf16', action='store_true', default=False,
                         help='Enable BF16 inference')
     parser.add_argument('--is_eval', action='store_true',

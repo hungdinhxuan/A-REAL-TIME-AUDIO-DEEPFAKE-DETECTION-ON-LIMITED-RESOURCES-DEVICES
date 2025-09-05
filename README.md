@@ -300,3 +300,12 @@ CUDA_VISIBLE_DEVICES=2 OMP_NUM_THREADS=5 PYTHONPATH=$PYTHONPATH:/datab/hungdx/KD
 ### 4s
 
 CUDA_VISIBLE_DEVICES="" PYTHONPATH=$PYTHONPATH:/datab/hungdx/KDW2V-AASISTL/fairseq python export.py --student_model_path="/home/hungdx/code/KDW2V-AASISTL/runs/Distil_XLSR_5_Custom_Trans_Layer_Linear_noaudioaug_randomstart_large_corpus_jun_on_4s_kaist/best_checkpoint_105.pth" --comment="wrapper_4s" --padding=4 --yaml="/home/hungdx/code/KDW2V-AASISTL/configs/kaist_proj_on_large_corpus_jun_4s.yaml"
+
+
+
+# Jul 2025
+
+###2s - MDT-LoRA
+CUDA_VISIBLE_DEVICES="" python export_v2.py --student_model_path="/nvme1/hungdx/KDW2V-AASISTL/runs/Distil_XLSR_5_Custom_Trans_Layer_ConformerTCM_conf-1-2/best.pth" --comment="mdt_lora_mini_wrapper_2s" --padding=2 --yaml="/nvme1/hungdx/KDW2V-AASISTL/configs/MDT/2025_July_25/xlsr_conformertcm_large_corpus_nov_conf-1-2.yaml"
+###no-pad - MDT-LoRA
+CUDA_VISIBLE_DEVICES="" python export_v2.py --student_model_path="/nvme1/hungdx/KDW2V-AASISTL/runs/Distil_XLSR_5_Custom_Trans_Layer_ConformerTCM_conf-1-2/best.pth" --comment="mdt_lora_mini_wrapper_no_pad" --padding=-1 --yaml="/nvme1/hungdx/KDW2V-AASISTL/configs/MDT/2025_July_25/xlsr_conformertcm_large_corpus_nov_conf-1-2.yaml"

@@ -205,11 +205,11 @@ class Model(nn.Module):
         return self._forward(x_big)
 
 
-if __name__ == "__main__":
-    from torchinfo import summary
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    model = Model(
-        device=device,
-        ssl_cpkt_path='/datad/hungdx/Rawformer-implementation-anti-spoofing/pretrained/xlsr2_300m.pt',
-    ).to(device)
-    summary(model, input_size=(8, 64600))
+# if __name__ == "__main__":
+#     from torchinfo import summary
+#     device = "cuda" if torch.cuda.is_available() else "cpu"
+#     model = Model(
+#         device=device,
+#         ssl_cpkt_path='/datad/hungdx/Rawformer-implementation-anti-spoofing/pretrained/xlsr2_300m.pt',
+#     ).to(device)
+#     summary(model, input_size=(8, 64600))

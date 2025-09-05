@@ -31,20 +31,37 @@ class MyConformer(nn.Module):
         self.class_token = nn.Parameter(torch.rand(1, emb_size))
         self.fc5 = nn.Linear(emb_size, 2)
     
+    # def forward(self, x): # x shape [bs, tiempo, frecuencia]
+    #     x = x + self.positional_emb[:, :x.size(1), :]
+    #     x = torch.stack([torch.vstack((self.class_token, x[i])) for i in range(x.shape[0])])#[bs,1+tiempo,emb_size]
+    #     list_attn_weight = []
+    #     for layer in self.encoder_blocks:
+    #         x, attn_weight = layer(x) #[bs,1+tiempo,emb_size]
+    #         list_attn_weight.append(attn_weight)
+    #     if self.pooling=='mean':
+    #         embedding = x.mean(dim=1)
+    #     elif self.pooling=='max':
+    #         embedding = x.max(dim=1)[0]
+    #     else:
+    #         # first token
+    #         embedding=x[:,0,:] #[bs, emb_size]
+    #     out=self.fc5(embedding) #[bs,2]
+    #     return out
+    
+    # Inference optimized version
     def forward(self, x): # x shape [bs, tiempo, frecuencia]
+        # Add positional embeddings efficiently
         x = x + self.positional_emb[:, :x.size(1), :]
-        x = torch.stack([torch.vstack((self.class_token, x[i])) for i in range(len(x))])#[bs,1+tiempo,emb_size]
-        list_attn_weight = []
+        
+        # More efficient way to add class token
+        batch_size = x.shape[0]
+        class_tokens = self.class_token.expand(batch_size, -1)
+        x = torch.cat([class_tokens.unsqueeze(1), x], dim=1)  # [bs, 1+tiempo, emb_size]
+        
+        # Process through encoder blocks without accumulating attention weights
         for layer in self.encoder_blocks:
-            x, attn_weight = layer(x) #[bs,1+tiempo,emb_size]
-            list_attn_weight.append(attn_weight)
-        if self.pooling=='mean':
-            embedding = x.mean(dim=1)
-        elif self.pooling=='max':
-            embedding = x.max(dim=1)[0]
-        else:
-            # first token
-            embedding=x[:,0,:] #[bs, emb_size]
+            x, _ = layer(x)  # Discard attention weights to save memory
+        embedding=x[:,0,:] #[bs, emb_size]
         out=self.fc5(embedding) #[bs,2]
         return out
     
