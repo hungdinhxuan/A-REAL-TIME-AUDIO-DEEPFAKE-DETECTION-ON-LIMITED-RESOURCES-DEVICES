@@ -32,7 +32,7 @@ import eval_metrics_DF as em
 from aasist.AASIST import *
 from wav2vec2_conformertcm import Model as W2V2_ConformerTCM
 import numpy as np
-from losses import Stand0ardMidLoss_v2 as StandardMidLoss
+from losses import StandardMidLoss
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -243,10 +243,10 @@ if dataset:
 
 train_loader, dev_loader = get_train_dev_dataloader(
     args, augment_mode, dataset, padding_size=padding_size)
-standard_mid_loss = StandardMidLoss(t_layers=len(config['model']['teacher']['teacher_module_paths'])-1, s_layers=len(config['model']['student']['student_module_paths'])-1, device=device)
 
-# optimizer = torch.optim.Adam(student_model.parameters(), lr=float(
-#     config['train']['learning_rate']), weight_decay=config['train']['weight_decay'])
+
+standard_mid_loss = StandardMidLoss(t_layers=len(config['model']['teacher']['teacher_module_paths'])-1, s_layers=len(config['model']['student']['student_module_paths'])-1, device=device, mse_loss_weight=0.0001)
+
 optimizer = torch.optim.Adam([{
     'params': student_model.parameters(),
 },
@@ -370,7 +370,6 @@ if len(freeze_layers) > 0:
 # Summary model
 summary(student_model, (1, 16000))
 
-
 for epoch in tqdm(range(start_epoch, num_epochs), colour='green'):
     logger.info('Epoch {}/{}'.format(epoch, num_epochs - 1))
 
@@ -405,7 +404,7 @@ for epoch in tqdm(range(start_epoch, num_epochs), colour='green'):
         writer.add_scalar('Accuracy/train', train_acc, epoch)
         for key, value in loss_dict.items():
             if isinstance(value, AverageMeter):
-                wandb.log({key: value.avg}) 
+                wandb.log({key: value.avg})
             else:
                 wandb.log({key: value})
             # writer.add_scalar(f'train_key', value, epoch)

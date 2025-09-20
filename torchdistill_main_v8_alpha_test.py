@@ -2,11 +2,15 @@ import torch
 import os
 import sys
 from wav2vec2_vib import Model as Wav2Vec2VIB
-
+#
 from student import *
 from teacher import *
 from data_utils import *
-from torchdistill_utils_alpha_test import *
+
+'''
+    Only KD loss is used
+'''
+from torchdistill_utils_alpha_test_v6 import *
 from utils import *
 from torchdistill.models.registry import get_model
 
@@ -32,8 +36,9 @@ import eval_metrics_DF as em
 from aasist.AASIST import *
 from wav2vec2_conformertcm import Model as W2V2_ConformerTCM
 import numpy as np
-from losses import Stand0ardMidLoss_v2 as StandardMidLoss
-
+from losses import StandardMidLoss_v6 as StandardMidLoss
+from torchinfo import summary
+from wav2vec2_tiny import *
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
@@ -131,6 +136,14 @@ teacher_model = get_model(config['model']['teacher']['name'],
 student_model = get_model(
             student_model_name, device=device, **config['model']['student']['kwargs']).to(device)
 
+print("Student model summary:")
+summary(student_model, (1, 16000))
+
+print("Teacher model summary:")
+summary(teacher_model, (1, 16000))
+
+# sys.exit(0)
+
 print("Current number of student parameters: ",  sum(p.numel()
       for p in student_model.parameters()))
 
@@ -176,27 +189,105 @@ if "student_resume" in config["train"] and config["train"]["student_resume"] != 
         config["train"]["student_resume"]))
 
 
+def uniform_element_selection(wt, s_shape):
+    assert wt.dim() == len(s_shape), "Tensors have different number of dimensions"
+    ws = wt.clone()
+    for dim in range(wt.dim()):
+        assert wt.shape[dim] >= s_shape[dim], "Teacher's dimension should not be smaller than student's dimension"  # determine whether teacher is larger than student on this dimension
+        if wt.shape[dim] % s_shape[dim] == 0:
+            step = wt.shape[dim] // s_shape[dim]
+            indices = torch.arange(s_shape[dim], device=wt.device) * step
+        else:
+            indices = torch.round(torch.linspace(0, wt.shape[dim]-1, s_shape[dim], device=wt.device)).long()
+        ws = torch.index_select(ws, dim, indices)
+    assert ws.shape == s_shape
+    return ws
+
 if copy_weights:
-    if is_teacher_parallel:
-        student_model.module.load_state_dict(
-            teacher_model.module.state_dict(), strict=False)
-    else:
-        student_model.module.load_state_dict(
-            teacher_model.state_dict(), strict=False)
+    # if is_teacher_parallel:
+    #     student_model.module.load_state_dict(
+    #         teacher_model.module.state_dict(), strict=False)
+    # else:
+    #     student_model.module.load_state_dict(
+    #         teacher_model.state_dict(), strict=False)
 
-    logger.info("Copied teacher weights to student")
+    # logger.info("Copied teacher weights to student")
 
-    if len(custom_order_copy_weights) > 0 and order == "custom":
-        logger.info("Copy transformer weights with custom order")
-        for index, value in enumerate(custom_order_copy_weights):
-            if is_teacher_parallel:
-                student_model.module.front_end.model.encoder.layers[index].load_state_dict(
-                    teacher_model.module.front_end.model.encoder.layers[value].state_dict(), strict=False)
-            else:
-                student_model.module.front_end.model.encoder.layers[index].load_state_dict(
-                    teacher_model.front_end.model.encoder.layers[value].state_dict(), strict=False)
-            logger.info(
-                f"Copied teacher transformer weights from  to front_end.model.encoder.layers[{value}] to front_end.model.encoder.layers[{index}] student")
+    # if len(custom_order_copy_weights) > 0 and order == "custom":
+    #     logger.info("Copy transformer weights with custom order")
+    #     for index, value in enumerate(custom_order_copy_weights):
+    #         if is_teacher_parallel:
+    #             student_model.module.front_end.model.encoder.layers[index].load_state_dict(
+    #                 teacher_model.module.front_end.model.encoder.layers[value].state_dict(), strict=False)
+    #         else:
+    #             student_model.module.front_end.model.encoder.layers[index].load_state_dict(
+    #                 teacher_model.front_end.model.encoder.layers[value].state_dict(), strict=False)
+    #         logger.info(
+    #             f"Copied teacher transformer weights from  to front_end.model.encoder.layers[{value}] to front_end.model.encoder.layers[{index}] student")
+    weight_selection = {}
+
+    student_weights = student_model.state_dict()
+    # remove prefix 'module.'
+    student_weights = {k.replace('module.', ''): v for k, v in student_weights.items()}
+    # parallel teacher
+    #teacher_model = nn.DataParallel(teacher_model).to(device)
+    teacher_weights = teacher_model.state_dict()
+
+    # print teacher_weights that startwith 'front_end.model.feature_extractor.conv_layers'
+    # for key in student_weights.keys():
+    #     if key.startswith('front_end.model.feature_extractor.conv_layers'):
+    #         print(key)
+    #         print(student_weights[key].shape)
+    #         # print(teacher_weights[key].shape)
+    #         # print(uniform_element_selection(teacher_weights[key], student_weights[key].shape).shape)
+
+    # print("--------------------------------")
+    # for key in teacher_weights.keys():
+    #     if key.startswith('front_end.model.feature_extractor.conv_layers'):
+    #         print(key)
+    #         print(teacher_weights[key].shape)
+    #         # print(student_weights[key].shape)
+    #         # print(uniform_element_selection(teacher_weights[key], student_weights[key].shape).shape)
+
+    
+    # print teacher_weights that startwith 'front_end.model.feature_extractor.conv_layers'
+    # import sys
+    # sys.exit(0)
+    # print(student_model.module.front_end.model.feature_extractor.conv_layers)
+    # print(teacher_model.front_end.model.feature_extractor.conv_layers)
+    #print("Loading conv_layers")
+    #student_model.module.front_end.model.feature_extractor.conv_layers.load_state_dict(teacher_model.front_end.model.feature_extractor.conv_layers.state_dict(), strict=False)
+    # print(student_model.module.front_end.model.feature_extractor.conv_layers)
+    # print(student_model.module.front_end.model.feature_extractor.conv_layers.state_dict())
+    # import sys
+    # sys.exit(0)
+    # student_model.module.backend.load_state_dict(teacher_weights['backend'])
+    # student_model.module.LL.load_state_dict(teacher_weights['LL'])
+
+    # List manually 
+    # list_manually_copy_weights = ['conv_layers', 'backend']
+
+    for key in student_weights.keys():
+        # We don't perform weight selection on classification head by default. Remove this constraint if target dataset is the same as teacher's.
+        if "backend" in key or "conv_layers" in key :
+            continue
+        # First-N layer selection is implicitly applied here
+        weight_selection[key] = uniform_element_selection(teacher_weights[key], student_weights[key].shape)
+    
+    ## loading front_end parts
+    print("Loading front_end parts")
+    student_model.module.load_state_dict(weight_selection, strict=False)
+
+    ## Loading backend
+    # print("Loading backend")
+    # student_model.module.backend.load_state_dict(teacher_model.backend.state_dict(), strict=True)
+    ## Loading LL
+    # print("Loading LL")
+    # student_model.module.LL.load_state_dict(teacher_model.LL.state_dict(), strict=True)
+    print("All parts loaded")
+    # print(weight_selection.keys())
+    # import sys
+    # sys.exit(0)
 
 if torchaudio_wrapper:
     logger.info('Use torchaudio wrapper')
@@ -243,10 +334,12 @@ if dataset:
 
 train_loader, dev_loader = get_train_dev_dataloader(
     args, augment_mode, dataset, padding_size=padding_size)
-standard_mid_loss = StandardMidLoss(t_layers=len(config['model']['teacher']['teacher_module_paths'])-1, s_layers=len(config['model']['student']['student_module_paths'])-1, device=device)
 
-# optimizer = torch.optim.Adam(student_model.parameters(), lr=float(
-#     config['train']['learning_rate']), weight_decay=config['train']['weight_decay'])
+
+
+standard_mid_loss = StandardMidLoss(t_layers=config['model']['teacher']['num_layers'], s_layers=config['model']['student']['num_layers'], device=device)
+
+# Add standard_mid_loss parameters to optimizer
 optimizer = torch.optim.Adam([{
     'params': student_model.parameters(),
 },
@@ -255,6 +348,41 @@ optimizer = torch.optim.Adam([{
 }
 ], lr=float(
     config['train']['learning_rate']), weight_decay=config['train']['weight_decay'])
+
+def check_optimizer_includes_loss_params(optimizer, loss_module):
+    """Check if optimizer includes loss module parameters"""
+    
+    # Get all loss module parameters
+    loss_param_ids = {id(p) for p in loss_module.parameters()}
+    
+    # Get all optimizer parameters
+    optimizer_param_ids = set()
+    for param_group in optimizer.param_groups:
+        for param in param_group['params']:
+            optimizer_param_ids.add(id(param))
+    
+    # Check coverage
+    missing_params = loss_param_ids - optimizer_param_ids
+    
+    print("=== Optimizer Parameter Check ===")
+    print(f"Loss module has {len(loss_param_ids)} parameters")
+    print(f"Optimizer covers {len(optimizer_param_ids & loss_param_ids)} loss parameters")
+    print(f"Missing {len(missing_params)} loss parameters from optimizer")
+    
+    if missing_params:
+        print("\nMISSING PARAMETERS:")
+        for name, param in loss_module.named_parameters():
+            if id(param) in missing_params:
+                print(f"  - {name}: {param.shape}")
+                print(f"    requires_grad: {param.requires_grad}")
+        return False
+    else:
+        print("✅ All loss module parameters are in optimizer!")
+        return True
+
+check_optimizer_includes_loss_params(optimizer, standard_mid_loss)
+
+# sys.exit(0)
 
 exp_lr_scheduler = None
 if 'is_learning_rate_scheduler' in config and config['is_learning_rate_scheduler']:
@@ -367,8 +495,6 @@ if len(freeze_layers) > 0:
             logger.info(f'Freeze {name}')
 
 
-# Summary model
-summary(student_model, (1, 16000))
 
 
 for epoch in tqdm(range(start_epoch, num_epochs), colour='green'):

@@ -1,0 +1,1 @@
+CUDA_VISIBLE_DEVICES=3 OMP_NUM_THREADS=5 python torchdistill_main_v5_alpha_test.py --yaml 'configs/MDT/2025_Sep_4/xlsr_conformertcm_large_corpus_nov_conf-1-1-1.yaml' --database_path='data/replay_cl_250610/' --protocols_path='protocol.txt'

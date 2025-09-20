@@ -15,5 +15,6 @@ dependencies = [
     "torch==2.1.2",
     "torchaudio==2.1.2",
     "torchinfo>=1.8.0",
+    "transformers==4.28.0",
     "wandb>=0.21.0",
 ]

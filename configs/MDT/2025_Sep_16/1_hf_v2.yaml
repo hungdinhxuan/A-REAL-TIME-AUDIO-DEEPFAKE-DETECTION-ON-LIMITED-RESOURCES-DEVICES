@@ -1,0 +1,85 @@
+# This config is same as conf-1.yaml but with different average model
+# So codebase right now is changed to save top 5 models
+# 24-layers from teacher, 5-layers from student
+name: "1_hf_v2_model"
+model:
+  teacher:
+    name: "W2V2_ConformerTCM"
+    pretrained_path: "/nvme1/hungdx/Lightning-hydra/logs/best_ckpt/MDT_baseline_lora_june11.pth"
+    is_parallel: False
+    teacher_module_paths:
+      - "backend"
+    teacher_module_ios:
+      - "False:True"
+    kwargs:
+      args:
+        emb_size: 144
+        heads: 4
+        kernel_size: 31
+        n_encoders: 4
+        type: "conv" # conv_res2net, conv_seblock, conv_res2net_seblock
+        pooling: "first"
+      
+
+  student:
+    name: "Distil_Wav2vec2_HF_N_Trans_Layer_ConformerTCM"
+    student_module_paths:
+      - "backend"
+
+    student_module_ios:
+      - "False:True"
+    kwargs:
+      args:
+          emb_size: 144
+          heads: 4
+          kernel_size: 31
+          n_encoders: 4
+          type: "conv" # conv_res2net, conv_seblock, conv_res2net_seblock
+          pooling: "first"
+      num_layers: 5 #
+      order: "first" # 'middle' for middle layers, 'first' for first layers, 'last' for last layers, "custom" for custom layers
+      #custom_order: [1, 2, 3, 4, 5] # 2, 3, 4, 5th layer
+
+is_learning_rate_scheduler: True
+
+learning_rate_scheduler:
+  name: "MultiStepLR"
+  params:
+    milestones: [5] # 5 epochs warm-up
+    gamma: 0.1
+    verbose: True
+
+train:
+  wandb_project_name: "KDADD25"
+  learning_rate: 0.0001
+  weight_decay: 0.0001
+  batch_size: 32
+  num_epochs: 300
+  num_workers: 4
+  amp: False
+  teacher: True
+  patience: 10
+  alpha: 0.1 # weight for CE loss (1-beta), beta = 0.9
+  seed: 12442
+  freeze_ssl_num_epoch: 0 # 0 for no freeze
+  dataset: "standard" # 'Jun' for Jun dataset
+  augment_mode: "rawboost" # 'rawboost' for rawboost, 'audiomentations' for audiomentations
+  algo: -1 # No augmentation
+  student_resume: "" # Stateless training
+  cross_entropy_loss_weight: [0.3, 0.7]
+  is_kl_loss: False
+  copy_weights: False
+  padding_size: 32000 # 2s
+  wandb_disabled: False
+
+criterion_weights: [1]
+
+criterions:
+  - key: "KDLoss"
+    kwargs:
+      student_module_path: "backend"
+      student_module_io: "output"
+      teacher_module_path: "backend"
+      teacher_module_io: "output"
+      beta: 0.9
+      temperature: 4

@@ -82,11 +82,21 @@ class SSLModel(nn.Module):
         self.model = self.model.to(device)
         self.out_dim = out_dim
         self.freeze = False
+        self.n_layers = 24
 
-    def extract_feat(self, input_data):
+    def extract_feat(self, input_data, layerwise=False):
         input_tmp = input_data[:, :, 0] if input_data.ndim == 3 else input_data
-        emb = self.model(input_tmp, mask=False, features_only=True)['x']
-        return emb
+        dict_ = self.model(input_data, mask=False, features_only=True, layer=self.n_layers)
+        x, layerresult = dict_['x'], dict_['layer_results']
+        if layerwise:
+            # import sys
+            # # print(x.shape)
+            # # print(dict_)
+            # print(len(layerresult))
+            # sys.exit()
+            return x, torch.stack([t[0].permute(1, 0, 2) if isinstance(t, tuple) else t for t in layerresult[:self.n_layers]], dim=1)
+        else:
+            return x
 
     def forward(self, input_data):
         return self.extract_feat(input_data)
@@ -694,6 +704,7 @@ class Custom_Wav2Vec2_Fe(nn.Module):
         super().__init__()
 
         self.out_dim = kwargs.get('out_dim', 256)
+        self.ffn_dim = kwargs.get('ffn_dim', 4096)
         encoder_layer_drop = kwargs.get('encoder_layer_drop', 0.0)
         encoder_dropout = kwargs.get('encoder_dropout', 0.0)
         encoder_ff_interm_dropout = kwargs.get(
@@ -703,6 +714,7 @@ class Custom_Wav2Vec2_Fe(nn.Module):
         encoder_projection_dropout = kwargs.get(
             'encoder_projection_dropout', 0.0)
         encoder_num_layers = kwargs.get('encoder_num_layers', 12)
+        encoder_num_heads = kwargs.get('encoder_num_heads', 12)
 
         self.model = wav2vec2_model(
             extractor_mode="layer_norm",
@@ -712,9 +724,9 @@ class Custom_Wav2Vec2_Fe(nn.Module):
             encoder_pos_conv_kernel=128,
             encoder_pos_conv_groups=16,
             encoder_num_layers=encoder_num_layers,  # Number of transformer layers
-            encoder_num_heads=16,
+            encoder_num_heads=encoder_num_heads,
             encoder_attention_dropout=encoder_attention_dropout,
-            encoder_ff_interm_features=4096,
+            encoder_ff_interm_features=self.ffn_dim,
             encoder_ff_interm_dropout=encoder_ff_interm_dropout,
             encoder_dropout=encoder_dropout,
             encoder_layer_norm_first=True,

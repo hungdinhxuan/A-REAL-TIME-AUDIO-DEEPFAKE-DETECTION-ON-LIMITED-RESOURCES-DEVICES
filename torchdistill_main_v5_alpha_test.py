@@ -6,7 +6,7 @@ from wav2vec2_vib import Model as Wav2Vec2VIB
 from student import *
 from teacher import *
 from data_utils import *
-from torchdistill_utils_alpha_test import *
+from torchdistill_utils_alpha_test_v3 import *
 from utils import *
 from torchdistill.models.registry import get_model
 
@@ -32,7 +32,7 @@ import eval_metrics_DF as em
 from aasist.AASIST import *
 from wav2vec2_conformertcm import Model as W2V2_ConformerTCM
 import numpy as np
-from losses import Stand0ardMidLoss_v2 as StandardMidLoss
+from losses import StandardMidLoss_v4 as StandardMidLoss
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -243,10 +243,11 @@ if dataset:
 
 train_loader, dev_loader = get_train_dev_dataloader(
     args, augment_mode, dataset, padding_size=padding_size)
+
+
 standard_mid_loss = StandardMidLoss(t_layers=len(config['model']['teacher']['teacher_module_paths'])-1, s_layers=len(config['model']['student']['student_module_paths'])-1, device=device)
 
-# optimizer = torch.optim.Adam(student_model.parameters(), lr=float(
-#     config['train']['learning_rate']), weight_decay=config['train']['weight_decay'])
+# Add standard_mid_loss parameters to optimizer
 optimizer = torch.optim.Adam([{
     'params': student_model.parameters(),
 },
@@ -255,6 +256,41 @@ optimizer = torch.optim.Adam([{
 }
 ], lr=float(
     config['train']['learning_rate']), weight_decay=config['train']['weight_decay'])
+
+def check_optimizer_includes_loss_params(optimizer, loss_module):
+    """Check if optimizer includes loss module parameters"""
+    
+    # Get all loss module parameters
+    loss_param_ids = {id(p) for p in loss_module.parameters()}
+    
+    # Get all optimizer parameters
+    optimizer_param_ids = set()
+    for param_group in optimizer.param_groups:
+        for param in param_group['params']:
+            optimizer_param_ids.add(id(param))
+    
+    # Check coverage
+    missing_params = loss_param_ids - optimizer_param_ids
+    
+    print("=== Optimizer Parameter Check ===")
+    print(f"Loss module has {len(loss_param_ids)} parameters")
+    print(f"Optimizer covers {len(optimizer_param_ids & loss_param_ids)} loss parameters")
+    print(f"Missing {len(missing_params)} loss parameters from optimizer")
+    
+    if missing_params:
+        print("\nMISSING PARAMETERS:")
+        for name, param in loss_module.named_parameters():
+            if id(param) in missing_params:
+                print(f"  - {name}: {param.shape}")
+                print(f"    requires_grad: {param.requires_grad}")
+        return False
+    else:
+        print("✅ All loss module parameters are in optimizer!")
+        return True
+
+check_optimizer_includes_loss_params(optimizer, standard_mid_loss)
+
+# sys.exit(0)
 
 exp_lr_scheduler = None
 if 'is_learning_rate_scheduler' in config and config['is_learning_rate_scheduler']:
@@ -369,7 +405,6 @@ if len(freeze_layers) > 0:
 
 # Summary model
 summary(student_model, (1, 16000))
-
 
 for epoch in tqdm(range(start_epoch, num_epochs), colour='green'):
     logger.info('Epoch {}/{}'.format(epoch, num_epochs - 1))

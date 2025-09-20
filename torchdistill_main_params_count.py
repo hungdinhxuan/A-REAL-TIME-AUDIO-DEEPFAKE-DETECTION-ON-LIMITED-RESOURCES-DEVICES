@@ -32,7 +32,7 @@ import eval_metrics_DF as em
 from aasist.AASIST import *
 from wav2vec2_conformertcm import Model as W2V2_ConformerTCM
 import numpy as np
-from losses import Stand0ardMidLoss_v2 as StandardMidLoss
+from losses import StandardMidLoss
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -243,10 +243,10 @@ if dataset:
 
 train_loader, dev_loader = get_train_dev_dataloader(
     args, augment_mode, dataset, padding_size=padding_size)
-standard_mid_loss = StandardMidLoss(t_layers=len(config['model']['teacher']['teacher_module_paths'])-1, s_layers=len(config['model']['student']['student_module_paths'])-1, device=device)
 
-# optimizer = torch.optim.Adam(student_model.parameters(), lr=float(
-#     config['train']['learning_rate']), weight_decay=config['train']['weight_decay'])
+
+standard_mid_loss = StandardMidLoss(t_layers=len(config['model']['teacher']['teacher_module_paths'])-1, s_layers=len(config['model']['student']['student_module_paths'])-1, device=device, mse_loss_weight=0.0001)
+
 optimizer = torch.optim.Adam([{
     'params': student_model.parameters(),
 },
@@ -305,52 +305,6 @@ if 'criterions' in config and 'criterion_weights' in config:
     logger.info('Mid level loss weight: {}'.format(
         config['criterion_weights']))
 
-start_epoch = 0
-
-# Initialize early stopping variables
-not_improving = 0
-best_loss = float('inf')
-bests = np.ones(n_mejores, dtype=float) * float('inf')
-
-# Initialize best checkpoints tracking (no placeholder files needed)
-
-if restore:
-    logger.info('Restore from previous checkpoint')
-    previous_model_saved_path = os.path.join(model_to_save, config['name'])
-
-    if not os.path.exists(previous_model_saved_path):
-        logger.info(
-            'Previous model saved path {} does not exist'.format(previous_model_saved_path))
-        sys.exit(0)
-
-    # Get the latest checkpoint startwith 'checkpoint'
-    checkpoints = [f for f in os.listdir(
-        previous_model_saved_path) if f.startswith('checkpoint')]
-    if len(checkpoints) == 0:
-        logger.info('No checkpoint found')
-        sys.exit(0)
-    # Sort the checkpoint by epoch
-    checkpoints = sorted(checkpoints, key=lambda x: int(
-        x.split('_')[-1].split('.')[0]))
-    last_checkpoint = checkpoints[-1]
-
-    student_model_path = os.path.join(
-        previous_model_saved_path, last_checkpoint)
-    checkpoint = torch.load(student_model_path)
-    try:
-
-        student_model.load_state_dict(checkpoint['model_state_dict'])
-        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        start_epoch = checkpoint['epoch'] + 1
-        scaler.load_state_dict(checkpoint['scaler'])
-        logger.info(
-            'Restore from previous checkpoint at epoch {}'.format(start_epoch))
-
-    except:
-        logger.info(
-            'Failed to restore from previous checkpoint, the checkpoint may be corrupted or deprecated')
-        sys.exit(0)
-
 ######## Transformer layer drop ########
 if encoder_layerdrop > 0:
     logger.info('Use encoder layer drop')
@@ -369,173 +323,3 @@ if len(freeze_layers) > 0:
 
 # Summary model
 summary(student_model, (1, 16000))
-
-
-for epoch in tqdm(range(start_epoch, num_epochs), colour='green'):
-    logger.info('Epoch {}/{}'.format(epoch, num_epochs - 1))
-
-    # Freeze SSL model for the first defined epochs
-    if 'freeze_ssl_num_epoch' in config['train'] and epoch < config['train']['freeze_ssl_num_epoch']:
-        logger.info('Freeze SSL model')
-        student_model.module.front_end.frozen()
-
-    else:
-        try:
-            if student_model.module.front_end.freeze:
-                logger.info('Unfreeze SSL model')
-                student_model.module.front_end.unfrozen()
-            else:
-                # Do nothing
-                pass
-        except:
-            pass
-
-    if "self_kd_config" not in config:
-        train_loss, train_acc, loss_dict = kd_train_epoch(train_loader, student_model, teacher_model, optimizer, device, scaler, config,
-                                                              student_forward_hook_manager, teacher_forward_hook_manager, epoch, exp_lr_scheduler=exp_lr_scheduler, use_amp=use_amp, standard_mid_loss=standard_mid_loss)
-       
-        # dev_loss, accuracy = kd_val_epoch(
-        #     dev_loader, student_model, device, config)
-        # new eval
-        dev_loss, accuracy, dev_loss_dict = kd_val_epoch_advanced(
-            dev_loader, student_model, teacher_model, device, config, student_forward_hook_manager, teacher_forward_hook_manager, standard_mid_loss=standard_mid_loss)
-
-        logger.info(
-            'Epoch: {} - train_loss: {} - dev_loss: {}'.format(epoch, train_loss, dev_loss))
-        writer.add_scalar('Accuracy/train', train_acc, epoch)
-        for key, value in loss_dict.items():
-            if isinstance(value, AverageMeter):
-                wandb.log({key: value.avg}) 
-            else:
-                wandb.log({key: value})
-            # writer.add_scalar(f'train_key', value, epoch)
-
-        for key, value in dev_loss_dict.items():
-            if isinstance(value, AverageMeter):
-                wandb.log({"Eval/" + key: value.avg})
-            else:
-                wandb.log({"Eval/" + key: value})
-            # writer.add_scalar(f'eval_key', value, epoch)
-
-        wandb.log({
-            "Accuracy_train": train_acc
-        })
-
-    if exp_lr_scheduler is not None:
-        if config['learning_rate_scheduler']['name'] == 'ReduceLROnPlateau':
-            exp_lr_scheduler.step(dev_loss)
-        elif config['learning_rate_scheduler']['name'] == 'MultiStepLR' or config['learning_rate_scheduler']['name'] == 'StepLR':
-            exp_lr_scheduler.step()
-
-
-    if exp_lr_scheduler is not None and config['learning_rate_scheduler']['name'] != 'ReduceLROnPlateau':
-        writer.add_scalar('Lr/epoch', exp_lr_scheduler.get_last_lr()[0], epoch)
-
-        
-        wandb.log({"train_loss": train_loss, "dev_loss": dev_loss, "Eval Accuracy": accuracy,
-                       "learning_rate": exp_lr_scheduler.get_last_lr()[0]})
-        
-    else:
-        writer.add_scalar('Lr/epoch', optimizer.param_groups[0]['lr'], epoch)
-        wandb.log({"train_loss": train_loss, "dev_loss": dev_loss,
-                       "Eval Accuracy": accuracy,
-                       "learning_rate": optimizer.param_groups[0]['lr'],
-                       "Accuracy_train": train_acc
-                       })
-
-
-    # Early stopping based on not_improving criteria
-    current_dev_loss = dev_loss.avg if isinstance(dev_loss, AverageMeter) else dev_loss
-    if current_dev_loss < best_loss:
-        best_loss = current_dev_loss
-        torch.save(student_model.state_dict(), os.path.join(
-            model_save_path, 'best.pth'))
-        logger.info('New best epoch with dev_loss: {}'.format(current_dev_loss))
-        not_improving = 0
-    else:
-        not_improving += 1
-        logger.info('Not improving for {} epochs'.format(not_improving))
-    
-    # Save top n_mejores models
-    for i in range(n_mejores):
-        if bests[i] > current_dev_loss:
-            # Shift worse models down
-            for t in range(n_mejores-1, i, -1):
-                bests[t] = bests[t-1]
-                old_path = os.path.join(best_save_path, 'best_{}.pth'.format(t-1))
-                new_path = os.path.join(best_save_path, 'best_{}.pth'.format(t))
-                if os.path.exists(old_path):
-                    if os.path.exists(new_path):
-                        os.remove(new_path)
-                    os.rename(old_path, new_path)
-            
-            # Save current model at position i
-            bests[i] = current_dev_loss
-            torch.save(student_model.state_dict(), os.path.join(
-                best_save_path, 'best_{}.pth'.format(i)))
-            logger.info('Saved model at rank {} with dev_loss: {}'.format(i, current_dev_loss))
-            break
-    
-    logger.info('Current n-best losses: {}'.format(bests))
-    
-    # Check if we should stop early
-    if not_improving >= patience:
-        logger.info("Early stopping: not improving for {} epochs".format(patience))
-        break
-
-
-
-if use_amp:
-    logger.info('End automatic mixed precision training')
-
-# Model averaging after training
-logger.info('######## Post-training Model Averaging ########')
-if average_model and n_average_model <= n_mejores:
-    logger.info('Averaging top {} models'.format(n_average_model))
-    
-    # Load first model
-    first_model_path = os.path.join(best_save_path, 'best_0.pth')
-    if os.path.exists(first_model_path):
-        student_model.load_state_dict(torch.load(first_model_path, map_location=device))
-        logger.info('Model loaded: {}'.format(first_model_path))
-        sd = student_model.state_dict()
-        
-        # Add remaining models
-        for i in range(1, n_average_model):
-            model_path = os.path.join(best_save_path, 'best_{}.pth'.format(i))
-            if os.path.exists(model_path):
-                student_model.load_state_dict(torch.load(model_path, map_location=device))
-                logger.info('Model loaded: {}'.format(model_path))
-                sd2 = student_model.state_dict()
-                for key in sd:
-                    sd[key] = sd[key] + sd2[key]
-            else:
-                logger.warning('Model {} not found, skipping'.format(model_path))
-        
-        # Average the weights
-        for key in sd:
-            sd[key] = sd[key] / n_average_model
-        
-        # Load averaged model and save
-        student_model.load_state_dict(sd)
-        averaged_model_path = os.path.join(best_save_path, 'avg_{}_best.pth'.format(n_average_model))
-        torch.save(student_model.state_dict(), averaged_model_path)
-        
-        logger.info('Model loaded average of {} best models and saved to {}'.format(
-            n_average_model, averaged_model_path))
-    else:
-        logger.warning('No best models found for averaging')
-else:
-    if not average_model:
-        logger.info('Model averaging disabled')
-    else:
-        logger.warning('Cannot average {} models when only {} best models are saved'.format(
-            n_average_model, n_mejores))
-    
-    # Load single best model
-    best_model_path = os.path.join(model_save_path, 'best.pth')
-    if os.path.exists(best_model_path):
-        student_model.load_state_dict(torch.load(best_model_path, map_location=device))
-        logger.info('Loaded single best model: {}'.format(best_model_path))
-    else:
-        logger.warning('No best model found at {}'.format(best_model_path))

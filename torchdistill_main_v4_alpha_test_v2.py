@@ -6,7 +6,7 @@ from wav2vec2_vib import Model as Wav2Vec2VIB
 from student import *
 from teacher import *
 from data_utils import *
-from torchdistill_utils_alpha_test import *
+from torchdistill_utils_alpha_test_v2 import *
 from utils import *
 from torchdistill.models.registry import get_model
 
@@ -32,7 +32,7 @@ import eval_metrics_DF as em
 from aasist.AASIST import *
 from wav2vec2_conformertcm import Model as W2V2_ConformerTCM
 import numpy as np
-from losses import Stand0ardMidLoss_v2 as StandardMidLoss
+from losses import StandardMidLoss_v3 as StandardMidLoss
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -243,17 +243,8 @@ if dataset:
 
 train_loader, dev_loader = get_train_dev_dataloader(
     args, augment_mode, dataset, padding_size=padding_size)
-standard_mid_loss = StandardMidLoss(t_layers=len(config['model']['teacher']['teacher_module_paths'])-1, s_layers=len(config['model']['student']['student_module_paths'])-1, device=device)
 
-# optimizer = torch.optim.Adam(student_model.parameters(), lr=float(
-#     config['train']['learning_rate']), weight_decay=config['train']['weight_decay'])
-optimizer = torch.optim.Adam([{
-    'params': student_model.parameters(),
-},
-{
-    'params': standard_mid_loss.parameters(),
-}
-], lr=float(
+optimizer = torch.optim.Adam(student_model.parameters(), lr=float(
     config['train']['learning_rate']), weight_decay=config['train']['weight_decay'])
 
 exp_lr_scheduler = None
@@ -370,6 +361,7 @@ if len(freeze_layers) > 0:
 # Summary model
 summary(student_model, (1, 16000))
 
+standard_mid_loss = StandardMidLoss(t_layers=len(config['model']['teacher']['teacher_module_paths'])-1, s_layers=len(config['model']['student']['student_module_paths'])-1, device=device)
 
 for epoch in tqdm(range(start_epoch, num_epochs), colour='green'):
     logger.info('Epoch {}/{}'.format(epoch, num_epochs - 1))

@@ -1,0 +1,1 @@
+CUDA_VISIBLE_DEVICES='' OMP_NUM_THREADS=5 python torchdistill_main_params_count.py --yaml 'configs/MDT/params_count/xlsr_conformertcm_tiny_4_large_corpus_nov_conf-1.yaml' --database_path='data/replay_cl_250610/' --protocols_path='protocol.txt'

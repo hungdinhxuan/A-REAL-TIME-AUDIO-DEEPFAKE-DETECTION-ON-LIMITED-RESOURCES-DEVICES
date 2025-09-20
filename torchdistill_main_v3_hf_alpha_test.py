@@ -32,8 +32,8 @@ import eval_metrics_DF as em
 from aasist.AASIST import *
 from wav2vec2_conformertcm import Model as W2V2_ConformerTCM
 import numpy as np
-from losses import Stand0ardMidLoss_v2 as StandardMidLoss
-
+from losses import StandardMidLoss_v2_hf as StandardMidLoss
+from wav2vec2_tiny import *
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
