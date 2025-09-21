@@ -224,6 +224,7 @@ class StandardMidLoss_v2(nn.Module):
         
         return loss, mse_loss, cosine_loss
 
+
 class StandardMidLoss_v2_hf(nn.Module):
     """
     A loss module for the Knowledge Distillation from two embedding features
@@ -472,7 +473,7 @@ class StandardMidLoss_v3(nn.Module):
         
         return loss, mse_loss, cosine_loss, recon_loss
 
-class StandardMidLoss_v3_v2(nn.Module):
+class StandardMidLoss_v2_deep(nn.Module):
     """
     A loss module for the Knowledge Distillation from two embedding features
     This is the same as StandardMidLoss, but we have one more projection layer to make the student and teacher have the same dimension
@@ -575,7 +576,7 @@ class StandardMidLoss_v3_v2(nn.Module):
         
         # Projection here
            
-        teacher_feature_proj, teacher_feature_recon = self.t_projection(teacher_feature_maps)
+        teacher_feature_proj, _ = self.t_projection(teacher_feature_maps)
         #teacher_feature_proj = teacher_feature_proj.transpose(0, 1) # (feature_dim, batch_size, hidden_dim) -> (batch_size, feature_dim, hidden_dim)
         #print(f"teacher_feature_proj shape: {teacher_feature_proj.shape}")
         
@@ -584,18 +585,18 @@ class StandardMidLoss_v3_v2(nn.Module):
         # projection_loss = self.mse_loss(teacher_feature_proj, teacher_feature_maps)
         mse_loss = self.mse_loss(student_feature_maps, teacher_feature_proj)
         cosine_loss = self.cosine_loss(student_feature_maps.contiguous().view(self.size, -1), teacher_feature_proj.contiguous().view(self.size, -1), target=torch.ones(self.size, device=student_feature_maps.device))
-        recon_loss = self.mse_loss(teacher_feature_maps, teacher_feature_recon)
+        #recon_loss = self.mse_loss(teacher_feature_maps, teacher_feature_recon)
         #kl_loss = self.kl_loss(student_feature_maps, teacher_feature_proj)
         # hard code for weight
         scaled_mse_loss = mse_loss * self.mse_loss_weight
         scaled_cosine_loss = cosine_loss * self.cosine_loss_weight
-        scaled_recon_loss = recon_loss * self.recon_loss_weight
+        #scaled_recon_loss = recon_loss * self.recon_loss_weight
         
-        loss = scaled_mse_loss + scaled_cosine_loss + scaled_recon_loss
+        loss = scaled_mse_loss + scaled_cosine_loss #+ scaled_recon_loss
         #loss = mse_loss
         #loss = kl_loss
         
-        return loss, mse_loss, cosine_loss, recon_loss
+        return loss, mse_loss, cosine_loss #, recon_loss
 
 class StandardMidLoss_v4(nn.Module):
     """
