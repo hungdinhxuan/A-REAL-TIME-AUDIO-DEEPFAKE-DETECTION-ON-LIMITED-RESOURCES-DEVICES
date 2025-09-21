@@ -629,10 +629,12 @@ class My_Wav2vec2Base_FE(nn.Module):
 
     def __init__(self, device, **kwargs):
         super().__init__()
+        from dotenv import load_dotenv
+        load_dotenv()
         self.num_layers = kwargs.get('num_layers', 12)
         self.order = kwargs.get('order', 'first')
         self.custom_order = kwargs.get('custom_order', None)
-        ckpt_path = "/home/hungdx/wav2vec_small.pt"
+        ckpt_path = os.getenv("W2V_PRETRAINED_PATH", "/home/hungdx/wav2vec_small.pt")
         if self.num_layers < 1 or self.num_layers > 12:
             raise ValueError(
                 "Number of layers must be at least 1 and at most 12.")

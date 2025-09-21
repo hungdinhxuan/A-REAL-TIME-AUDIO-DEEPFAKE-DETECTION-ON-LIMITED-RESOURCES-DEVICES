@@ -1,0 +1,207 @@
+name: "unified_kd_experiment"
+train:
+  seed: 1234
+  batch_size: 32
+  num_epochs: 100
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  cross_entropy_loss_weight: [0.1, 0.9]
+  alpha: 1.0
+  beta: 0.5
+  patience: 10
+  amp: true
+  teacher: true
+  is_recon_loss: false
+  augment_mode: "rawboost"
+  dataset: "LA19"
+  algo: 3
+  copy_weights: false
+  padding_size: 64600
+  n_mejores_loss: 5
+  average_model: true
+  n_average_model: 5
+  model_to_save: "runs"
+  freeze_layers: []
+  freeze_ssl_num_epoch: 0
+  wandb_disabled: false
+  wandb_project_name: "torchdistill_unified"
+  restore: false
+
+learning_rate_scheduler:
+  name: "ReduceLROnPlateau"
+  params:
+    mode: "min"
+    factor: 0.5
+    patience: 5
+    verbose: true
+
+model:
+  teacher:
+    name: "W2V2_TA"
+    pretrained_path: "/path/to/teacher/model.pth"
+    is_parallel: true
+    teacher_module_paths:
+      - "front_end.model.encoder.layers.0"
+      - "front_end.model.encoder.layers.1"
+      - "front_end.model.encoder.layers.2"
+      - "front_end.model.encoder.layers.3"
+      - "front_end.model.encoder.layers.4"
+      - "front_end.model.encoder.layers.5"
+      - "front_end.model.encoder.layers.6"
+      - "front_end.model.encoder.layers.7"
+      - "front_end.model.encoder.layers.8"
+      - "front_end.model.encoder.layers.9"
+      - "front_end.model.encoder.layers.10"
+      - "front_end.model.encoder.layers.11"
+      - "backend"
+    teacher_module_ios:
+      - "False:True"
+      - "False:True"
+      - "False:True"
+      - "False:True"
+      - "False:True"
+      - "False:True"
+      - "False:True"
+      - "False:True"
+      - "False:True"
+      - "False:True"
+      - "False:True"
+      - "False:True"
+      - "False:True"
+    kwargs:
+      model_path: "/path/to/teacher/model.pth"
+
+  student:
+    name: "Distil_W2V2BASE_AASISTL"
+    type: "ssl"
+    student_module_paths:
+      - "front_end.model.encoder.layers.0"
+      - "front_end.model.encoder.layers.1"
+      - "front_end.model.encoder.layers.2"
+      - "front_end.model.encoder.layers.3"
+      - "front_end.model.encoder.layers.4"
+      - "front_end.model.encoder.layers.5"
+      - "backend"
+    student_module_ios:
+      - "False:True"
+      - "False:True"
+      - "False:True"
+      - "False:True"
+      - "False:True"
+      - "False:True"
+      - "False:True"
+    kwargs:
+      encoder_layerdrop: 0.0
+      custom_order: []
+      order: null
+
+# Unified Loss Configuration
+unified_loss:
+  # Projection layer configuration
+  projection:
+    type: "linear"  # Options: "linear", "shallow_ae", "deep_ae", "mlp", null
+    target: "teacher"  # Options: "teacher", "student"
+    input_dim: 1024
+    output_dim: 768
+    kwargs:
+      # For MLP projection:
+      # hidden_dim: 1024
+      # For autoencoder projections:
+      # use_bias: true
+      # dims: [1024, 768, 768]  # For deep autoencoder
+  
+  # Loss configuration
+  loss:
+    enabled: ["mse", "cosine"]  # Options: ["mse", "cosine", "recon"]
+    weights:
+      mse: 0.0001
+      cosine: 1.0
+      recon: 0.0001
+  
+  # Pooling configuration
+  pooling:
+    method: "mean"  # Options: "mean", "sum", "max", "min", "weighted_sum", "last", "first"
+  
+  # Processing mode
+  processing_mode: "legacy"  # Options: "legacy", "new"
+
+# Alternative unified loss configurations for different scenarios:
+
+# Configuration 1: Shallow Autoencoder with Reconstruction Loss
+# unified_loss:
+#   projection:
+#     type: "shallow_ae"
+#     target: "teacher"
+#     input_dim: 1024
+#     output_dim: 768
+#     kwargs:
+#       use_bias: true
+#   loss:
+#     enabled: ["mse", "cosine", "recon"]
+#     weights:
+#       mse: 0.0001
+#       cosine: 1.0
+#       recon: 0.0001
+#   pooling:
+#     method: "weighted_sum"
+#   processing_mode: "legacy"
+
+# Configuration 2: MLP Projection with Sum Pooling
+# unified_loss:
+#   projection:
+#     type: "mlp"
+#     target: "student"
+#     input_dim: 768
+#     output_dim: 1024
+#     kwargs:
+#       hidden_dim: 1024
+#   loss:
+#     enabled: ["mse", "cosine"]
+#     weights:
+#       mse: 0.0001
+#       cosine: 1.0
+#   pooling:
+#     method: "sum"
+#   processing_mode: "new"
+
+# Configuration 3: Deep Autoencoder with Max Pooling
+# unified_loss:
+#   projection:
+#     type: "deep_ae"
+#     target: "teacher"
+#     input_dim: 1024
+#     output_dim: 768
+#     kwargs:
+#       dims: [1024, 1024, 768]
+#       use_bias: true
+#   loss:
+#     enabled: ["mse", "cosine", "recon"]
+#     weights:
+#       mse: 0.0001
+#       cosine: 1.0
+#       recon: 0.0001
+#   pooling:
+#     method: "max"
+#   processing_mode: "legacy"
+
+# Configuration 4: No Projection with Last Layer Pooling
+# unified_loss:
+#   projection:
+#     type: null
+#     target: "teacher"
+#     input_dim: 1024
+#     output_dim: 768
+#     kwargs: {}
+#   loss:
+#     enabled: ["mse", "cosine"]
+#     weights:
+#       mse: 0.0001
+#       cosine: 1.0
+#   pooling:
+#     method: "last"
+#   processing_mode: "legacy"
+
+# Traditional mid-level loss configuration (for comparison)
+criterions: []
+criterion_weights: []
+

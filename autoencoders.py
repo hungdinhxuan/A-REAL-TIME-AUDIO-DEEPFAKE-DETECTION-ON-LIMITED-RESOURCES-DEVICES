@@ -11,7 +11,6 @@ from typing import Sequence, Union, Tuple
 # set device globally
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
-
 class AbstractAutoencoder(nn.Module):
     @abstractmethod
     def __init__(self):
@@ -59,6 +58,55 @@ class DeepAutoencoder(AbstractAutoencoder):
         self.decoder = nn.Sequential(*dec_layers)
 
 
+class SequentialDeepAutoencoder(AbstractAutoencoder):
+    """ Deep AE that processes each frame independently while preserving sequence structure """
+    def __init__(self, dims: Sequence[int], use_bias=True):
+        """
+        :param dims: seq of integers specifying the dimensions of the layers 
+                    (first dim should be feature_size, last dim is the compressed size)
+        :param use_bias: if False, don't use bias
+        """
+        super().__init__()
+        assert len(dims) > 0 and all(d > 0 for d in dims)
+        self.type = "sequentialDeepAE"
+        self.use_bias = use_bias
+        
+        # Build encoder layers
+        enc_layers = []
+        for i in range(len(dims) - 1):
+            enc_layers.append(nn.Linear(dims[i], dims[i + 1], bias=use_bias))
+            if i < len(dims) - 2:  # Don't add ReLU after the last layer
+                enc_layers.append(nn.ReLU(inplace=True))
+        
+        # Build decoder layers
+        dec_layers = []
+        for i in reversed(range(1, len(dims))):
+            dec_layers.append(nn.Linear(dims[i], dims[i - 1], bias=use_bias))
+            if i > 1:  # Don't add activation after the last layer
+                dec_layers.append(nn.ReLU(inplace=True))
+        
+        self.encoder = nn.Sequential(*enc_layers)
+        self.decoder = nn.Sequential(*dec_layers)
+    
+    def forward(self, x):
+        # x shape: (batch_size, sequence_length, feature_size)
+        batch_size, seq_len, feature_size = x.shape
+        #import pdb; pdb.set_trace()
+        # Reshape to process all frames at once: (batch_size * seq_len, feature_size)
+        x_reshaped = x.reshape(-1, feature_size)
+        
+        # Encode
+        encoded_reshaped = self.encoder(x_reshaped)
+        latent_dim = encoded_reshaped.shape[-1]
+        
+        # Reshape back to sequence format: (batch_size, seq_len, latent_dim)
+        encoded = encoded_reshaped.view(batch_size, seq_len, latent_dim)
+        
+        # Decode
+        decoded_reshaped = self.decoder(encoded_reshaped)
+        decoded = decoded_reshaped.view(batch_size, seq_len, feature_size)
+        
+        return encoded, decoded
 
 class DeepRandomizedAutoencoder(DeepAutoencoder):
     def __init__(self, dims: Sequence[int]):

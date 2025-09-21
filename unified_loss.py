@@ -1,9 +1,8 @@
 import torch.nn.functional as F
 from torch import nn
 import torch
-from autoencoders import ShallowAutoencoder, DeepAutoencoder
+from autoencoders import ShallowAutoencoder, DeepAutoencoder, SequentialDeepAutoencoder
 from typing import Dict, Any, Optional, Union, List, Tuple
-
 
 class MLP(nn.Module):
     """
@@ -27,7 +26,7 @@ class MLP(nn.Module):
 
 class UnifiedMidLoss(nn.Module):
     """
-    A unified loss module for Knowledge Distillation that can dynamically handle:
+    A unified loss module for Middle loss for Knowledge Distillation that can dynamically handle:
     - Different projection layers (Linear, ShallowAutoencoder, DeepAutoencoder, MLP, None)
     - Different loss combinations (MSE, Cosine, Reconstruction)
     - Flexible weight configuration
@@ -111,6 +110,7 @@ class UnifiedMidLoss(nn.Module):
         
         # Initialize projection layer
         self.projection_layer = self._create_projection_layer()
+        self.AUTO_ENCODER_TYPES = ['shallow_ae', 'deep_ae', 'sequential_deep_ae']
         
     def _create_projection_layer(self) -> Optional[nn.Module]:
         """Create projection layer based on configuration"""
@@ -139,7 +139,11 @@ class UnifiedMidLoss(nn.Module):
                 dims=dims,
                 use_bias=kwargs.get('use_bias', True)
             ).to(self.device)
-        
+        elif proj_type == 'sequential_deep_ae':
+            return SequentialDeepAutoencoder(
+                dims=kwargs.get('dims', [input_dim, output_dim, output_dim]),
+                use_bias=kwargs.get('use_bias', True)
+            ).to(self.device)
         elif proj_type == 'mlp':
             hidden_dim = kwargs.get('hidden_dim', max(input_dim, output_dim))
             return MLP(
@@ -231,6 +235,8 @@ class UnifiedMidLoss(nn.Module):
             student_feature_maps = student_normalized.permute(3, 0, 1, 2)  # (num_layers, feature_dim, batch_size, hidden_dim)
             teacher_feature_maps = teacher_normalized.permute(3, 0, 1, 2)  # (num_layers, feature_dim, batch_size, hidden_dim)
             
+            # print(student_feature_maps.shape, teacher_feature_maps.shape)
+            # import pdb; pdb.set_trace()
             # Pool over layers
             student_pooled = self._apply_pooling(student_feature_maps, dim=0, tensor_type='student')  # (feature_dim, batch_size, hidden_dim)
             teacher_pooled = self._apply_pooling(teacher_feature_maps, dim=0, tensor_type='teacher')  # (feature_dim, batch_size, hidden_dim)
@@ -265,6 +271,18 @@ class UnifiedMidLoss(nn.Module):
             else:  # Legacy format (dim=0)
                 weights = weights.view(-1, 1, 1, 1)
             return (tensor * weights).sum(dim=dim)
+        elif pooling_method == 'weighted_mean':
+            # For weighted mean, use appropriate layer weights based on tensor type
+            if tensor_type == 'student':
+                weights = F.softmax(self.s_weight_hidd, dim=-1)
+            else:  # teacher
+                weights = F.softmax(self.t_weight_hidd, dim=-1)
+            
+            if dim == -1:  # New format
+                weights = weights.view(1, 1, 1, -1)
+            else:  # Legacy format (dim=0)
+                weights = weights.view(-1, 1, 1, 1)
+            return (tensor * weights).mean(dim=dim)
         elif pooling_method == 'last':
             # Take the last layer
             if dim == -1:
@@ -290,7 +308,7 @@ class UnifiedMidLoss(nn.Module):
         
         # Apply projection based on target
         if proj_target == 'teacher':
-            if proj_type in ['shallow_ae', 'deep_ae']:
+            if proj_type in self.AUTO_ENCODER_TYPES:
                 teacher_projected, teacher_recon = self.projection_layer(teacher_features)
                 return student_features, teacher_projected, teacher_recon
             else:
@@ -298,7 +316,7 @@ class UnifiedMidLoss(nn.Module):
                 return student_features, teacher_projected, None
         
         elif proj_target == 'student':
-            if proj_type in ['shallow_ae', 'deep_ae']:
+            if proj_type in self.AUTO_ENCODER_TYPES:
                 student_projected, student_recon = self.projection_layer(student_features)
                 return student_projected, teacher_features, student_recon
             else:
@@ -308,7 +326,7 @@ class UnifiedMidLoss(nn.Module):
         else:
             raise ValueError(f"Unknown projection target: {proj_target}")
     
-    def _compute_losses(self, student_features, teacher_features, reconstructed_features, batch_size):
+    def _compute_losses(self, student_features, teacher_features, raw_student_features, raw_teacher_features, reconstructed_features, batch_size):
         """Compute all enabled losses"""
         losses = {}
         
@@ -316,17 +334,17 @@ class UnifiedMidLoss(nn.Module):
             losses['mse'] = self.mse_loss(student_features, teacher_features)
         
         if 'cosine' in self.loss_config['enabled']:
-            student_flat = student_features.view(batch_size, -1)
-            teacher_flat = teacher_features.view(batch_size, -1)
+            student_flat = student_features.contiguous().view(batch_size, -1)
+            teacher_flat = teacher_features.contiguous().view(batch_size, -1)
             cosine_target = torch.ones(batch_size, device=self.device)
             losses['cosine'] = self.cosine_loss(student_flat, teacher_flat, cosine_target)
         
         if 'recon' in self.loss_config['enabled'] and reconstructed_features is not None:
             # Determine which features to reconstruct
             if self.projection_config['target'] == 'teacher':
-                losses['recon'] = self.mse_loss(teacher_features, reconstructed_features)
+                losses['recon'] = self.mse_loss(raw_teacher_features, reconstructed_features)
             else:
-                losses['recon'] = self.mse_loss(student_features, reconstructed_features)
+                losses['recon'] = self.mse_loss(raw_student_features, reconstructed_features)
         
         return losses
     
@@ -359,7 +377,7 @@ class UnifiedMidLoss(nn.Module):
         student_proj, teacher_proj, reconstructed = self._apply_projection(student_features, teacher_features)
         
         # Compute losses
-        losses = self._compute_losses(student_proj, teacher_proj, reconstructed, batch_size)
+        losses = self._compute_losses(student_proj, teacher_proj, student_features, teacher_features, reconstructed, batch_size)
         
         # Scale and combine losses
         total_loss = 0
