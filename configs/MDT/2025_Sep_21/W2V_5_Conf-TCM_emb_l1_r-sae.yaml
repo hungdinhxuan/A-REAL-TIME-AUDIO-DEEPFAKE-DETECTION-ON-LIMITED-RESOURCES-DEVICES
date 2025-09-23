@@ -1,7 +1,7 @@
 # This config is same as conf-1.yaml but with different average model
 # So codebase right now is changed to save top 5 models
 # 24-layers from teacher, 5-layers from student
-name: "Distil_W2V_5_Conf-TCM_emb_c_m_r-dae_fullset"
+name: "Distil_W2V_5_Conf-TCM_emb_l1_r-sae-fullset"
 model:
   teacher:
     name: "W2V2_ConformerTCM"
@@ -108,7 +108,7 @@ learning_rate_scheduler:
   params:
     milestones: [5]
     gamma: 0.1 # Warm-up lr for 5 epochs and then decay to 0.000001
-    # verbose: True
+    #verbose: True
 
 train:
   wandb_project_name: "Unified_KDADD25"
@@ -135,15 +135,14 @@ train:
 
 unified_loss:
   projection:
-    type: "sequential_deep_ae"
+    type: "shallow_ae"
     target: "teacher"
-    kwargs:
-      dims: [1024, 768, 768]
+    input_dim: 1024
+    output_dim: 768
   loss:
-    enabled: ["mse", "cosine", "recon"]
+    enabled: ["l1", "recon"]
     weights:
-      mse: 0.00001
-      cosine: 1.0
+      l1: 1
       recon: 0.00001
   pooling:
     method: "weighted_mean"

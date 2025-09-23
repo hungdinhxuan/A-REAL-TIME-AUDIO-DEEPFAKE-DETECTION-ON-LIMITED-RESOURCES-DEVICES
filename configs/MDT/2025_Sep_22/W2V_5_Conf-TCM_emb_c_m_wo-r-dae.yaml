@@ -1,7 +1,7 @@
 # This config is same as conf-1.yaml but with different average model
 # So codebase right now is changed to save top 5 models
 # 24-layers from teacher, 5-layers from student
-name: "Distil_W2V_5_Conf-TCM_emb_c_m_r-dae_fullset"
+name: "Distil_W2V_5_Conf-TCM_emb_c_m_wo-r-dae_fullset"
 model:
   teacher:
     name: "W2V2_ConformerTCM"
@@ -140,11 +140,10 @@ unified_loss:
     kwargs:
       dims: [1024, 768, 768]
   loss:
-    enabled: ["mse", "cosine", "recon"]
+    enabled: ["mse", "cosine"]
     weights:
       mse: 0.00001
       cosine: 1.0
-      recon: 0.00001
   pooling:
     method: "weighted_mean"
   processing_mode: "legacy"

@@ -1,7 +1,7 @@
 # This config is same as conf-1.yaml but with different average model
 # So codebase right now is changed to save top 5 models
 # 24-layers from teacher, 5-layers from student
-name: "Distil_W2V_5_Conf-TCM_emb_c_m_r-dae_fullset"
+name: "Distil_W2V_5_Conf-TCM_emb_c_m_stage2_fullset"
 model:
   teacher:
     name: "W2V2_ConformerTCM"
@@ -89,6 +89,8 @@ model:
       - "False:True"
       - "False:True"
 
+    pretrained_student_path: "/home/hungdx/code/A-REAL-TIME-AUDIO-DEEPFAKE-DETECTION-ON-LIMITED-RESOURCES-DEVICES/pretrained/wav2vec2_5_conformertcm_pretrained_stage1_epoch_012.pth"
+
     kwargs:
       args:
           emb_size: 144
@@ -120,7 +122,7 @@ train:
   amp: False
   teacher: True
   patience: 10
-  alpha: 0.1 # weight for CE loss (1-beta), beta = 0.9
+  alpha: 0.3 # weight for CE loss (1-beta), beta = 0.9
   seed: 12442
   freeze_ssl_num_epoch: 0 # 0 for no freeze
   dataset: "standard" # 'Jun' for Jun dataset
@@ -135,16 +137,15 @@ train:
 
 unified_loss:
   projection:
-    type: "sequential_deep_ae"
+    type: "linear"
     target: "teacher"
-    kwargs:
-      dims: [1024, 768, 768]
+    input_dim: 1024
+    output_dim: 768
   loss:
-    enabled: ["mse", "cosine", "recon"]
+    enabled: ["mse", "cosine"]
     weights:
-      mse: 0.00001
+      mse: 0.1
       cosine: 1.0
-      recon: 0.00001
   pooling:
     method: "weighted_mean"
   processing_mode: "legacy"
@@ -158,5 +159,5 @@ criterions:
       student_module_io: "output"
       teacher_module_path: "backend"
       teacher_module_io: "output"
-      beta: 0.9
+      beta: 0.7
       temperature: 4

@@ -52,7 +52,7 @@ def create_unified_loss_from_config(config: dict, t_layers: int, s_layers: int, 
     if not loss_config:
         loss_config = {
             'enabled': ['mse', 'cosine'],
-            'weights': {'mse': 0.0001, 'cosine': 1.0, 'recon': 0.0001}
+            'weights': {'mse': 0.0001, 'cosine': 1.0, 'recon': 0.0001, 'l1': 0.0001}
         }
         # WARNING: No loss configuration provided
         logger.warning("No loss configuration provided")
@@ -163,8 +163,11 @@ def kd_train_epoch_unified(train_loader, student, teacher, optimizer, device, sc
         loss_dict['unified_loss'] = AverageMeter()
         loss_dict['unified_loss_mse'] = AverageMeter()
         loss_dict['unified_loss_cosine'] = AverageMeter()
-        if 'recon' in config.get('unified_loss', {}).get('loss', {}).get('enabled', []):
+        unified_loss_enabled = config.get('unified_loss', {}).get('loss', {}).get('enabled', [])
+        if 'recon' in unified_loss_enabled:
             loss_dict['unified_loss_recon'] = AverageMeter()
+        if 'l1' in unified_loss_enabled:
+            loss_dict['unified_loss_l1'] = AverageMeter()
 
     for i, (batch_x, batch_y) in pbar:
 
@@ -230,26 +233,26 @@ def kd_train_epoch_unified(train_loader, student, teacher, optimizer, device, sc
                 teacher_module_path_list = config['model']['teacher']['teacher_module_paths']
                 teacher_module_io_list = config['model']['teacher']['teacher_module_ios']
                 
-                # Check if unified loss supports reconstruction loss
+                # Get unified loss results
                 unified_loss_enabled = config.get('unified_loss', {}).get('loss', {}).get('enabled', [])
-                has_recon = 'recon' in unified_loss_enabled
+                loss_results = unified_loss.forward(
+                    student_io_dict, teacher_io_dict, student_module_path_list, 
+                    student_module_io_list, teacher_module_path_list, teacher_module_io_list, 
+                    size=batch_size)
                 
-                if has_recon:
-                    tmp_loss, tmp_mse_loss, tmp_cosine_loss, tmp_recon_loss = unified_loss.forward(
-                        student_io_dict, teacher_io_dict, student_module_path_list, 
-                        student_module_io_list, teacher_module_path_list, teacher_module_io_list, 
-                        size=batch_size)
-                    loss_dict['unified_loss_recon'].update(tmp_recon_loss.item(), batch_size)
-                else:
-                    tmp_loss, tmp_mse_loss, tmp_cosine_loss = unified_loss.forward(
-                        student_io_dict, teacher_io_dict, student_module_path_list, 
-                        student_module_io_list, teacher_module_path_list, teacher_module_io_list, 
-                        size=batch_size)
-                
+                # Parse results dynamically
+                tmp_loss = loss_results[0]  # Total loss is always first
                 loss_dict['unified_loss'].update(tmp_loss.item(), batch_size)
-                loss_dict['unified_loss_mse'].update(tmp_mse_loss.item(), batch_size)
-                loss_dict['unified_loss_cosine'].update(tmp_cosine_loss.item(), batch_size)
                 total_loss += tmp_loss
+                
+                # Parse individual losses based on enabled losses
+                loss_idx = 1
+                for loss_type in ['mse', 'l1', 'cosine', 'recon']:
+                    if loss_type in unified_loss_enabled:
+                        if loss_idx < len(loss_results):
+                            loss_value = loss_results[loss_idx]
+                            loss_dict[f'unified_loss_{loss_type}'].update(loss_value.item(), batch_size)
+                            loss_idx += 1
 
             # Current loss function
             # Loss = alpha * CE + beta * KL + gamma * KDs
@@ -345,8 +348,11 @@ def kd_val_epoch_unified(dev_loader, student, teacher, device, config,
         loss_dict['unified_loss_dev'] = AverageMeter()
         loss_dict['unified_loss_mse_dev'] = AverageMeter()
         loss_dict['unified_loss_cosine_dev'] = AverageMeter()
-        if 'recon' in config.get('unified_loss', {}).get('loss', {}).get('enabled', []):
+        unified_loss_enabled = config.get('unified_loss', {}).get('loss', {}).get('enabled', [])
+        if 'recon' in unified_loss_enabled:
             loss_dict['unified_loss_recon_dev'] = AverageMeter()
+        if 'l1' in unified_loss_enabled:
+            loss_dict['unified_loss_l1_dev'] = AverageMeter()
 
     with torch.inference_mode():
         for batch_x, batch_y in tqdm(dev_loader):
@@ -399,26 +405,26 @@ def kd_val_epoch_unified(dev_loader, student, teacher, device, config,
                 teacher_module_path_list = config['model']['teacher']['teacher_module_paths']
                 teacher_module_io_list = config['model']['teacher']['teacher_module_ios']
                 
-                # Check if unified loss supports reconstruction loss
+                # Get unified loss results
                 unified_loss_enabled = config.get('unified_loss', {}).get('loss', {}).get('enabled', [])
-                has_recon = 'recon' in unified_loss_enabled
+                loss_results = unified_loss.forward(
+                    student_io_dict, teacher_io_dict, student_module_path_list, 
+                    student_module_io_list, teacher_module_path_list, teacher_module_io_list, 
+                    size=batch_size)
                 
-                if has_recon:
-                    tmp_loss, tmp_mse_loss, tmp_cosine_loss, tmp_recon_loss = unified_loss.forward(
-                        student_io_dict, teacher_io_dict, student_module_path_list, 
-                        student_module_io_list, teacher_module_path_list, teacher_module_io_list, 
-                        size=batch_size)
-                    loss_dict['unified_loss_recon_dev'].update(tmp_recon_loss.item(), batch_size)
-                else:
-                    tmp_loss, tmp_mse_loss, tmp_cosine_loss = unified_loss.forward(
-                        student_io_dict, teacher_io_dict, student_module_path_list, 
-                        student_module_io_list, teacher_module_path_list, teacher_module_io_list, 
-                        size=batch_size)
-                
+                # Parse results dynamically
+                tmp_loss = loss_results[0]  # Total loss is always first
                 loss_dict['unified_loss_dev'].update(tmp_loss.item(), batch_size)
-                loss_dict['unified_loss_mse_dev'].update(tmp_mse_loss.item(), batch_size)
-                loss_dict['unified_loss_cosine_dev'].update(tmp_cosine_loss.item(), batch_size)
                 total_loss += tmp_loss
+                
+                # Parse individual losses based on enabled losses
+                loss_idx = 1
+                for loss_type in ['mse', 'l1', 'cosine', 'recon']:
+                    if loss_type in unified_loss_enabled:
+                        if loss_idx < len(loss_results):
+                            loss_value = loss_results[loss_idx]
+                            loss_dict[f'unified_loss_{loss_type}_dev'].update(loss_value.item(), batch_size)
+                            loss_idx += 1
 
             batch_y = batch_y.view(-1).type(torch.int64).to(device)
 

@@ -1,7 +1,7 @@
 # This config is same as conf-1.yaml but with different average model
 # So codebase right now is changed to save top 5 models
 # 24-layers from teacher, 5-layers from student
-name: "Distil_W2V_5_Conf-TCM_emb_c_m_r-dae_fullset"
+name: "Distil_W2V_12_Conf-TCM_emb_c_m_wo-r-sae_fullset"
 model:
   teacher:
     name: "W2V2_ConformerTCM"
@@ -80,8 +80,22 @@ model:
       - "front_end.model.encoder.layers.2.final_layer_norm" # 3rd layer
       - "front_end.model.encoder.layers.3.final_layer_norm" # 4th layer
       - "front_end.model.encoder.layers.4.final_layer_norm" # 5th layer
+      - "front_end.model.encoder.layers.5.final_layer_norm" # 6th layer
+      - "front_end.model.encoder.layers.6.final_layer_norm" # 7th layer
+      - "front_end.model.encoder.layers.7.final_layer_norm" # 8th layer
+      - "front_end.model.encoder.layers.8.final_layer_norm" # 9th layer
+      - "front_end.model.encoder.layers.9.final_layer_norm" # 10th layer
+      - "front_end.model.encoder.layers.10.final_layer_norm" # 11th layer
+      - "front_end.model.encoder.layers.11.final_layer_norm" # 12th layer
 
     student_module_ios:
+      - "False:True"
+      - "False:True"
+      - "False:True"
+      - "False:True"
+      - "False:True"
+      - "False:True"
+      - "False:True"
       - "False:True"
       - "False:True"
       - "False:True"
@@ -97,7 +111,7 @@ model:
           n_encoders: 4
           type: "conv" # conv_res2net, conv_seblock, conv_res2net_seblock
           pooling: "first"
-      num_layers: 5 #
+      num_layers: 12 #
       order: "first" # 'middle' for middle layers, 'first' for first layers, 'last' for last layers, "custom" for custom layers
       #custom_order: [1, 2, 3, 4, 5] # 2, 3, 4, 5th layer
 
@@ -108,7 +122,7 @@ learning_rate_scheduler:
   params:
     milestones: [5]
     gamma: 0.1 # Warm-up lr for 5 epochs and then decay to 0.000001
-    # verbose: True
+    #verbose: True
 
 train:
   wandb_project_name: "Unified_KDADD25"
@@ -135,16 +149,15 @@ train:
 
 unified_loss:
   projection:
-    type: "sequential_deep_ae"
+    type: "shallow_ae"
     target: "teacher"
-    kwargs:
-      dims: [1024, 768, 768]
+    input_dim: 1024
+    output_dim: 768
   loss:
-    enabled: ["mse", "cosine", "recon"]
+    enabled: ["mse", "cosine"]
     weights:
       mse: 0.00001
       cosine: 1.0
-      recon: 0.00001
   pooling:
     method: "weighted_mean"
   processing_mode: "legacy"

@@ -17,3 +17,5 @@ Ablation study     | short notation
 emb = cosine + mse + recon (Shallow AE) | emb_c_m_r-sae
 emb = l1 + recon (Shallow AE)  | emb_l1_r-sae
 emb = cosine + mse + recon (Sequential Deep AE)    | emb_c_m_r-dae
+
+ws_emb: weighted sum

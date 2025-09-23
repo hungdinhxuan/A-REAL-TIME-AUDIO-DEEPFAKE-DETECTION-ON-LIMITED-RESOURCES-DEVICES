@@ -1,7 +1,7 @@
 # This config is same as conf-1.yaml but with different average model
 # So codebase right now is changed to save top 5 models
 # 24-layers from teacher, 5-layers from student
-name: "Distil_W2V_5_Conf-TCM_emb_c_m_r-dae_fullset"
+name: "Distil_W2V_5_Conf-TCM_emb_c_m_r-sae_fullset"
 model:
   teacher:
     name: "W2V2_ConformerTCM"
@@ -101,17 +101,17 @@ model:
       order: "first" # 'middle' for middle layers, 'first' for first layers, 'last' for last layers, "custom" for custom layers
       #custom_order: [1, 2, 3, 4, 5] # 2, 3, 4, 5th layer
 
-is_learning_rate_scheduler: False
+is_learning_rate_scheduler: True
 
 learning_rate_scheduler:
   name: "MultiStepLR"
   params:
-    milestones: [50, 70]
-    gamma: 0.5
-    verbose: True
+    milestones: [5]
+    gamma: 0.1 # Warm-up lr for 5 epochs and then decay to 0.000001
+    #verbose: True
 
 train:
-  wandb_project_name: "KDADD25"
+  wandb_project_name: "Unified_KDADD25"
   learning_rate: 0.00001
   weight_decay: 0.0001
   batch_size: 32

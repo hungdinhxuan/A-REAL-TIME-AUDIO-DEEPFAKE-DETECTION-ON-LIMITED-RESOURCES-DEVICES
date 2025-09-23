@@ -156,6 +156,15 @@ print("Current number of student parameters: ",  sum(p.numel()
 teacher_forward_hook_manager = ForwardHookManager(device)
 student_forward_hook_manager = ForwardHookManager(device)
 
+
+# Load pretrained student model
+if "pretrained_student_path" in config["model"]["student"]:
+    student_model.load_state_dict(torch.load(
+        config["model"]["student"]["pretrained_student_path"], map_location=device))
+    logger.info("Loaded student model from {}".format(
+        config["model"]["student"]["pretrained_student_path"]))
+
+
 student_model = torch.nn.DataParallel(student_model).to(device)
 
 if "is_parallel" in config["model"]["teacher"] and not config["model"]["teacher"]["is_parallel"]:

@@ -41,6 +41,7 @@ class UnifiedMidLoss(nn.Module):
     
     Supported loss types:
     - 'mse': Mean Squared Error
+    - 'l1': L1 Loss (Mean Absolute Error)
     - 'cosine': Cosine Embedding Loss
     - 'recon': Reconstruction Loss (when using autoencoders)
     """
@@ -63,7 +64,7 @@ class UnifiedMidLoss(nn.Module):
                 - output_dim: Output dimension
                 - kwargs: Additional arguments for projection layer
             loss_config: Configuration for loss components
-                - enabled: List of enabled loss types ['mse', 'cosine', 'recon']
+                - enabled: List of enabled loss types ['mse', 'l1', 'cosine', 'recon']
                 - weights: Dict with loss weights {loss_type: weight}
             pooling_config: Configuration for pooling across layers
                 - method: 'mean', 'sum', 'max', 'min', 'weighted_sum', 'last', 'first'
@@ -86,7 +87,7 @@ class UnifiedMidLoss(nn.Module):
         
         default_loss = {
             'enabled': ['mse', 'cosine'],
-            'weights': {'mse': 0.0001, 'cosine': 1.0, 'recon': 0.0001}
+            'weights': {'mse': 0.0001, 'cosine': 1.0, 'recon': 0.0001, 'l1': 0.0001}
         }
         
         default_pooling = {
@@ -101,6 +102,7 @@ class UnifiedMidLoss(nn.Module):
         # Initialize loss functions
         self.mse_loss = nn.MSELoss()
         self.cosine_loss = nn.CosineEmbeddingLoss()
+        self.l1_loss = nn.L1Loss()
         
         # Layer normalization and weights
         self.t_layer_norm = nn.LayerNorm(normalized_shape=t_layers, device=device)
@@ -175,7 +177,10 @@ class UnifiedMidLoss(nn.Module):
                     student_feature_maps.append(student_io_dict[student_module_path][student_module_io])
                 except:
                     continue
-        
+        # Check if any feat in feats map that return batch size 1 like (feature_dim, 1, hidden_dim)
+        # then remove it 
+        student_feature_maps = [feat for feat in student_feature_maps if feat.shape[1] != 1]
+
         # Pad student features if needed
         if len(student_feature_maps) < self.s_layers:
             for i in range(self.s_layers - len(student_feature_maps)):
@@ -193,6 +198,7 @@ class UnifiedMidLoss(nn.Module):
                 teacher_feature_maps.append(teacher_io_dict[teacher_module_path][teacher_module_io])
         
         # Stack and reshape
+        # import pdb; pdb.set_trace()
         student_feature_maps = torch.stack(student_feature_maps, dim=0)  # (num_layers, batch_size, feature_dim, hidden_dim)
         teacher_feature_maps = torch.stack(teacher_feature_maps, dim=0)  # (num_layers, batch_size, feature_dim, hidden_dim)
         
@@ -333,6 +339,9 @@ class UnifiedMidLoss(nn.Module):
         if 'mse' in self.loss_config['enabled']:
             losses['mse'] = self.mse_loss(student_features, teacher_features)
         
+        if 'l1' in self.loss_config['enabled']:
+            losses['l1'] = self.l1_loss(student_features, teacher_features)
+        
         if 'cosine' in self.loss_config['enabled']:
             student_flat = student_features.contiguous().view(batch_size, -1)
             teacher_flat = teacher_features.contiguous().view(batch_size, -1)
@@ -390,125 +399,12 @@ class UnifiedMidLoss(nn.Module):
             total_loss += scaled_loss
         
         # Return format similar to original classes
-        if 'recon' in losses:
-            return total_loss, losses['mse'], losses['cosine'], losses['recon']
-        else:
-            return total_loss, losses['mse'], losses['cosine']
-
-
-# Convenience functions to create common configurations
-def create_linear_projection_config(target='teacher', input_dim=1024, output_dim=768):
-    """Create configuration for linear projection"""
-    return {
-        'type': 'linear',
-        'target': target,
-        'input_dim': input_dim,
-        'output_dim': output_dim,
-        'kwargs': {}
-    }
-
-
-def create_shallow_ae_projection_config(target='teacher', input_dim=1024, output_dim=768, use_bias=True):
-    """Create configuration for shallow autoencoder projection"""
-    return {
-        'type': 'shallow_ae',
-        'target': target,
-        'input_dim': input_dim,
-        'output_dim': output_dim,
-        'kwargs': {'use_bias': use_bias}
-    }
-
-
-def create_deep_ae_projection_config(target='teacher', dims=[1024, 768, 768], use_bias=True):
-    """Create configuration for deep autoencoder projection"""
-    return {
-        'type': 'deep_ae',
-        'target': target,
-        'input_dim': dims[0],
-        'output_dim': dims[-1],
-        'kwargs': {'dims': dims, 'use_bias': use_bias}
-    }
-
-
-def create_mlp_projection_config(target='student', input_dim=768, output_dim=1024, hidden_dim=1024):
-    """Create configuration for MLP projection"""
-    return {
-        'type': 'mlp',
-        'target': target,
-        'input_dim': input_dim,
-        'output_dim': output_dim,
-        'kwargs': {'hidden_dim': hidden_dim}
-    }
-
-
-def create_loss_config(enabled_losses=['mse', 'cosine'], weights=None):
-    """Create loss configuration"""
-    if weights is None:
-        weights = {'mse': 0.0001, 'cosine': 1.0, 'recon': 0.0001}
-    
-    return {
-        'enabled': enabled_losses,
-        'weights': weights
-    }
-
-
-def create_pooling_config(method='mean'):
-    """Create pooling configuration"""
-    return {
-        'method': method
-    }
-
-
-# Example usage and factory functions for common configurations
-def create_standard_mid_loss_v2(t_layers, s_layers, device, **kwargs):
-    """Equivalent to StandardMidLoss_v2"""
-    projection_config = create_linear_projection_config(target='teacher', input_dim=1024, output_dim=768)
-    loss_config = create_loss_config(['mse', 'cosine'], {'mse': 0.0001, 'cosine': 1.0})
-    pooling_config = create_pooling_config('mean')
-    
-    return UnifiedMidLoss(
-        t_layers=t_layers,
-        s_layers=s_layers,
-        device=device,
-        projection_config=projection_config,
-        loss_config=loss_config,
-        pooling_config=pooling_config,
-        processing_mode='legacy',
-        **kwargs
-    )
-
-
-def create_standard_mid_loss_v3(t_layers, s_layers, device, **kwargs):
-    """Equivalent to StandardMidLoss_v3"""
-    projection_config = create_shallow_ae_projection_config(target='teacher', input_dim=1024, output_dim=768)
-    loss_config = create_loss_config(['mse', 'cosine', 'recon'], {'mse': 0.0001, 'cosine': 1.0, 'recon': 0.0001})
-    pooling_config = create_pooling_config('mean')
-    
-    return UnifiedMidLoss(
-        t_layers=t_layers,
-        s_layers=s_layers,
-        device=device,
-        projection_config=projection_config,
-        loss_config=loss_config,
-        pooling_config=pooling_config,
-        processing_mode='legacy',
-        **kwargs
-    )
-
-
-def create_standard_mid_loss_v6(t_layers, s_layers, device, **kwargs):
-    """Equivalent to StandardMidLoss_v6"""
-    projection_config = create_mlp_projection_config(target='student', input_dim=768, output_dim=1024)
-    loss_config = create_loss_config(['mse', 'cosine'], {'mse': 0.0001, 'cosine': 1.0})
-    pooling_config = create_pooling_config('mean')
-    
-    return UnifiedMidLoss(
-        t_layers=t_layers,
-        s_layers=s_layers,
-        device=device,
-        projection_config=projection_config,
-        loss_config=loss_config,
-        pooling_config=pooling_config,
-        processing_mode='new',
-        **kwargs
-    )
+        # Build return tuple dynamically based on enabled losses
+        return_values = [total_loss]
+        
+        # Add individual losses in a consistent order
+        for loss_type in ['mse', 'l1', 'cosine', 'recon']:
+            if loss_type in losses:
+                return_values.append(losses[loss_type])
+        
+        return tuple(return_values)
