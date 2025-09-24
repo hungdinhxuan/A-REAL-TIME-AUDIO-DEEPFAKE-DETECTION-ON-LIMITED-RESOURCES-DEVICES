@@ -47,6 +47,7 @@ from wav2vec2_conformertcm import Model as W2V2_ConformerTCM
 import numpy as np
 #from losses import StandardMidLoss_v2 as StandardMidLoss
 # dotenv import
+from wav2vec2_tiny import *
 from torchinfo import summary
 from dotenv import load_dotenv
 load_dotenv()

@@ -110,6 +110,7 @@ class UnifiedMidLoss(nn.Module):
         self.s_layer_norm = nn.LayerNorm(normalized_shape=s_layers, device=device)
         self.s_weight_hidd = nn.Parameter(torch.ones(s_layers, device=device))
         
+        self.frontend_type = kwargs.get('frontend_type', 'fairseq')
         # Initialize projection layer
         self.projection_layer = self._create_projection_layer()
         self.AUTO_ENCODER_TYPES = ['shallow_ae', 'deep_ae', 'sequential_deep_ae']
@@ -198,10 +199,11 @@ class UnifiedMidLoss(nn.Module):
                 teacher_feature_maps.append(teacher_io_dict[teacher_module_path][teacher_module_io])
         
         # Stack and reshape
-        # import pdb; pdb.set_trace()
         student_feature_maps = torch.stack(student_feature_maps, dim=0)  # (num_layers, batch_size, feature_dim, hidden_dim)
         teacher_feature_maps = torch.stack(teacher_feature_maps, dim=0)  # (num_layers, batch_size, feature_dim, hidden_dim)
         
+        if self.frontend_type == 'HF':
+            student_feature_maps = student_feature_maps.permute(0, 2, 1, 3)  # (num_layers, feature_dim, batch_size, hidden_dim)
         # Handle different reshaping modes
         if hasattr(self, '_reshape_student') and self._reshape_student:
             student_feature_maps = student_feature_maps.permute(0, 2, 1, 3)  # (num_layers, feature_dim, batch_size, hidden_dim)

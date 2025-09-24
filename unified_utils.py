@@ -18,7 +18,7 @@ logging.getLogger('hydra.core.utils').setLevel(logging.CRITICAL)
 def create_unified_loss_from_config(config: dict, t_layers: int, s_layers: int, device: torch.device):
     """
     Create UnifiedMidLoss from YAML configuration
-    
+     
     Args:
         config: YAML configuration dictionary
         t_layers: Number of teacher layers
