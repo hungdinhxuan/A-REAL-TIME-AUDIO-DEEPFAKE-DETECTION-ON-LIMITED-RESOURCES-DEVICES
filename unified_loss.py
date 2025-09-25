@@ -12,11 +12,11 @@ class MLP(nn.Module):
         super().__init__()
         self.mlp = nn.Sequential(
             nn.Linear(input_dim, hidden_dim, device=device),
-            nn.ReLU(),
+            nn.GELU(),
             nn.Linear(hidden_dim, hidden_dim, device=device),
-            nn.ReLU(),
+            nn.GELU(),
             nn.Linear(hidden_dim, output_dim, device=device),
-            nn.ReLU()
+            nn.GELU()
         )
         
     def forward(self, x):
@@ -167,9 +167,17 @@ class UnifiedMidLoss(nn.Module):
         student_feature_maps = []
         teacher_feature_maps = []
         
+        student_conv_feature_maps = None
+        teacher_conv_feature_maps = None
         # Process student features
         for student_module_path, student_module_io in zip(student_module_path_list, student_module_io_list):
-            if student_module_path != 'backend':
+            if student_module_path == 'front_end.model.encoder.pos_conv':
+                if student_module_io == 'False:True':
+                    student_module_io = 'output'
+                elif student_module_io == 'True:False':
+                    student_module_io = 'input'
+                student_conv_feature_maps = student_io_dict[student_module_path][student_module_io]
+            elif student_module_path != 'backend' and student_module_path != 'front_end.model.encoder.pos_conv':
                 if student_module_io == 'False:True':
                     student_module_io = 'output'
                 elif student_module_io == 'True:False':
@@ -179,6 +187,7 @@ class UnifiedMidLoss(nn.Module):
                 except:
                     continue
         # Check if any feat in feats map that return batch size 1 like (feature_dim, 1, hidden_dim)
+        
         # then remove it 
         student_feature_maps = [feat for feat in student_feature_maps if feat.shape[1] != 1]
 
@@ -191,13 +200,19 @@ class UnifiedMidLoss(nn.Module):
         
         # Process teacher features
         for teacher_module_path, teacher_module_io in zip(teacher_module_path_list, teacher_module_io_list):
-            if teacher_module_path != 'backend':
+            if teacher_module_path == 'front_end.model.encoder.pos_conv':
+                if teacher_module_io == 'False:True':
+                    teacher_module_io = 'output'
+                elif teacher_module_io == 'True:False':
+                    teacher_module_io = 'input'
+                teacher_conv_feature_maps = teacher_io_dict[teacher_module_path][teacher_module_io]
+            elif teacher_module_path != 'backend' and teacher_module_path != 'front_end.model.encoder.pos_conv':
                 if teacher_module_io == 'False:True':
                     teacher_module_io = 'output'
                 elif teacher_module_io == 'True:False':
                     teacher_module_io = 'input'
                 teacher_feature_maps.append(teacher_io_dict[teacher_module_path][teacher_module_io])
-        
+        #import pdb; pdb.set_trace()
         # Stack and reshape
         student_feature_maps = torch.stack(student_feature_maps, dim=0)  # (num_layers, batch_size, feature_dim, hidden_dim)
         teacher_feature_maps = torch.stack(teacher_feature_maps, dim=0)  # (num_layers, batch_size, feature_dim, hidden_dim)
@@ -208,7 +223,7 @@ class UnifiedMidLoss(nn.Module):
         if hasattr(self, '_reshape_student') and self._reshape_student:
             student_feature_maps = student_feature_maps.permute(0, 2, 1, 3)  # (num_layers, feature_dim, batch_size, hidden_dim)
         
-        return student_feature_maps, teacher_feature_maps, size
+        return student_feature_maps, teacher_feature_maps, size, student_conv_feature_maps, teacher_conv_feature_maps
     
     def _apply_layer_normalization_and_pooling(self, student_feature_maps, teacher_feature_maps):
         """Apply layer normalization and pooling across layers"""
@@ -225,6 +240,9 @@ class UnifiedMidLoss(nn.Module):
             # Apply LayerNorm and weights
             student_normalized = self.s_layer_norm(student_transposed) * s_norm_w.view(1, 1, 1, -1)
             teacher_normalized = self.t_layer_norm(teacher_transposed) * t_norm_w.view(1, 1, 1, -1)
+             # Apply weight to student_transposed and teacher_transposed (it might redundant with LayerNorm)
+            # student_normalized = student_transposed * s_norm_w.view(1, 1, 1, -1)
+            # teacher_normalized = teacher_transposed * t_norm_w.view(1, 1, 1, -1)
             
             # Pool over layers: (batch_size, feature_dim, hidden_dim)
             student_pooled = self._apply_pooling(student_normalized, dim=-1, tensor_type='student')
@@ -238,6 +256,10 @@ class UnifiedMidLoss(nn.Module):
             # Apply LayerNorm and weights
             student_normalized = self.s_layer_norm(student_transposed) * s_norm_w.view(1, 1, 1, -1)
             teacher_normalized = self.t_layer_norm(teacher_transposed) * t_norm_w.view(1, 1, 1, -1)
+            
+            # Apply weight to student_transposed and teacher_transposed (it might redundant with LayerNorm)
+            # student_normalized = student_transposed * s_norm_w.view(1, 1, 1, -1)
+            # teacher_normalized = teacher_transposed * t_norm_w.view(1, 1, 1, -1)
             
             # Transpose back and pool
             student_feature_maps = student_normalized.permute(3, 0, 1, 2)  # (num_layers, feature_dim, batch_size, hidden_dim)
@@ -334,28 +356,40 @@ class UnifiedMidLoss(nn.Module):
         else:
             raise ValueError(f"Unknown projection target: {proj_target}")
     
-    def _compute_losses(self, student_features, teacher_features, raw_student_features, raw_teacher_features, reconstructed_features, batch_size):
+    def _compute_losses(self, student_features, teacher_features, raw_student_features, raw_teacher_features, reconstructed_features, batch_size, **kwargs):
         """Compute all enabled losses"""
         losses = {}
+        student_conv_feature_maps = kwargs.get('student_conv_feature_maps', None)
+        teacher_conv_feature_maps = kwargs.get('teacher_conv_feature_maps', None)
         
         if 'mse' in self.loss_config['enabled']:
             losses['mse'] = self.mse_loss(student_features, teacher_features)
+            if student_conv_feature_maps is not None and teacher_conv_feature_maps is not None:
+                losses['mse_conv'] = self.mse_loss(student_conv_feature_maps, teacher_conv_feature_maps)
         
         if 'l1' in self.loss_config['enabled']:
             losses['l1'] = self.l1_loss(student_features, teacher_features)
+            if student_conv_feature_maps is not None and teacher_conv_feature_maps is not None:
+                losses['l1_conv'] = self.l1_loss(student_conv_feature_maps, teacher_conv_feature_maps)
         
         if 'cosine' in self.loss_config['enabled']:
             student_flat = student_features.contiguous().view(batch_size, -1)
             teacher_flat = teacher_features.contiguous().view(batch_size, -1)
             cosine_target = torch.ones(batch_size, device=self.device)
             losses['cosine'] = self.cosine_loss(student_flat, teacher_flat, cosine_target)
+            if student_conv_feature_maps is not None and teacher_conv_feature_maps is not None:
+                losses['cosine_conv'] = self.cosine_loss(student_conv_feature_maps.contiguous().view(batch_size, -1), teacher_conv_feature_maps.contiguous().view(batch_size, -1), cosine_target)
         
         if 'recon' in self.loss_config['enabled'] and reconstructed_features is not None:
             # Determine which features to reconstruct
             if self.projection_config['target'] == 'teacher':
                 losses['recon'] = self.mse_loss(raw_teacher_features, reconstructed_features)
+                if student_conv_feature_maps is not None and teacher_conv_feature_maps is not None:
+                    losses['recon_conv'] = self.mse_loss(raw_teacher_features, reconstructed_features)
             else:
                 losses['recon'] = self.mse_loss(raw_student_features, reconstructed_features)
+                if student_conv_feature_maps is not None and teacher_conv_feature_maps is not None:
+                    losses['recon_conv'] = self.mse_loss(raw_student_features, reconstructed_features)
         
         return losses
     
@@ -373,7 +407,7 @@ class UnifiedMidLoss(nn.Module):
         
         if self.processing_mode == 'legacy':
             # Legacy format
-            student_feature_maps, teacher_feature_maps, batch_size = self._process_legacy_input(*args, **kwargs)
+            student_feature_maps, teacher_feature_maps, batch_size, student_conv_feature_maps, teacher_conv_feature_maps = self._process_legacy_input(*args, **kwargs)
         else:
             # New format
             student_feature_maps, teacher_feature_maps = args[0], args[1]
@@ -386,9 +420,21 @@ class UnifiedMidLoss(nn.Module):
         
         # Apply projection
         student_proj, teacher_proj, reconstructed = self._apply_projection(student_features, teacher_features)
+        #import pdb; pdb.set_trace()
         
         # Compute losses
-        losses = self._compute_losses(student_proj, teacher_proj, student_features, teacher_features, reconstructed, batch_size)
+        if self.processing_mode == 'legacy':
+            if student_conv_feature_maps is not None and teacher_conv_feature_maps is not None:
+                student_conv_feature_maps = student_conv_feature_maps.permute(0, 2, 1)
+                teacher_conv_feature_maps = teacher_conv_feature_maps.permute(0, 2, 1)
+                student_conv_feature_proj, teacher_conv_feature_proj, reconstructed_conv = self._apply_projection(student_conv_feature_maps, teacher_conv_feature_maps)
+            else:
+                student_conv_feature_proj = None
+                teacher_conv_feature_proj = None
+                reconstructed_conv = None
+            losses = self._compute_losses(student_proj, teacher_proj, student_features, teacher_features, reconstructed, batch_size, student_conv_feature_maps=student_conv_feature_proj, teacher_conv_feature_maps=teacher_conv_feature_proj)
+        else:
+            losses = self._compute_losses(student_proj, teacher_proj, student_features, teacher_features, reconstructed, batch_size)
         
         # Scale and combine losses
         total_loss = 0

@@ -217,3 +217,12 @@ To migrate from the existing system:
 
 See the `unified_config_example.yaml` file for comprehensive examples of different configurations and their use cases.
 
+
+# Ray tune
+python unified_ray_tune.py \
+  --base_yaml /home/hungdx/code/A-REAL-TIME-AUDIO-DEEPFAKE-DETECTION-ON-LIMITED-RESOURCES-DEVICES/configs/MDT/2025_Sep_24/W2V_5_Conf-TCM_wo_norm_ws_emb_c_m_stage2_raytune.yaml \
+  --preset quick \
+  --num_samples 200 \
+  --gpus_per_trial 1 \
+  --cpus_per_trial 4 \
+  --max_concurrent_trials 3 --cuda_visible_devices "MIG-57de94a5-be15-5b5a-b67e-e118352d8a59"
