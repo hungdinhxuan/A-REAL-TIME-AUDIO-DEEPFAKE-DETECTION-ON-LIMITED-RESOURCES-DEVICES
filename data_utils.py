@@ -1036,9 +1036,12 @@ def get_train_dev_dataloader(args, augment='rawboost', dataset='LA19', padding_s
         return train_loader, dev_loader
     elif dataset == 'standard':
         logging.info("Using standard dataset")
-        d_label_trn, file_train = genSpoof_list_standard(dir_meta=os.path.join(args.database_path, args.protocols_path),
+        try:
+            d_label_trn, file_train = genSpoof_list_standard(dir_meta=os.path.join(args.database_path, args.protocols_path),
+                                                            is_train=True, is_dev=False, is_eval=False)
+        except Exception as e:
+            d_label_trn, file_train = genSpoof_list_standard(dir_meta=args.protocols_path,
                                                          is_train=True, is_dev=False, is_eval=False)
-        
         print('no. of training trials', len(file_train))
         if augment == 'rawboost':
             logging.info(

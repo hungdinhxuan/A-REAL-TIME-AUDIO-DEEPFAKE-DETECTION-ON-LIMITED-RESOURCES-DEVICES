@@ -58,45 +58,46 @@ args = get_main_menu()
 set_random_seed(1221, args)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = Custom_Wav2Vec2_Fe(device).to(device)
+#model = Custom_Wav2Vec2_Fe(device).to(device)
 my_xlsr = My_XLSR_FE(device).to(device)
+print(my_xlsr)
 
-my_xlsr = W2V2_TA(import_fairseq_model(my_xlsr.model)).to(device)
+# my_xlsr = W2V2_TA(import_fairseq_model(my_xlsr.model)).to(device)
 
-model_hook_manager = ForwardHookManager(device)
-my_xlsr_forward_hook_manager = ForwardHookManager(device)
+# model_hook_manager = ForwardHookManager(device)
+# my_xlsr_forward_hook_manager = ForwardHookManager(device)
 
-model_hook_manager.add_hook(
-    model, 'model.encoder.transformer.layers.0.final_layer_norm', requires_input=True, requires_output=True)
+# model_hook_manager.add_hook(
+#     model, 'model.encoder.transformer.layers.0.final_layer_norm', requires_input=True, requires_output=True)
 
-my_xlsr_forward_hook_manager.add_hook(
-    my_xlsr, 'model.encoder.transformer.layers.0.final_layer_norm', requires_input=True, requires_output=True)
+# my_xlsr_forward_hook_manager.add_hook(
+#     my_xlsr, 'model.encoder.transformer.layers.0.final_layer_norm', requires_input=True, requires_output=True)
 
-dummy_input = torch.randn(3, 16000).to(device)
-# summary(model, input_size=(1, 16000), depth=5)
-model(dummy_input)
-my_xlsr(dummy_input)
+# dummy_input = torch.randn(3, 16000).to(device)
+# # summary(model, input_size=(1, 16000), depth=5)
+# model(dummy_input)
+# my_xlsr(dummy_input)
 
-io_model_dict = model_hook_manager.pop_io_dict()
-io_my_xlsr_dict = my_xlsr_forward_hook_manager.pop_io_dict()
-# Create an instance of the LowRankTransform
-transform = LowRankTransform(in_features=256, out_features=1024).to(device)
+# io_model_dict = model_hook_manager.pop_io_dict()
+# io_my_xlsr_dict = my_xlsr_forward_hook_manager.pop_io_dict()
+# # Create an instance of the LowRankTransform
+# transform = LowRankTransform(in_features=256, out_features=1024).to(device)
 
-# torch.Size([1, 49, 256])
-model_out = io_model_dict['model.encoder.transformer.layers.0.final_layer_norm']['output']
-# torch.Size([1, 49, 1024])
-my_xlsr_out = io_my_xlsr_dict['model.encoder.transformer.layers.0.final_layer_norm']['output']
+# # torch.Size([1, 49, 256])
+# model_out = io_model_dict['model.encoder.transformer.layers.0.final_layer_norm']['output']
+# # torch.Size([1, 49, 1024])
+# my_xlsr_out = io_my_xlsr_dict['model.encoder.transformer.layers.0.final_layer_norm']['output']
 
-# Linear interpolation to make the shape of the output of the model and my_xlsr the same
-model_out_interpolated = F.interpolate(
-    model_out, size=my_xlsr_out.shape[2], mode='linear', align_corners=True)
+# # Linear interpolation to make the shape of the output of the model and my_xlsr the same
+# model_out_interpolated = F.interpolate(
+#     model_out, size=my_xlsr_out.shape[2], mode='linear', align_corners=True)
 
-conv_expand = ConvExpand(256, 1024).to(device)
+# conv_expand = ConvExpand(256, 1024).to(device)
 
-# Transform my_xlsr_out to match the dimensions of model_out
-model_out_expand = conv_expand(model_out)
-model_out_transformed = transform(model_out)
-print(model_out_expand.shape)
+# # Transform my_xlsr_out to match the dimensions of model_out
+# model_out_expand = conv_expand(model_out)
+# model_out_transformed = transform(model_out)
+# print(model_out_expand.shape)
 
 # print(model)
 # print(my_xlsr)

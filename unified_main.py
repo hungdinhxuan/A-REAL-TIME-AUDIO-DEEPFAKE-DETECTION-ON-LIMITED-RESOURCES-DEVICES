@@ -100,6 +100,10 @@ copy_weights = config["train"].get("copy_weights", False)
 padding_size = config["train"].get(
     "padding_size", 64600)  # default 64600 for 4s
 
+# Ensure that config name is unique
+import uuid
+config['name'] = config['name'] + "_" + str(uuid.uuid4())
+
 # Model saving and averaging configuration
 n_mejores = config['train'].get('n_mejores_loss', 5)  # number of best models to save
 average_model = config['train'].get('average_model', True)  # whether to average models
@@ -166,7 +170,7 @@ if "pretrained_student_path" in config["model"]["student"]:
         config["model"]["student"]["pretrained_student_path"]))
 
 
-student_model = torch.nn.DataParallel(student_model).to(device)
+#student_model = torch.nn.DataParallel(student_model).to(device)
 
 if "is_parallel" in config["model"]["teacher"] and not config["model"]["teacher"]["is_parallel"]:
     logger.info("Teacher model is not parallel")
@@ -261,7 +265,7 @@ for module_path, ios in zip(config['model']['student']['student_module_paths'], 
     requires_input, requires_output = bool(
         requires_input), bool(requires_output)
     student_forward_hook_manager.add_hook(
-        student_model.module, module_path, requires_input=requires_input, requires_output=requires_output)
+        student_model, module_path, requires_input=requires_input, requires_output=requires_output)
 
 
 logger.info('Prepare training, dev set .....')
@@ -274,8 +278,8 @@ train_loader, dev_loader = get_train_dev_dataloader(
     args, augment_mode, dataset, padding_size=padding_size)
 
 # Initialize unified loss from configuration
-t_layers = len(config['model']['teacher']['teacher_module_paths']) - 1
-s_layers = len(config['model']['student']['student_module_paths']) - 1
+t_layers = config['model']['teacher']['kwargs'].get('num_layers', 24)
+s_layers = config['model']['student']['kwargs']['num_layers']
 unified_loss = create_unified_loss_from_config(config, t_layers, s_layers, device)
 
 # Create optimizer with unified loss parameters

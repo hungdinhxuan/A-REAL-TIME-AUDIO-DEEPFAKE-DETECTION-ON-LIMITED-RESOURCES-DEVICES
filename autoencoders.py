@@ -30,7 +30,7 @@ class ShallowAutoencoder(AbstractAutoencoder):
         super().__init__()
         assert input_dim > 0 and latent_dim > 0
         self.type = "shallowAE"
-        self.encoder = nn.Sequential(nn.Linear(input_dim, latent_dim, bias=use_bias), nn.ReLU(inplace=True))
+        self.encoder = nn.Sequential(nn.Linear(input_dim, latent_dim, bias=use_bias), nn.GELU())
         self.decoder = nn.Sequential(nn.Linear(latent_dim, input_dim, bias=use_bias), nn.Sigmoid())
 
 
