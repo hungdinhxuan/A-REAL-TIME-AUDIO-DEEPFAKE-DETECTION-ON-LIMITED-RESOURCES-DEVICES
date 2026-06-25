@@ -574,7 +574,7 @@ class My_XLSR_FE(nn.Module):
         self.num_layers = kwargs.get('num_layers', 24)
         self.order = kwargs.get('order', 'first')
         self.custom_order = kwargs.get('custom_order', None)
-        ckpt_path = os.getenv("XLSR_PRETRAINED_PATH", "/nvme1/hungdx/Lightning-hydra/xlsr2_300m.pt")
+        ckpt_path = os.getenv("XLSR_PRETRAINED_PATH", "/nvme1/hungdx/Lightning-hydra/pretrained/xlsr2_300m.pt")
         if self.num_layers < 1 or self.num_layers > 24:
             raise ValueError(
                 "Number of layers must be at least 1 and at most 24.")

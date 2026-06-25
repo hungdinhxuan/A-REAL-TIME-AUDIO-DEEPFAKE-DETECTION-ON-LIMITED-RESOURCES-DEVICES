@@ -92,12 +92,6 @@ def make_sure_2d(x: Tensor) -> Tensor:
         x = x.unsqueeze(0)
     return x
 
-# def pad2(x, max_len: int = PADDING_SIZE):
-#     '''
-#     Maximum length of the input is 10000
-#     '''
-#     pass
-
 class WrapperScaledModel(nn.Module):
     def __init__(self, model):
         super().__init__()
@@ -172,8 +166,6 @@ class WrapperModel_NOPAD(nn.Module):
             output = self.model(x)
         return self.softmax(output)[0][0]
 
-
-
 # Load spoofed sample
 input, _ = librosa.load(
     "/datad/Datasets/moreko/wavs/09MKIS0040_12815.wav", sr=16000)  # Bona fide
@@ -184,15 +176,6 @@ print(input.shape)
 padded_input = pad(input).unsqueeze(0) if PADDING_SIZE > 0 else input
 
 checkpoint = args.student_model_path
-
-# Init Linear model
-# model = Distil_W2V2BASE_Linear(
-#     device, ssl_cpkt_path="/datad/hungdx/KDW2V-AASISTL/wav2vec_small.pt")
-
-# Init VIB model
-# model = Distil_W2V2BASE_VIB(
-#     device, ssl_cpkt_path="/datad/hungdx/KDW2V-AASISTL/wav2vec_small.pt")
-
 
 # Latest model
 with open(args.yaml, 'r') as f:
@@ -222,40 +205,12 @@ with torch.no_grad():
 model.module.front_end = W2V2_TA(import_fairseq_model(
     model.module.front_end.model
 )).to(device)
-# model.ssl_model = W2V2_TA(import_fairseq_model(
-#     model.ssl_model.model
-# )).to(device)
 
 model.eval()
 print("After replace")
 with torch.no_grad():
     after = model(padded_input)
     print(after)
-
-# ================================================================ Testing fusion model ================================================================
-# model2 = Distil_W2V2BASE_Linear(
-#     device, ssl_cpkt_path='/datab/hungdx/KDW2V-AASISTL/wav2vec_small.pt')
-# model2 = nn.DataParallel(model2).to(device)
-# model2.load_state_dict(torch.load(
-#     "/datab/hungdx/KDW2V-AASISTL/models/W2V2BASE_Linear_DKDLoss_cnsl_noaudiomentations/best_checkpoint_39.pth", map_location=device))
-
-# model2.module.ssl_model = W2V2_TA(import_fairseq_model(
-#     model2.module.ssl_model.model
-# )).to(device)
-
-# model2.eval()
-
-# # Fusion model
-# fusion_model = WrapperFusionModel(nn.ModuleList([model, model2])).to(device)
-# fusion_model.eval()
-# with torch.no_grad():
-#     print("After fusion")
-#     after = fusion_model(padded_input)
-#     print(after)
-
-# # Summary of the model
-# summary(fusion_model, input_size=(1, 64600))
-# ================================================================ Testing fusion model ================================================================
 
 # Scriptable
 
@@ -331,88 +286,6 @@ if args.qat:
     import sys
     sys.exit(0)
 
-if args.executorch:
-    print("Exporting executorch model")
-    comment += "_executorch"
-    from executorch.backends.xnnpack.partition.xnnpack_partitioner import XnnpackPartitioner
-    from executorch.exir import to_edge_transform_and_lower
-    from torch.export import Dim, export
-    dynamic_shapes = {
-        "x": Dim("length", min=16000, max=160000)
-    }
-    inputs = (torch.randn(1, 64000),)
-    exported_program = export(model_fp32, inputs, dynamic_shapes=dynamic_shapes)
-    executorch_program = to_edge_transform_and_lower(
-        exported_program,
-        partitioner = [XnnpackPartitioner()]
-    ).to_executorch()
-    print("Executorch program")
-    with open("model.pte", "wb") as f:
-        f.write(executorch_program.buffer)
-        
-    # Testing executorch program
-    from executorch.runtime import Runtime
-    runtime = Runtime.get()
-    program = runtime.load_program("model.pte")
-    method = program.load_method("forward")
-    print("Executorch program output")
-    outputs = method.execute([inputs])
-    print(outputs)
-    sys.exit(0)
- 
-
-
-if args.bf16:
-    SAVE_MODEL_PATH_LAPTOP_BF16 = SAVE_MODEL_PATH % "bf16"
-    with torch.cpu.amp.autocast():
-        model_bf16 = torch.jit.script(model_fp32)
-        model_bf16 = torch.jit.freeze(model_bf16)
-
-        with torch.no_grad():
-            y = model_bf16(padded_input)
-            print("After bf16 autotrace")
-            print(y)
-
-        optimized_for_inference = torch.jit.optimize_for_inference(model_bf16)
-        torch.jit.save(
-            optimized_for_inference, SAVE_MODEL_PATH_LAPTOP_BF16)
-        print("Saved model to ", SAVE_MODEL_PATH_LAPTOP_BF16)
-
-    # Save optimized model for mobile
-    SAVE_MODEL_PATH_MOBILE_BF16 = SAVE_MODEL_PATH % "mobile_bf16"
-    opt_model = optimize_for_mobile(optimized_for_inference)
-    # print("After optimize_for_mobile")
-    # with torch.no_grad():
-    #     after = opt_model(input)
-    #     print(after)
-    opt_model.save(SAVE_MODEL_PATH_MOBILE_BF16)
-    print("Saving optimized model to ", SAVE_MODEL_PATH_MOBILE_BF16)
-
-
-if args.onnx:
-
-    SAVE_MODEL_ONNX_PATH = SAVE_MODEL_PATH.replace(".pt", ".onnx")
-    model_fp32_jit = torch.jit.script(model_fp32)
-    model_fp32_jit = torch.jit.freeze(model_fp32_jit)
-
-    torch.onnx.export(model_fp32_jit,               # model being run
-                      # model input (or a tuple for multiple inputs)
-                      input,
-                      # where to save the model (can be a file or file-like object)
-                      SAVE_MODEL_ONNX_PATH,
-                      #   export_params=True,        # store the trained parameter weights inside the model file
-                      opset_version=14,          # the ONNX version to export the model to
-                      #   do_constant_folding=True,  # whether to execute constant folding for optimization
-                      input_names=['input'],   # the model's input names
-                      output_names=['output'],  # the model's output names
-                      #   dynamic_axes={"input": {0: "batch_size", 1: "sequence_length"}, "output": {
-                      #       0: "batch_size", 1: "sequence_length"}}
-                      )
-    results = perform_onnx_inference(SAVE_MODEL_ONNX_PATH, input)
-    print("ONNX results")
-    print(results)
-
-
 print("Before trace")
 padded_input = padded_input.squeeze(0)
 with torch.no_grad():
@@ -434,8 +307,8 @@ with torch.no_grad():
     print(jit_out)
 
 SAVE_MODEL_PATH_LAPTOP = SAVE_MODEL_PATH % "jit"
-# optimized_jit_for_inference = torch.jit.optimize_for_inference(jit_model)
-# torch.jit.save(jit_model, SAVE_MODEL_PATH_LAPTOP)
+optimized_jit_for_inference = torch.jit.optimize_for_inference(jit_model)
+torch.jit.save(jit_model, SAVE_MODEL_PATH_LAPTOP)
 # print("Saved model to ", SAVE_MODEL_PATH_LAPTOP)
 
 from torch._C import _MobileOptimizerType as MobileOptimizerType

@@ -9,7 +9,7 @@ from torchdistill.losses.registry import get_mid_level_loss
 from contrast.supcontrastloss import SupConLoss, supcon_loss
 import numpy as np
 from utils import AverageMeter
-from losses import MSELoss, CosineLoss
+#from losses import MSELoss, CosineLoss
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

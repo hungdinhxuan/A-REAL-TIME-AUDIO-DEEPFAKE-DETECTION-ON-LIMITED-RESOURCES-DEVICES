@@ -26,7 +26,7 @@ def clear_pytorch_caches():
 #model = torch.jit.load("./exports/Distil_XLSR_5_Custom_Trans_Layer_ConformerTCM_conf-1-2_best_mdt_lora_mini_wrapper_no_pad3mobile.pt")
 
 # qat
-model = torch.jit.load("./exports/Distil_XLSR_5_Custom_Trans_Layer_ConformerTCM_conf-1-2_best_mdt_lora_mini_wrapper_no_pad3qat.pt")
+model = torch.jit.load("./exports/best_avg_5_best_mdt_lora_mini_wrapper_from_MDT_241214_lora_250501_hotfixmobile.pt")
 
 input = torch.randn(1, 33600)
 

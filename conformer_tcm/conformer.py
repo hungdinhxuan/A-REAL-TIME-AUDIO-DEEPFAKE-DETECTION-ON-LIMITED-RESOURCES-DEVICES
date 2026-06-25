@@ -181,21 +181,21 @@ class ConformerConvModule(nn.Module):
         padding = calc_same_padding(
             kernel_size) if not causal else (kernel_size - 1, 0)
 
-        if type == 'conv':
+        # if type == 'conv':
 
-            self.net = nn.Sequential(
-                nn.LayerNorm(dim),
-                Rearrange('b n c -> b c n'),
-                nn.Conv1d(dim, inner_dim * 2, 1),
-                GLU(dim=1),
-                DepthWiseConv1d(inner_dim, inner_dim,
-                                kernel_size=kernel_size, padding=padding),
-                nn.BatchNorm1d(inner_dim) if not causal else nn.Identity(),
-                Swish(),
-                nn.Conv1d(inner_dim, dim, 1),
-                Rearrange('b c n -> b n c'),
-                nn.Dropout(dropout)
-            )
+        self.net = nn.Sequential(
+            nn.LayerNorm(dim),
+            Rearrange('b n c -> b c n'),
+            nn.Conv1d(dim, inner_dim * 2, 1),
+            GLU(dim=1),
+            DepthWiseConv1d(inner_dim, inner_dim,
+                            kernel_size=kernel_size, padding=padding),
+            nn.BatchNorm1d(inner_dim) if not causal else nn.Identity(),
+            Swish(),
+            nn.Conv1d(inner_dim, dim, 1),
+            Rearrange('b c n -> b n c'),
+            nn.Dropout(dropout)
+        )
 
         # elif type == 'conv_res2net':
         #     self.net = nn.Sequential(
@@ -243,8 +243,8 @@ class ConformerConvModule(nn.Module):
         #         Rearrange('b c n -> b n c'),
         #         nn.Dropout(dropout))
 
-        else:
-            raise ValueError('Invalid type')
+        # else:
+        #     raise ValueError('Invalid type')
 
     def forward(self, x):
         return self.net(x)
